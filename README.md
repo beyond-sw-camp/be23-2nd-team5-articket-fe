@@ -1,8 +1,8 @@
 <p align="center", width=50%>	
-<img width="1920" height="1536" alt="정의 이미지" src="https://github.com/user-attachments/assets/eceae756-39b7-419c-a111-945a4d69c1e4" />
+<img width="1920" height="1536" alt="정의 이미지" src="./asset/main.png" />
 </p>
 
-> ‘SeatFlow’는 “좌석의 흐름을 끊김 없이 이어가다(Seat + Flow)”라는 의미를 담고 있습니다.
+> ‘SeatFlow(가명)’는 “좌석의 흐름을 끊김 없이 이어가다(Seat + Flow)”라는 의미를 담고 있습니다.
 관객이 공연을 둘러보고 **좌석 현황을 실시간**으로 확인한 뒤, <b>좌석 임시 확보(선점)</b>와 결제를 거쳐 예매를 확정할 수 있도록 설계된 공연 예매 플랫폼입니다. 
 
 ***
@@ -38,6 +38,8 @@ SeatFlow는 위 문제를 해결하기 위해 “실시간 좌석 반영 → 좌
 ***
 
 ## 주요 기능
+<a href="https://ticket-service-fe.vercel.app/">🔗 [서비스 체험(Interactive Prototype)]</a> - 서비스 배포 시 제거될 예정입니다.<br/>
+<a href="https://www.figma.com/design/zUP4s1rnn62eMA5T0WlaEG/be23-2nd-team5?node-id=0-1&p=f">🔗 [디자인 프로토타입(Figma)]</a>
 
 ### 비인증 사용자(GUEST)
 > 로그인 없이 “둘러보기”만 가능한 사용자
@@ -74,19 +76,17 @@ SeatFlow는 위 문제를 해결하기 위해 “실시간 좌석 반영 → 좌
 
 ## 프로젝트 설계
 
-
 ***
 
-
 ## 요구사항 명세서
+<a href="https://docs.google.com/spreadsheets/d/1wvPbU3cpkc5v6pNopNGYWIIp6Pc-fyFyQHueswUGb9c/edit?gid=782621183#gid=782621183">🔗 [요구사항 명세서 URL]</a>
 
-<a href="https://docs.google.com/spreadsheets/d/1wvPbU3cpkc5v6pNopNGYWIIp6Pc-fyFyQHueswUGb9c/edit?gid=1760002883#gid=1760002883">🔗 [요구사항 명세서 URL]</a>
-
-## Entity Relationship Diagram (ERD)
+## WBS
 <a href="https://docs.google.com/spreadsheets/d/1wvPbU3cpkc5v6pNopNGYWIIp6Pc-fyFyQHueswUGb9c/edit?gid=1947580387#gid=1947580387">🔗 [WBS URL]</a>
 
-<p align="center">
-	<img width="2213" height="1067" alt="er diagram" src="https://github.com/user-attachments/assets/1409eb09-8163-4502-a678-7bf5c5fd0fec" />
+## Entity Relationship Diagram (ERD)
+<p align="center"> 
+	<img width="2213" height="1067" alt="er-diagram" src="./asset/erd.png"/>
 </p>
 
 ***
