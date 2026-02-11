@@ -8,8 +8,8 @@ export const ENDPOINTS = {
   seats: (scheduleId) => `/schedules/${scheduleId}/seats`,
 
   // AUTH
-  signup: () => `/auth/signup`,
-  login: () => `/auth/login`,
+  signup: () => `/member/create`,
+  login: () => `/member/doLogin`,
 
   // USER
   me: () => `/users/me`,

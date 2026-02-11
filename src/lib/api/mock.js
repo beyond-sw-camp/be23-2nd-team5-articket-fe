@@ -122,7 +122,7 @@ export async function mockFetch(path, init = {}) {
   }
 
   // ---- AUTH ----
-  if (method === 'POST' && pathname === '/auth/signup') {
+  if (method === 'POST' && pathname === '/member/create') {
     state.auditLogs.unshift({
       id: `a-${Date.now()}`,
       at: new Date().toISOString(),
@@ -132,7 +132,7 @@ export async function mockFetch(path, init = {}) {
     })
     return ok({ ok: true })
   }
-  if (method === 'POST' && pathname === '/auth/login') {
+  if (method === 'POST' && pathname === '/member/doLogin') {
     state.auditLogs.unshift({
       id: `a-${Date.now()}`,
       at: new Date().toISOString(),

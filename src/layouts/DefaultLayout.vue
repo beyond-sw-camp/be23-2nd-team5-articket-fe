@@ -85,7 +85,7 @@ function submitSearch() {
                 v-if="role === 'GUEST'"
                 variant="ghost"
                 class="h-10 px-3"
-                @click="$router.push('/auth/login')"
+                @click="$router.push('/member/doLogin')"
               >
                 <LogIn class="h-4 w-4" />
                 <span class="ml-2 text-sm">로그인</span>

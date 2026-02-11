@@ -13,8 +13,8 @@ import SeatMapView from '../views/schedules/SeatMapView.vue'
 import SeatsView from '../views/schedules/SeatsView.vue'
 import NearbyView from '../views/venues/NearbyView.vue'
 import VenueDetailView from '../views/venues/VenueDetailView.vue'
-import LoginView from '../views/auth/LoginView.vue'
-import SignupView from '../views/auth/SignupView.vue'
+import LoginView from '../views/member/LoginView.vue'
+import SignupView from '../views/member/SignupView.vue'
 
 // user
 import ProfileView from '../views/me/ProfileView.vue'
@@ -73,8 +73,8 @@ const routes = [
   { path: '/nearby', ...withLayout(NearbyView, { roleScope: 'guest' }) },
   { path: '/venues/:venueId', ...withLayout(VenueDetailView, { roleScope: 'guest' }) },
 
-  { path: '/auth/login', ...withLayout(LoginView, { roleScope: 'auth' }) },
-  { path: '/auth/signup', ...withLayout(SignupView, { roleScope: 'auth' }) },
+  { path: '/member/doLogin', ...withLayout(LoginView, { roleScope: 'auth' }) },
+  { path: '/member/create', ...withLayout(SignupView, { roleScope: 'auth' }) },
 
   { path: '/me', ...withLayout(ProfileView, { requiresAuth: true, requiredRole: 'USER' }) },
   { path: '/me/orders', ...withLayout(MyOrdersView, { requiresAuth: true, requiredRole: 'USER' }) },
@@ -139,7 +139,7 @@ router.beforeEach((to) => {
   const authed = isAuthed()
 
   if (role === 'GUEST' || !authed) {
-    return { path: '/auth/login', query: { redirect: to.fullPath } }
+    return { path: '/member/doLogin', query: { redirect: to.fullPath } }
   }
 
   if (meta.requiredRole && role !== meta.requiredRole) {
