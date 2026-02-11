@@ -73,7 +73,6 @@
 import UiCard from '../../components/common/UiCard.vue'
 import UiButton from '../../components/common/UiButton.vue'
 import { useAuthApi } from '../../composables/useAuthApi'
-import { useRoute } from 'vue-router'
 
 export default {
   name: 'MemberLogin',
@@ -87,13 +86,14 @@ export default {
         email: null,
         password: null,
         nextRole: 'USER'
-      }
+      },
+      loading: false,
+      error: '',
+      authApi: null
     }
   },
-  setup(props, { expose }) {
-    const route = useRoute()
-    const { loading, error, login } = useAuthApi()
-    return { route, loading, error, login }
+  created() {
+    this.authApi = useAuthApi()
   },
   methods: {
     async handleLogin() {
@@ -102,15 +102,25 @@ export default {
         password: this.form.password
       }
       
-      const success = await this.login(data, this.form.nextRole)
+      this.loading = true
+      this.error = ''
       
-      if (success) {
-        const redirect = this.route.query.redirect || '/me'
-        this.$router.push(redirect)
+      try {
+        const success = await this.authApi.login(data, this.form.nextRole)
+        
+        if (success) {
+          const redirect = this.$route.query.redirect || '/me'
+          this.$router.push(redirect)
+        } else {
+          this.error = this.authApi.error.value || '로그인에 실패했어요.'
+        }
+      } catch (e) {
+        this.error = e.message || '로그인에 실패했어요.'
+      } finally {
+        this.loading = false
       }
     },
     
-    // 회원가입 이동
     goToSignup() {
       this.$router.push('/member/create')
     }

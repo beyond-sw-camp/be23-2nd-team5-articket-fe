@@ -1,11 +1,3 @@
-<script setup>
-defineProps({
-  columns: { type: Array, default: () => [] }, // [{key,label,align}]
-  rows: { type: Array, default: () => [] },
-  rowKey: { type: String, default: 'id' },
-})
-</script>
-
 <template>
   <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
     <table class="w-full text-left text-sm">
@@ -29,4 +21,15 @@ defineProps({
     <div v-if="rows.length === 0" class="px-4 py-8 text-center text-sm text-slate-500">표시할 데이터가 없습니다.</div>
   </div>
 </template>
+
+<script>
+export default {
+  name: 'UiTable',
+  props: {
+    columns: { type: Array, default: () => [] }, // [{key,label,align}]
+    rows: { type: Array, default: () => [] },
+    rowKey: { type: String, default: 'id' }
+  }
+}
+</script>
 

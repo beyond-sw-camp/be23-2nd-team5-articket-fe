@@ -1,44 +1,3 @@
-<script setup>
-import { computed, onMounted, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { Flame, Ticket, ChevronRight } from 'lucide-vue-next'
-import UiCard from '../../components/common/UiCard.vue'
-import UiBadge from '../../components/common/UiBadge.vue'
-import UiButton from '../../components/common/UiButton.vue'
-import EmptyState from '../../components/common/EmptyState.vue'
-import { useApi } from '../../composables/useApi'
-import { ENDPOINTS } from '../../lib/api/endpoints'
-
-const api = useApi()
-const route = useRoute()
-const router = useRouter()
-
-const loading = ref(false)
-const items = ref([])
-
-const cat = computed(() => String(route.query.cat || ''))
-const q = computed(() => String(route.query.q || ''))
-
-async function load() {
-  loading.value = true
-  try {
-    const res = await api.get(`${ENDPOINTS.concerts()}?cat=${encodeURIComponent(cat.value)}&q=${encodeURIComponent(q.value)}`)
-    items.value = res.items || []
-  } finally {
-    loading.value = false
-  }
-}
-
-onMounted(load)
-watch(() => route.query, load)
-
-function badgeTone(label) {
-  if (label === '매진임박') return { tone: 'solid', color: 'red' }
-  if (label === '오픈예정') return { tone: 'soft', color: 'amber' }
-  return { tone: 'soft', color: 'green' }
-}
-</script>
-
 <template>
   <div class="grid gap-4">
     <div class="grid gap-4 lg:grid-cols-3">
@@ -99,7 +58,7 @@ function badgeTone(label) {
         :key="c.id"
         class="cursor-pointer transition hover:shadow-lg"
         :padded="false"
-        @click="router.push(`/concerts/${c.id}`)"
+        @click="$router.push(`/concerts/${c.id}`)"
       >
         <div class="relative overflow-hidden rounded-2xl">
           <img class="h-44 w-full object-cover" :src="c.posterUrl" :alt="c.title" />
@@ -129,3 +88,70 @@ function badgeTone(label) {
   </div>
 </template>
 
+<script>
+import { Flame, Ticket, ChevronRight } from 'lucide-vue-next'
+import UiCard from '../../components/common/UiCard.vue'
+import UiBadge from '../../components/common/UiBadge.vue'
+import UiButton from '../../components/common/UiButton.vue'
+import EmptyState from '../../components/common/EmptyState.vue'
+import { useApi } from '../../composables/useApi'
+import { ENDPOINTS } from '../../lib/api/endpoints'
+
+export default {
+  name: 'HomeView',
+  components: {
+    Flame,
+    Ticket,
+    ChevronRight,
+    UiCard,
+    UiBadge,
+    UiButton,
+    EmptyState
+  },
+  data() {
+    return {
+      loading: false,
+      items: [],
+      api: null
+    }
+  },
+  computed: {
+    cat() {
+      return String(this.$route.query.cat || '')
+    },
+    q() {
+      return String(this.$route.query.q || '')
+    }
+  },
+  watch: {
+    '$route.query': {
+      handler() {
+        this.load()
+      },
+      deep: true
+    }
+  },
+  created() {
+    this.api = useApi()
+  },
+  mounted() {
+    this.load()
+  },
+  methods: {
+    async load() {
+      this.loading = true
+      try {
+        const res = await this.api.get(`${ENDPOINTS.concerts()}?cat=${encodeURIComponent(this.cat)}&q=${encodeURIComponent(this.q)}`)
+        this.items = res.items || []
+      } finally {
+        this.loading = false
+      }
+    },
+    badgeTone(label) {
+      if (label === '매진임박') return { tone: 'solid', color: 'red' }
+      if (label === '오픈예정') return { tone: 'soft', color: 'amber' }
+      return { tone: 'soft', color: 'green' }
+    }
+  }
+}
+</script>

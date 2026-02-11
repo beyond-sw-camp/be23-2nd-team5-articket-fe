@@ -1,24 +1,12 @@
-<script setup>
-import { X } from 'lucide-vue-next'
-import UiButton from './UiButton.vue'
-
-defineProps({
-  open: { type: Boolean, default: false },
-  title: { type: String, default: '' },
-})
-
-const emit = defineEmits(['close'])
-</script>
-
 <template>
   <Teleport to="body">
     <div v-if="open" class="fixed inset-0 z-[80]">
-      <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" @click="emit('close')"></div>
+      <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" @click="$emit('close')"></div>
       <div class="absolute inset-0 flex items-end justify-center p-4 sm:items-center">
         <div class="w-full max-w-xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg">
           <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3">
             <div class="text-sm font-semibold text-slate-900">{{ title }}</div>
-            <UiButton variant="ghost" class="h-9 px-3" @click="emit('close')">
+            <UiButton variant="ghost" class="h-9 px-3" @click="$emit('close')">
               <X class="h-4 w-4" />
             </UiButton>
           </div>
@@ -33,4 +21,22 @@ const emit = defineEmits(['close'])
     </div>
   </Teleport>
 </template>
+
+<script>
+import { X } from 'lucide-vue-next'
+import UiButton from './UiButton.vue'
+
+export default {
+  name: 'UiModal',
+  components: {
+    X,
+    UiButton
+  },
+  props: {
+    open: { type: Boolean, default: false },
+    title: { type: String, default: '' }
+  },
+  emits: ['close']
+}
+</script>
 

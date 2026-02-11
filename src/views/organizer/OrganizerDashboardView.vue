@@ -1,49 +1,3 @@
-<script setup>
-import { computed, onMounted, ref } from 'vue'
-import StatCard from '../../components/common/StatCard.vue'
-import UiCard from '../../components/common/UiCard.vue'
-import UiBadge from '../../components/common/UiBadge.vue'
-import UiButton from '../../components/common/UiButton.vue'
-import UiTable from '../../components/common/UiTable.vue'
-import { useApi } from '../../composables/useApi'
-import { ENDPOINTS } from '../../lib/api/endpoints'
-
-const api = useApi()
-
-const loading = ref(false)
-const concerts = ref([])
-
-async function load() {
-  loading.value = true
-  try {
-    const res = await api.get(ENDPOINTS.organizerConcerts())
-    concerts.value = res.items || []
-  } finally {
-    loading.value = false
-  }
-}
-
-onMounted(load)
-
-const totalRevenue = computed(() =>
-  concerts.value.reduce((sum, c) => sum + Number(c.revenue || 0), 0),
-)
-const todayOpen = computed(() => concerts.value.reduce((sum, c) => sum + (c.todayOpen || 0), 0))
-const todayClose = computed(() => concerts.value.reduce((sum, c) => sum + (c.todayClose || 0), 0))
-
-const topColumns = [
-  { key: 'title', label: '공연' },
-  { key: 'status', label: '상태' },
-  { key: 'scheduleCount', label: '회차' },
-  { key: 'orderCount', label: '주문' },
-  { key: 'revenue', label: '매출' },
-]
-
-const topRows = computed(() =>
-  [...concerts.value].sort((a, b) => (b.revenue || 0) - (a.revenue || 0)).slice(0, 3),
-)
-</script>
-
 <template>
   <div class="grid gap-4">
     <div class="flex items-end justify-between gap-3">
@@ -108,3 +62,68 @@ const topRows = computed(() =>
   </div>
 </template>
 
+<script>
+import StatCard from '../../components/common/StatCard.vue'
+import UiCard from '../../components/common/UiCard.vue'
+import UiBadge from '../../components/common/UiBadge.vue'
+import UiButton from '../../components/common/UiButton.vue'
+import UiTable from '../../components/common/UiTable.vue'
+import { useApi } from '../../composables/useApi'
+import { ENDPOINTS } from '../../lib/api/endpoints'
+
+export default {
+  name: 'OrganizerDashboardView',
+  components: {
+    StatCard,
+    UiCard,
+    UiBadge,
+    UiButton,
+    UiTable
+  },
+  data() {
+    return {
+      loading: false,
+      concerts: [],
+      api: null,
+      topColumns: [
+        { key: 'title', label: '공연' },
+        { key: 'status', label: '상태' },
+        { key: 'scheduleCount', label: '회차' },
+        { key: 'orderCount', label: '주문' },
+        { key: 'revenue', label: '매출' }
+      ]
+    }
+  },
+  computed: {
+    totalRevenue() {
+      return this.concerts.reduce((sum, c) => sum + Number(c.revenue || 0), 0)
+    },
+    todayOpen() {
+      return this.concerts.reduce((sum, c) => sum + (c.todayOpen || 0), 0)
+    },
+    todayClose() {
+      return this.concerts.reduce((sum, c) => sum + (c.todayClose || 0), 0)
+    },
+    topRows() {
+      return [...this.concerts].sort((a, b) => (b.revenue || 0) - (a.revenue || 0)).slice(0, 3)
+    }
+  },
+  created() {
+    this.api = useApi()
+  },
+  mounted() {
+    this.load()
+  },
+  methods: {
+    async load() {
+      this.loading = true
+      try {
+        const res = await this.api.get(ENDPOINTS.organizerConcerts())
+        this.concerts = res.items || []
+      } finally {
+        this.loading = false
+      }
+    }
+  }
+}
+</script>

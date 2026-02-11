@@ -1,8 +1,3 @@
-<script setup>
-import UiCard from '../../components/common/UiCard.vue'
-import UiButton from '../../components/common/UiButton.vue'
-</script>
-
 <template>
   <UiCard>
     <div class="text-sm font-semibold text-slate-900">페이지를 찾을 수 없어요 (404)</div>
@@ -13,3 +8,15 @@ import UiButton from '../../components/common/UiButton.vue'
   </UiCard>
 </template>
 
+<script>
+import UiCard from '../../components/common/UiCard.vue'
+import UiButton from '../../components/common/UiButton.vue'
+
+export default {
+  name: 'NotFoundView',
+  components: {
+    UiCard,
+    UiButton
+  }
+}
+</script>

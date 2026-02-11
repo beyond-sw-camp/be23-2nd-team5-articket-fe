@@ -1,25 +1,3 @@
-<script setup>
-import { computed } from 'vue'
-import { seatColorClass, SEAT_STATUS } from '../../mocks/seats'
-
-const props = defineProps({
-  seats: { type: Array, default: () => [] },
-  selected: { type: Array, default: () => [] },
-})
-const emit = defineEmits(['toggle'])
-
-const selectedSet = computed(() => new Set(props.selected))
-
-function canPick(seat) {
-  return seat.status === SEAT_STATUS.AVAILABLE
-}
-
-function onClick(seat) {
-  if (!canPick(seat) && !selectedSet.value.has(seat.id)) return
-  emit('toggle', seat.id)
-}
-</script>
-
 <template>
   <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
     <div class="grid grid-cols-10 gap-1 sm:grid-cols-12 md:grid-cols-14">
@@ -41,4 +19,32 @@ function onClick(seat) {
     </div>
   </div>
 </template>
+
+<script>
+import { seatColorClass, SEAT_STATUS } from '../../mocks/seats'
+
+export default {
+  name: 'SeatGrid',
+  props: {
+    seats: { type: Array, default: () => [] },
+    selected: { type: Array, default: () => [] }
+  },
+  emits: ['toggle'],
+  computed: {
+    selectedSet() {
+      return new Set(this.selected)
+    }
+  },
+  methods: {
+    seatColorClass,
+    canPick(seat) {
+      return seat.status === SEAT_STATUS.AVAILABLE
+    },
+    onClick(seat) {
+      if (!this.canPick(seat) && !this.selectedSet.has(seat.id)) return
+      this.$emit('toggle', seat.id)
+    }
+  }
+}
+</script>
 

@@ -1,27 +1,3 @@
-<script setup>
-import { onMounted, ref } from 'vue'
-import UiCard from '../../components/common/UiCard.vue'
-import UiBadge from '../../components/common/UiBadge.vue'
-import UiButton from '../../components/common/UiButton.vue'
-import { useApi } from '../../composables/useApi'
-import { ENDPOINTS } from '../../lib/api/endpoints'
-
-const api = useApi()
-const profile = ref(null)
-const loading = ref(false)
-
-async function load() {
-  loading.value = true
-  try {
-    profile.value = await api.get(ENDPOINTS.me())
-  } finally {
-    loading.value = false
-  }
-}
-
-onMounted(load)
-</script>
-
 <template>
   <div class="grid gap-4">
     <UiCard v-if="loading">
@@ -60,3 +36,42 @@ onMounted(load)
   </div>
 </template>
 
+<script>
+import UiCard from '../../components/common/UiCard.vue'
+import UiBadge from '../../components/common/UiBadge.vue'
+import UiButton from '../../components/common/UiButton.vue'
+import { useApi } from '../../composables/useApi'
+import { ENDPOINTS } from '../../lib/api/endpoints'
+
+export default {
+  name: 'ProfileView',
+  components: {
+    UiCard,
+    UiBadge,
+    UiButton
+  },
+  data() {
+    return {
+      profile: null,
+      loading: false,
+      api: null
+    }
+  },
+  created() {
+    this.api = useApi()
+  },
+  mounted() {
+    this.load()
+  },
+  methods: {
+    async load() {
+      this.loading = true
+      try {
+        this.profile = await this.api.get(ENDPOINTS.me())
+      } finally {
+        this.loading = false
+      }
+    }
+  }
+}
+</script>

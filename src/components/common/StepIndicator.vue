@@ -1,17 +1,3 @@
-<script setup>
-import { computed } from 'vue'
-
-const props = defineProps({
-  steps: { type: Array, default: () => [] },
-  active: { type: Number, default: 0 },
-})
-
-const pct = computed(() => {
-  const total = Math.max(1, props.steps.length - 1)
-  return `${Math.round((props.active / total) * 100)}%`
-})
-</script>
-
 <template>
   <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
     <div class="flex items-center justify-between">
@@ -41,4 +27,20 @@ const pct = computed(() => {
     </div>
   </div>
 </template>
+
+<script>
+export default {
+  name: 'StepIndicator',
+  props: {
+    steps: { type: Array, default: () => [] },
+    active: { type: Number, default: 0 }
+  },
+  computed: {
+    pct() {
+      const total = Math.max(1, this.steps.length - 1)
+      return `${Math.round((this.active / total) * 100)}%`
+    }
+  }
+}
+</script>
 

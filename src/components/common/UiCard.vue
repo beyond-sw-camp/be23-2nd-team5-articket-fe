@@ -1,10 +1,3 @@
-<script setup>
-defineProps({
-  as: { type: String, default: 'div' },
-  padded: { type: Boolean, default: true },
-})
-</script>
-
 <template>
   <component
     :is="as"
@@ -14,4 +7,14 @@ defineProps({
     <slot />
   </component>
 </template>
+
+<script>
+export default {
+  name: 'UiCard',
+  props: {
+    as: { type: String, default: 'div' },
+    padded: { type: Boolean, default: true }
+  }
+}
+</script>
 

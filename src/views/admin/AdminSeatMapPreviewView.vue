@@ -1,15 +1,3 @@
-<script setup>
-import { computed } from 'vue'
-import { useRoute } from 'vue-router'
-import UiCard from '../../components/common/UiCard.vue'
-import UiBadge from '../../components/common/UiBadge.vue'
-import UiButton from '../../components/common/UiButton.vue'
-import { MOCK_SEAT_MAPS } from '../../mocks/venues'
-
-const route = useRoute()
-const seatMap = computed(() => MOCK_SEAT_MAPS.find((sm) => sm.id === route.params.seatMapId))
-</script>
-
 <template>
   <UiCard v-if="seatMap">
     <div class="flex items-start justify-between gap-3">
@@ -34,3 +22,23 @@ const seatMap = computed(() => MOCK_SEAT_MAPS.find((sm) => sm.id === route.param
   </UiCard>
 </template>
 
+<script>
+import UiCard from '../../components/common/UiCard.vue'
+import UiBadge from '../../components/common/UiBadge.vue'
+import UiButton from '../../components/common/UiButton.vue'
+import { MOCK_SEAT_MAPS } from '../../mocks/venues'
+
+export default {
+  name: 'AdminSeatMapPreviewView',
+  components: {
+    UiCard,
+    UiBadge,
+    UiButton
+  },
+  computed: {
+    seatMap() {
+      return MOCK_SEAT_MAPS.find((sm) => sm.id === this.$route.params.seatMapId)
+    }
+  }
+}
+</script>

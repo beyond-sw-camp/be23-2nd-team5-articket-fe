@@ -1,53 +1,3 @@
-<script setup>
-import { computed, onMounted, ref } from 'vue'
-import UiTabs from '../../components/common/UiTabs.vue'
-import UiTable from '../../components/common/UiTable.vue'
-import UiBadge from '../../components/common/UiBadge.vue'
-import UiButton from '../../components/common/UiButton.vue'
-import { useApi } from '../../composables/useApi'
-import { ENDPOINTS } from '../../lib/api/endpoints'
-
-const api = useApi()
-
-const tab = ref('published')
-const tabs = [
-  { key: 'draft', label: '초안' },
-  { key: 'published', label: '게시' },
-  { key: 'ended', label: '종료' },
-]
-
-const columns = [
-  { key: 'title', label: '공연' },
-  { key: 'status', label: '상태' },
-  { key: 'scheduleCount', label: '회차 수' },
-  { key: 'orderCount', label: '주문 수' },
-  { key: 'revenue', label: '매출' },
-]
-
-const loading = ref(false)
-const items = ref([])
-
-async function load() {
-  loading.value = true
-  try {
-    const res = await api.get(ENDPOINTS.organizerConcerts())
-    items.value = res.items || []
-  } finally {
-    loading.value = false
-  }
-}
-
-onMounted(load)
-
-const filtered = computed(() =>
-  items.value.filter((c) => {
-    if (tab.value === 'draft') return c.status === 'DRAFT'
-    if (tab.value === 'ended') return c.status === 'ENDED'
-    return c.status === 'PUBLISHED'
-  }),
-)
-</script>
-
 <template>
   <div class="grid gap-4">
     <div class="flex items-end justify-between gap-3">
@@ -78,3 +28,67 @@ const filtered = computed(() =>
   </div>
 </template>
 
+<script>
+import UiTabs from '../../components/common/UiTabs.vue'
+import UiTable from '../../components/common/UiTable.vue'
+import UiBadge from '../../components/common/UiBadge.vue'
+import UiButton from '../../components/common/UiButton.vue'
+import { useApi } from '../../composables/useApi'
+import { ENDPOINTS } from '../../lib/api/endpoints'
+
+export default {
+  name: 'OrganizerConcertsView',
+  components: {
+    UiTabs,
+    UiTable,
+    UiBadge,
+    UiButton
+  },
+  data() {
+    return {
+      tab: 'published',
+      tabs: [
+        { key: 'draft', label: '초안' },
+        { key: 'published', label: '게시' },
+        { key: 'ended', label: '종료' }
+      ],
+      columns: [
+        { key: 'title', label: '공연' },
+        { key: 'status', label: '상태' },
+        { key: 'scheduleCount', label: '회차 수' },
+        { key: 'orderCount', label: '주문 수' },
+        { key: 'revenue', label: '매출' }
+      ],
+      loading: false,
+      items: [],
+      api: null
+    }
+  },
+  computed: {
+    filtered() {
+      return this.items.filter((c) => {
+        if (this.tab === 'draft') return c.status === 'DRAFT'
+        if (this.tab === 'ended') return c.status === 'ENDED'
+        return c.status === 'PUBLISHED'
+      })
+    }
+  },
+  created() {
+    this.api = useApi()
+  },
+  mounted() {
+    this.load()
+  },
+  methods: {
+    async load() {
+      this.loading = true
+      try {
+        const res = await this.api.get(ENDPOINTS.organizerConcerts())
+        this.items = res.items || []
+      } finally {
+        this.loading = false
+      }
+    }
+  }
+}
+</script>

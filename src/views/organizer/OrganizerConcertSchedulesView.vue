@@ -1,41 +1,3 @@
-<script setup>
-import { onMounted, ref } from 'vue'
-import { useRoute } from 'vue-router'
-import UiCard from '../../components/common/UiCard.vue'
-import UiTable from '../../components/common/UiTable.vue'
-import UiBadge from '../../components/common/UiBadge.vue'
-import { useApi } from '../../composables/useApi'
-import { ENDPOINTS } from '../../lib/api/endpoints'
-
-const api = useApi()
-const route = useRoute()
-
-const loading = ref(false)
-const items = ref([])
-
-const columns = [
-  { key: 'startsAt', label: '일시' },
-  { key: 'status', label: '상태' },
-  { key: 'occupancy', label: '판매율(%)' },
-  { key: 'sold', label: 'SOLD' },
-  { key: 'hold', label: 'HOLD' },
-  { key: 'total', label: '총 좌석' },
-]
-
-async function load() {
-  loading.value = true
-  try {
-    const concertId = route.params.concertId
-    const res = await api.get(ENDPOINTS.organizerConcertSchedules(concertId))
-    items.value = res.items || []
-  } finally {
-    loading.value = false
-  }
-}
-
-onMounted(load)
-</script>
-
 <template>
   <div class="grid gap-4">
     <UiCard>
@@ -65,4 +27,52 @@ onMounted(load)
   </div>
 </template>
 
+<script>
+import UiCard from '../../components/common/UiCard.vue'
+import UiTable from '../../components/common/UiTable.vue'
+import UiBadge from '../../components/common/UiBadge.vue'
+import { useApi } from '../../composables/useApi'
+import { ENDPOINTS } from '../../lib/api/endpoints'
 
+export default {
+  name: 'OrganizerConcertSchedulesView',
+  components: {
+    UiCard,
+    UiTable,
+    UiBadge
+  },
+  data() {
+    return {
+      loading: false,
+      items: [],
+      api: null,
+      columns: [
+        { key: 'startsAt', label: '일시' },
+        { key: 'status', label: '상태' },
+        { key: 'occupancy', label: '판매율(%)' },
+        { key: 'sold', label: 'SOLD' },
+        { key: 'hold', label: 'HOLD' },
+        { key: 'total', label: '총 좌석' }
+      ]
+    }
+  },
+  created() {
+    this.api = useApi()
+  },
+  mounted() {
+    this.load()
+  },
+  methods: {
+    async load() {
+      this.loading = true
+      try {
+        const concertId = this.$route.params.concertId
+        const res = await this.api.get(ENDPOINTS.organizerConcertSchedules(concertId))
+        this.items = res.items || []
+      } finally {
+        this.loading = false
+      }
+    }
+  }
+}
+</script>

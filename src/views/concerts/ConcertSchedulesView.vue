@@ -1,39 +1,3 @@
-<script setup>
-import { onMounted, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { CalendarClock } from 'lucide-vue-next'
-import UiCard from '../../components/common/UiCard.vue'
-import UiBadge from '../../components/common/UiBadge.vue'
-import UiButton from '../../components/common/UiButton.vue'
-import { useApi } from '../../composables/useApi'
-import { ENDPOINTS } from '../../lib/api/endpoints'
-
-const api = useApi()
-const route = useRoute()
-const router = useRouter()
-
-const concert = ref(null)
-const schedules = ref([])
-const loading = ref(false)
-
-async function load() {
-  loading.value = true
-  try {
-    concert.value = await api.get(ENDPOINTS.concert(route.params.concertId))
-    const res = await api.get(ENDPOINTS.concertSchedules(route.params.concertId))
-    schedules.value = res.items || []
-  } finally {
-    loading.value = false
-  }
-}
-
-onMounted(load)
-
-function statusBadge(st) {
-  return st === 'OPEN' ? { tone: 'solid', color: 'red', label: 'OPEN' } : { tone: 'soft', color: 'slate', label: 'CLOSED' }
-}
-</script>
-
 <template>
   <div class="grid gap-4">
     <UiCard v-if="loading">
@@ -44,9 +8,9 @@ function statusBadge(st) {
       <div class="flex items-end justify-between gap-4">
         <div>
           <div class="text-sm font-semibold text-slate-900">회차 목록</div>
-          <div class="mt-1 text-sm text-slate-500">{{ concert?.title }}</div>
+          <div class="mt-1 text-sm text-slate-500">{{ concert ? concert.title : '' }}</div>
         </div>
-        <UiButton variant="ghost" class="h-11 px-4" @click="router.push(`/concerts/${route.params.concertId}`)">
+        <UiButton variant="ghost" class="h-11 px-4" @click="$router.push(`/concerts/${$route.params.concertId}`)">
           공연 상세
         </UiButton>
       </div>
@@ -56,7 +20,7 @@ function statusBadge(st) {
           v-for="s in schedules"
           :key="s.id"
           class="cursor-pointer transition hover:shadow-lg"
-          @click="router.push(`/schedules/${s.id}`)"
+          @click="$router.push(`/schedules/${s.id}`)"
         >
           <div class="flex items-start justify-between gap-3">
             <div>
@@ -76,3 +40,50 @@ function statusBadge(st) {
   </div>
 </template>
 
+<script>
+import { CalendarClock } from 'lucide-vue-next'
+import UiCard from '../../components/common/UiCard.vue'
+import UiBadge from '../../components/common/UiBadge.vue'
+import UiButton from '../../components/common/UiButton.vue'
+import { useApi } from '../../composables/useApi'
+import { ENDPOINTS } from '../../lib/api/endpoints'
+
+export default {
+  name: 'ConcertSchedulesView',
+  components: {
+    CalendarClock,
+    UiCard,
+    UiBadge,
+    UiButton
+  },
+  data() {
+    return {
+      concert: null,
+      schedules: [],
+      loading: false,
+      api: null
+    }
+  },
+  created() {
+    this.api = useApi()
+  },
+  mounted() {
+    this.load()
+  },
+  methods: {
+    async load() {
+      this.loading = true
+      try {
+        this.concert = await this.api.get(ENDPOINTS.concert(this.$route.params.concertId))
+        const res = await this.api.get(ENDPOINTS.concertSchedules(this.$route.params.concertId))
+        this.schedules = res.items || []
+      } finally {
+        this.loading = false
+      }
+    },
+    statusBadge(st) {
+      return st === 'OPEN' ? { tone: 'solid', color: 'red', label: 'OPEN' } : { tone: 'soft', color: 'slate', label: 'CLOSED' }
+    }
+  }
+}
+</script>

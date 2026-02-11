@@ -1,11 +1,3 @@
-<script setup>
-defineProps({
-  modelValue: { type: String, required: true },
-  tabs: { type: Array, default: () => [] }, // [{key,label}]
-})
-const emit = defineEmits(['update:modelValue'])
-</script>
-
 <template>
   <div class="flex items-center gap-2 overflow-x-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-sm">
     <button
@@ -18,10 +10,21 @@ const emit = defineEmits(['update:modelValue'])
           ? 'border-red-200 bg-red-50 text-red-700'
           : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
       "
-      @click="emit('update:modelValue', t.key)"
+      @click="$emit('update:modelValue', t.key)"
     >
       {{ t.label }}
     </button>
   </div>
 </template>
+
+<script>
+export default {
+  name: 'UiTabs',
+  props: {
+    modelValue: { type: String, required: true },
+    tabs: { type: Array, default: () => [] } // [{key,label}]
+  },
+  emits: ['update:modelValue']
+}
+</script>
 

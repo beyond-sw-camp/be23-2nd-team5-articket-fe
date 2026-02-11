@@ -1,22 +1,3 @@
-<script setup>
-import UiCard from '../../components/common/UiCard.vue'
-import UiTable from '../../components/common/UiTable.vue'
-import UiButton from '../../components/common/UiButton.vue'
-import UiBadge from '../../components/common/UiBadge.vue'
-import { MOCK_VENUES } from '../../mocks/venues'
-
-const columns = [
-  { key: 'name', label: '공연장' },
-  { key: 'address', label: '주소' },
-  { key: 'seatMaps', label: '좌석맵' },
-]
-
-const rows = MOCK_VENUES.map((v) => ({
-  ...v,
-  seatMaps: (v.seatMapIds || []).length,
-}))
-</script>
-
 <template>
   <div class="grid gap-4">
     <div class="flex items-end justify-between gap-3">
@@ -49,3 +30,33 @@ const rows = MOCK_VENUES.map((v) => ({
   </div>
 </template>
 
+<script>
+import UiCard from '../../components/common/UiCard.vue'
+import UiTable from '../../components/common/UiTable.vue'
+import UiButton from '../../components/common/UiButton.vue'
+import UiBadge from '../../components/common/UiBadge.vue'
+import { MOCK_VENUES } from '../../mocks/venues'
+
+export default {
+  name: 'AdminVenuesView',
+  components: {
+    UiCard,
+    UiTable,
+    UiButton,
+    UiBadge
+  },
+  data() {
+    return {
+      columns: [
+        { key: 'name', label: '공연장' },
+        { key: 'address', label: '주소' },
+        { key: 'seatMaps', label: '좌석맵' }
+      ],
+      rows: MOCK_VENUES.map((v) => ({
+        ...v,
+        seatMaps: (v.seatMapIds || []).length
+      }))
+    }
+  }
+}
+</script>

@@ -1,36 +1,3 @@
-<script setup>
-import { onMounted, ref } from 'vue'
-import UiCard from '../../components/common/UiCard.vue'
-import UiBadge from '../../components/common/UiBadge.vue'
-import UiButton from '../../components/common/UiButton.vue'
-import UiTable from '../../components/common/UiTable.vue'
-import { useApi } from '../../composables/useApi'
-import { ENDPOINTS } from '../../lib/api/endpoints'
-
-const api = useApi()
-const loading = ref(false)
-const items = ref([])
-
-const columns = [
-  { key: 'id', label: '주문ID' },
-  { key: 'status', label: '상태' },
-  { key: 'createdAt', label: '생성일' },
-  { key: 'totalAmount', label: '금액' },
-]
-
-async function load() {
-  loading.value = true
-  try {
-    const res = await api.get(ENDPOINTS.myOrders())
-    items.value = res.items || []
-  } finally {
-    loading.value = false
-  }
-}
-
-onMounted(load)
-</script>
-
 <template>
   <div class="grid gap-4">
     <div class="flex items-end justify-between gap-3">
@@ -66,3 +33,51 @@ onMounted(load)
   </div>
 </template>
 
+<script>
+import UiCard from '../../components/common/UiCard.vue'
+import UiBadge from '../../components/common/UiBadge.vue'
+import UiButton from '../../components/common/UiButton.vue'
+import UiTable from '../../components/common/UiTable.vue'
+import { useApi } from '../../composables/useApi'
+import { ENDPOINTS } from '../../lib/api/endpoints'
+
+export default {
+  name: 'MyOrdersView',
+  components: {
+    UiCard,
+    UiBadge,
+    UiButton,
+    UiTable
+  },
+  data() {
+    return {
+      loading: false,
+      items: [],
+      api: null,
+      columns: [
+        { key: 'id', label: '주문ID' },
+        { key: 'status', label: '상태' },
+        { key: 'createdAt', label: '생성일' },
+        { key: 'totalAmount', label: '금액' }
+      ]
+    }
+  },
+  created() {
+    this.api = useApi()
+  },
+  mounted() {
+    this.load()
+  },
+  methods: {
+    async load() {
+      this.loading = true
+      try {
+        const res = await this.api.get(ENDPOINTS.myOrders())
+        this.items = res.items || []
+      } finally {
+        this.loading = false
+      }
+    }
+  }
+}
+</script>

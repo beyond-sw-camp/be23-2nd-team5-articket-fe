@@ -1,30 +1,3 @@
-<script setup>
-import { onMounted, ref } from 'vue'
-import { useRoute } from 'vue-router'
-import UiCard from '../../components/common/UiCard.vue'
-import UiBadge from '../../components/common/UiBadge.vue'
-import UiButton from '../../components/common/UiButton.vue'
-import { useApi } from '../../composables/useApi'
-import { ENDPOINTS } from '../../lib/api/endpoints'
-
-const api = useApi()
-const route = useRoute()
-
-const loading = ref(false)
-const item = ref(null)
-
-async function load() {
-  loading.value = true
-  try {
-    item.value = await api.get(ENDPOINTS.myOrder(route.params.orderId))
-  } finally {
-    loading.value = false
-  }
-}
-
-onMounted(load)
-</script>
-
 <template>
   <div class="grid gap-4">
     <UiCard v-if="loading">
@@ -67,3 +40,42 @@ onMounted(load)
   </div>
 </template>
 
+<script>
+import UiCard from '../../components/common/UiCard.vue'
+import UiBadge from '../../components/common/UiBadge.vue'
+import UiButton from '../../components/common/UiButton.vue'
+import { useApi } from '../../composables/useApi'
+import { ENDPOINTS } from '../../lib/api/endpoints'
+
+export default {
+  name: 'MyOrderDetailView',
+  components: {
+    UiCard,
+    UiBadge,
+    UiButton
+  },
+  data() {
+    return {
+      loading: false,
+      item: null,
+      api: null
+    }
+  },
+  created() {
+    this.api = useApi()
+  },
+  mounted() {
+    this.load()
+  },
+  methods: {
+    async load() {
+      this.loading = true
+      try {
+        this.item = await this.api.get(ENDPOINTS.myOrder(this.$route.params.orderId))
+      } finally {
+        this.loading = false
+      }
+    }
+  }
+}
+</script>

@@ -1,9 +1,3 @@
-<script setup>
-import UiCard from '../../components/common/UiCard.vue'
-import UiButton from '../../components/common/UiButton.vue'
-import EmptyState from '../../components/common/EmptyState.vue'
-</script>
-
 <template>
   <div class="grid gap-4">
     <EmptyState
@@ -25,3 +19,17 @@ import EmptyState from '../../components/common/EmptyState.vue'
   </div>
 </template>
 
+<script>
+import UiCard from '../../components/common/UiCard.vue'
+import UiButton from '../../components/common/UiButton.vue'
+import EmptyState from '../../components/common/EmptyState.vue'
+
+export default {
+  name: 'HoldCreateView',
+  components: {
+    UiCard,
+    UiButton,
+    EmptyState
+  }
+}
+</script>

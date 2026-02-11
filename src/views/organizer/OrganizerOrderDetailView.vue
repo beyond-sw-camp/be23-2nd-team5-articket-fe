@@ -1,34 +1,3 @@
-<script setup>
-import { onMounted, ref } from 'vue'
-import { useRoute } from 'vue-router'
-import UiCard from '../../components/common/UiCard.vue'
-import UiBadge from '../../components/common/UiBadge.vue'
-import UiButton from '../../components/common/UiButton.vue'
-import { useApi } from '../../composables/useApi'
-import { ENDPOINTS } from '../../lib/api/endpoints'
-
-const api = useApi()
-const route = useRoute()
-
-const loading = ref(false)
-const item = ref(null)
-const error = ref('')
-
-async function load() {
-  loading.value = true
-  error.value = ''
-  try {
-    item.value = await api.get(ENDPOINTS.organizerOrder(route.params.orderId))
-  } catch (e) {
-    error.value = e?.message || '주문 조회에 실패했어요.'
-  } finally {
-    loading.value = false
-  }
-}
-
-onMounted(load)
-</script>
-
 <template>
   <div class="grid gap-4">
     <UiCard v-if="loading">
@@ -85,4 +54,46 @@ onMounted(load)
   </div>
 </template>
 
+<script>
+import UiCard from '../../components/common/UiCard.vue'
+import UiBadge from '../../components/common/UiBadge.vue'
+import UiButton from '../../components/common/UiButton.vue'
+import { useApi } from '../../composables/useApi'
+import { ENDPOINTS } from '../../lib/api/endpoints'
 
+export default {
+  name: 'OrganizerOrderDetailView',
+  components: {
+    UiCard,
+    UiBadge,
+    UiButton
+  },
+  data() {
+    return {
+      loading: false,
+      item: null,
+      error: '',
+      api: null
+    }
+  },
+  created() {
+    this.api = useApi()
+  },
+  mounted() {
+    this.load()
+  },
+  methods: {
+    async load() {
+      this.loading = true
+      this.error = ''
+      try {
+        this.item = await this.api.get(ENDPOINTS.organizerOrder(this.$route.params.orderId))
+      } catch (e) {
+        this.error = e?.message || '주문 조회에 실패했어요.'
+      } finally {
+        this.loading = false
+      }
+    }
+  }
+}
+</script>

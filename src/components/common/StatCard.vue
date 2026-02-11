@@ -1,11 +1,3 @@
-<script setup>
-defineProps({
-  label: { type: String, default: '' },
-  value: { type: String, default: '' },
-  hint: { type: String, default: '' },
-})
-</script>
-
 <template>
   <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
     <div class="text-xs font-semibold text-slate-500">{{ label }}</div>
@@ -14,4 +6,15 @@ defineProps({
     <slot />
   </div>
 </template>
+
+<script>
+export default {
+  name: 'StatCard',
+  props: {
+    label: { type: String, default: '' },
+    value: { type: String, default: '' },
+    hint: { type: String, default: '' }
+  }
+}
+</script>
 

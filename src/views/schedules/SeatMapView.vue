@@ -1,32 +1,3 @@
-<script setup>
-import { onMounted, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { LayoutGrid } from 'lucide-vue-next'
-import UiCard from '../../components/common/UiCard.vue'
-import UiButton from '../../components/common/UiButton.vue'
-import UiBadge from '../../components/common/UiBadge.vue'
-import { useApi } from '../../composables/useApi'
-import { ENDPOINTS } from '../../lib/api/endpoints'
-
-const api = useApi()
-const route = useRoute()
-const router = useRouter()
-
-const loading = ref(false)
-const seatMap = ref(null)
-
-async function load() {
-  loading.value = true
-  try {
-    seatMap.value = await api.get(ENDPOINTS.seatMap(route.params.scheduleId))
-  } finally {
-    loading.value = false
-  }
-}
-
-onMounted(load)
-</script>
-
 <template>
   <div class="grid gap-4">
     <UiCard v-if="loading">
@@ -57,7 +28,7 @@ onMounted(load)
       </div>
 
       <div class="mt-4">
-        <UiButton class="h-12 px-5" @click="router.push(`/schedules/${route.params.scheduleId}/seats`)">
+        <UiButton class="h-12 px-5" @click="$router.push(`/schedules/${$route.params.scheduleId}/seats`)">
           좌석 선택으로 이동
         </UiButton>
       </div>
@@ -65,3 +36,44 @@ onMounted(load)
   </div>
 </template>
 
+<script>
+import { LayoutGrid } from 'lucide-vue-next'
+import UiCard from '../../components/common/UiCard.vue'
+import UiButton from '../../components/common/UiButton.vue'
+import UiBadge from '../../components/common/UiBadge.vue'
+import { useApi } from '../../composables/useApi'
+import { ENDPOINTS } from '../../lib/api/endpoints'
+
+export default {
+  name: 'SeatMapView',
+  components: {
+    LayoutGrid,
+    UiCard,
+    UiButton,
+    UiBadge
+  },
+  data() {
+    return {
+      loading: false,
+      seatMap: null,
+      api: null
+    }
+  },
+  created() {
+    this.api = useApi()
+  },
+  mounted() {
+    this.load()
+  },
+  methods: {
+    async load() {
+      this.loading = true
+      try {
+        this.seatMap = await this.api.get(ENDPOINTS.seatMap(this.$route.params.scheduleId))
+      } finally {
+        this.loading = false
+      }
+    }
+  }
+}
+</script>

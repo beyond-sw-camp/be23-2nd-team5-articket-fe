@@ -1,40 +1,3 @@
-<script setup>
-import { computed, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { CreditCard } from 'lucide-vue-next'
-import UiCard from '../../components/common/UiCard.vue'
-import UiButton from '../../components/common/UiButton.vue'
-import UiBadge from '../../components/common/UiBadge.vue'
-import UiModal from '../../components/common/UiModal.vue'
-import { useApi } from '../../composables/useApi'
-import { ENDPOINTS } from '../../lib/api/endpoints'
-
-const route = useRoute()
-const router = useRouter()
-const api = useApi()
-
-const holdId = computed(() => String(route.query.holdId || ''))
-const loading = ref(false)
-const error = ref('')
-const open = ref(false)
-
-async function createOrderAndPay() {
-  if (!holdId.value) return
-  loading.value = true
-  error.value = ''
-  try {
-    const order = await api.post(ENDPOINTS.orders(), { holdId: holdId.value })
-    await api.post(ENDPOINTS.payments(), { orderId: order.id, method: 'MOCK_CARD' })
-    router.push(`/orders/${order.id}`)
-  } catch (e) {
-    error.value = e?.message || '결제 요청에 실패했어요.'
-  } finally {
-    loading.value = false
-    open.value = false
-  }
-}
-</script>
-
 <template>
   <div class="grid gap-4">
     <UiCard>
@@ -79,3 +42,56 @@ async function createOrderAndPay() {
   </UiModal>
 </template>
 
+<script>
+import { CreditCard } from 'lucide-vue-next'
+import UiCard from '../../components/common/UiCard.vue'
+import UiButton from '../../components/common/UiButton.vue'
+import UiBadge from '../../components/common/UiBadge.vue'
+import UiModal from '../../components/common/UiModal.vue'
+import { useApi } from '../../composables/useApi'
+import { ENDPOINTS } from '../../lib/api/endpoints'
+
+export default {
+  name: 'CheckoutView',
+  components: {
+    CreditCard,
+    UiCard,
+    UiButton,
+    UiBadge,
+    UiModal
+  },
+  data() {
+    return {
+      loading: false,
+      error: '',
+      open: false,
+      api: null
+    }
+  },
+  computed: {
+    holdId() {
+      return String(this.$route.query.holdId || '')
+    }
+  },
+  created() {
+    this.api = useApi()
+  },
+  methods: {
+    async createOrderAndPay() {
+      if (!this.holdId) return
+      this.loading = true
+      this.error = ''
+      try {
+        const order = await this.api.post(ENDPOINTS.orders(), { holdId: this.holdId })
+        await this.api.post(ENDPOINTS.payments(), { orderId: order.id, method: 'MOCK_CARD' })
+        this.$router.push(`/orders/${order.id}`)
+      } catch (e) {
+        this.error = e?.message || '결제 요청에 실패했어요.'
+      } finally {
+        this.loading = false
+        this.open = false
+      }
+    }
+  }
+}
+</script>

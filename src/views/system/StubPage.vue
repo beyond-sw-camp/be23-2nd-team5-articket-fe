@@ -1,14 +1,3 @@
-<script setup>
-import UiCard from '../../components/common/UiCard.vue'
-import UiBadge from '../../components/common/UiBadge.vue'
-
-defineProps({
-  title: { type: String, default: 'Stub Page' },
-  description: { type: String, default: '' },
-  badge: { type: String, default: 'stub' },
-})
-</script>
-
 <template>
   <UiCard>
     <div class="flex items-start justify-between gap-3">
@@ -25,3 +14,20 @@ defineProps({
   </UiCard>
 </template>
 
+<script>
+import UiCard from '../../components/common/UiCard.vue'
+import UiBadge from '../../components/common/UiBadge.vue'
+
+export default {
+  name: 'StubPage',
+  components: {
+    UiCard,
+    UiBadge
+  },
+  props: {
+    title: { type: String, default: 'Stub Page' },
+    description: { type: String, default: '' },
+    badge: { type: String, default: 'stub' }
+  }
+}
+</script>

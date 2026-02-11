@@ -1,68 +1,3 @@
-<script setup>
-import { computed, onMounted, onUnmounted, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { Timer } from 'lucide-vue-next'
-import UiCard from '../../components/common/UiCard.vue'
-import UiButton from '../../components/common/UiButton.vue'
-import UiBadge from '../../components/common/UiBadge.vue'
-import UiModal from '../../components/common/UiModal.vue'
-import { useSeatHoldMock } from '../../composables/useSeatHoldMock'
-
-const route = useRoute()
-const router = useRouter()
-
-const { getHold, releaseHold } = useSeatHoldMock()
-const loading = ref(false)
-const item = ref(null)
-const error = ref('')
-
-const now = ref(Date.now())
-let t = null
-
-const remainingMs = computed(() => {
-  const exp = item.value?.expiresAt ? new Date(item.value.expiresAt).getTime() : 0
-  return Math.max(0, exp - now.value)
-})
-const remainingText = computed(() => {
-  const s = Math.floor(remainingMs.value / 1000)
-  const mm = String(Math.floor(s / 60)).padStart(2, '0')
-  const ss = String(s % 60).padStart(2, '0')
-  return `${mm}:${ss}`
-})
-const expired = computed(() => remainingMs.value <= 0)
-
-const open = ref(false)
-
-async function load() {
-  loading.value = true
-  error.value = ''
-  try {
-    item.value = await getHold(route.params.holdId)
-  } catch (e) {
-    error.value = '선점 정보를 찾을 수 없어요. (만료되었을 수 있어요)'
-  } finally {
-    loading.value = false
-  }
-}
-
-async function cancelHold() {
-  await releaseHold(route.params.holdId)
-  open.value = false
-  router.push('/')
-}
-
-onMounted(() => {
-  load()
-  t = setInterval(() => {
-    now.value = Date.now()
-    if (expired.value) load()
-  }, 500)
-})
-onUnmounted(() => {
-  if (t) clearInterval(t)
-})
-</script>
-
 <template>
   <div class="grid gap-4">
     <UiCard v-if="loading">
@@ -125,3 +60,79 @@ onUnmounted(() => {
   </UiModal>
 </template>
 
+<script>
+import { Timer } from 'lucide-vue-next'
+import UiCard from '../../components/common/UiCard.vue'
+import UiButton from '../../components/common/UiButton.vue'
+import UiBadge from '../../components/common/UiBadge.vue'
+import UiModal from '../../components/common/UiModal.vue'
+import { useSeatHoldMock } from '../../composables/useSeatHoldMock'
+
+export default {
+  name: 'HoldDetailView',
+  components: {
+    Timer,
+    UiCard,
+    UiButton,
+    UiBadge,
+    UiModal
+  },
+  data() {
+    return {
+      loading: false,
+      item: null,
+      error: '',
+      now: Date.now(),
+      open: false,
+      timer: null,
+      seatHoldMock: null
+    }
+  },
+  computed: {
+    remainingMs() {
+      const exp = this.item?.expiresAt ? new Date(this.item.expiresAt).getTime() : 0
+      return Math.max(0, exp - this.now)
+    },
+    remainingText() {
+      const s = Math.floor(this.remainingMs / 1000)
+      const mm = String(Math.floor(s / 60)).padStart(2, '0')
+      const ss = String(s % 60).padStart(2, '0')
+      return `${mm}:${ss}`
+    },
+    expired() {
+      return this.remainingMs <= 0
+    }
+  },
+  created() {
+    this.seatHoldMock = useSeatHoldMock()
+  },
+  mounted() {
+    this.load()
+    this.timer = setInterval(() => {
+      this.now = Date.now()
+      if (this.expired) this.load()
+    }, 500)
+  },
+  beforeUnmount() {
+    if (this.timer) clearInterval(this.timer)
+  },
+  methods: {
+    async load() {
+      this.loading = true
+      this.error = ''
+      try {
+        this.item = await this.seatHoldMock.getHold(this.$route.params.holdId)
+      } catch (e) {
+        this.error = '선점 정보를 찾을 수 없어요. (만료되었을 수 있어요)'
+      } finally {
+        this.loading = false
+      }
+    },
+    async cancelHold() {
+      await this.seatHoldMock.releaseHold(this.$route.params.holdId)
+      this.open = false
+      this.$router.push('/')
+    }
+  }
+}
+</script>

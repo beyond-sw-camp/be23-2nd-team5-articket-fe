@@ -1,12 +1,3 @@
-<script setup>
-import { Info } from 'lucide-vue-next'
-
-defineProps({
-  title: { type: String, default: '비어있어요' },
-  description: { type: String, default: '' },
-})
-</script>
-
 <template>
   <div class="rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-sm">
     <div class="mx-auto flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-100">
@@ -19,4 +10,19 @@ defineProps({
     </div>
   </div>
 </template>
+
+<script>
+import { Info } from 'lucide-vue-next'
+
+export default {
+  name: 'EmptyState',
+  components: {
+    Info
+  },
+  props: {
+    title: { type: String, default: '비어있어요' },
+    description: { type: String, default: '' }
+  }
+}
+</script>
 

@@ -1,65 +1,3 @@
-<script setup>
-import { computed, onMounted, onUnmounted, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { CheckCircle2, XCircle, Clock3, RefreshCw } from 'lucide-vue-next'
-import UiCard from '../../components/common/UiCard.vue'
-import UiButton from '../../components/common/UiButton.vue'
-import UiBadge from '../../components/common/UiBadge.vue'
-import { useApi } from '../../composables/useApi'
-import { ENDPOINTS } from '../../lib/api/endpoints'
-
-const api = useApi()
-const route = useRoute()
-const router = useRouter()
-
-const loading = ref(false)
-const item = ref(null)
-const error = ref('')
-
-let timer = null
-
-const statusTone = computed(() => {
-  const st = item.value?.status
-  if (st === 'SUCCESS') return { tone: 'solid', color: 'green' }
-  if (st === 'FAILED') return { tone: 'solid', color: 'red' }
-  if (st === 'CANCELLED') return { tone: 'soft', color: 'slate' }
-  return { tone: 'soft', color: 'amber' }
-})
-
-const icon = computed(() => {
-  const st = item.value?.status
-  if (st === 'SUCCESS') return CheckCircle2
-  if (st === 'FAILED') return XCircle
-  if (st === 'CANCELLED') return XCircle
-  return Clock3
-})
-
-async function load() {
-  loading.value = true
-  error.value = ''
-  try {
-    item.value = await api.get(ENDPOINTS.order(route.params.orderId))
-  } catch (e) {
-    error.value = e?.message || '주문 조회에 실패했어요.'
-  } finally {
-    loading.value = false
-  }
-}
-
-onMounted(async () => {
-  await load()
-  timer = setInterval(async () => {
-    if (!item.value) return
-    if (item.value.status !== 'PENDING') return
-    await load()
-  }, 1200)
-})
-
-onUnmounted(() => {
-  if (timer) clearInterval(timer)
-})
-</script>
-
 <template>
   <div class="grid gap-4">
     <UiCard>
@@ -105,12 +43,12 @@ onUnmounted(() => {
         </div>
 
         <div class="sm:col-span-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <UiButton variant="ghost" class="h-12 px-5" @click="router.push('/me/orders')">내 주문</UiButton>
+          <UiButton variant="ghost" class="h-12 px-5" @click="$router.push('/me/orders')">내 주문</UiButton>
           <UiButton
             class="h-12 px-6"
             variant="ghost"
             :disabled="item.status !== 'SUCCESS'"
-            @click="router.push(`/orders/${item.id}/cancel`)"
+            @click="$router.push(`/orders/${item.id}/cancel`)"
           >
             주문 취소
           </UiButton>
@@ -120,3 +58,76 @@ onUnmounted(() => {
   </div>
 </template>
 
+<script>
+import { CheckCircle2, XCircle, Clock3, RefreshCw } from 'lucide-vue-next'
+import UiCard from '../../components/common/UiCard.vue'
+import UiButton from '../../components/common/UiButton.vue'
+import UiBadge from '../../components/common/UiBadge.vue'
+import { useApi } from '../../composables/useApi'
+import { ENDPOINTS } from '../../lib/api/endpoints'
+
+export default {
+  name: 'OrderStatusView',
+  components: {
+    CheckCircle2,
+    XCircle,
+    Clock3,
+    RefreshCw,
+    UiCard,
+    UiButton,
+    UiBadge
+  },
+  data() {
+    return {
+      loading: false,
+      item: null,
+      error: '',
+      timer: null,
+      api: null
+    }
+  },
+  computed: {
+    statusTone() {
+      const st = this.item?.status
+      if (st === 'SUCCESS') return { tone: 'solid', color: 'green' }
+      if (st === 'FAILED') return { tone: 'solid', color: 'red' }
+      if (st === 'CANCELLED') return { tone: 'soft', color: 'slate' }
+      return { tone: 'soft', color: 'amber' }
+    },
+    icon() {
+      const st = this.item?.status
+      if (st === 'SUCCESS') return 'CheckCircle2'
+      if (st === 'FAILED') return 'XCircle'
+      if (st === 'CANCELLED') return 'XCircle'
+      return 'Clock3'
+    }
+  },
+  created() {
+    this.api = useApi()
+  },
+  async mounted() {
+    await this.load()
+    this.timer = setInterval(async () => {
+      if (!this.item) return
+      if (this.item.status !== 'PENDING') return
+      await this.load()
+    }, 1200)
+  },
+  beforeUnmount() {
+    if (this.timer) clearInterval(this.timer)
+  },
+  methods: {
+    async load() {
+      this.loading = true
+      this.error = ''
+      try {
+        this.item = await this.api.get(ENDPOINTS.order(this.$route.params.orderId))
+      } catch (e) {
+        this.error = e?.message || '주문 조회에 실패했어요.'
+      } finally {
+        this.loading = false
+      }
+    }
+  }
+}
+</script>

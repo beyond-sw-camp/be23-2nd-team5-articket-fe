@@ -1,15 +1,3 @@
-<script setup>
-import { computed } from 'vue'
-import { useRoute } from 'vue-router'
-import UiCard from '../../components/common/UiCard.vue'
-import UiBadge from '../../components/common/UiBadge.vue'
-import UiButton from '../../components/common/UiButton.vue'
-import { MOCK_VENUES } from '../../mocks/venues'
-
-const route = useRoute()
-const venue = computed(() => MOCK_VENUES.find((v) => v.id === route.params.venueId))
-</script>
-
 <template>
   <UiCard v-if="venue">
     <div class="flex items-start justify-between gap-3">
@@ -38,3 +26,23 @@ const venue = computed(() => MOCK_VENUES.find((v) => v.id === route.params.venue
   </UiCard>
 </template>
 
+<script>
+import UiCard from '../../components/common/UiCard.vue'
+import UiBadge from '../../components/common/UiBadge.vue'
+import UiButton from '../../components/common/UiButton.vue'
+import { MOCK_VENUES } from '../../mocks/venues'
+
+export default {
+  name: 'AdminVenueEditView',
+  components: {
+    UiCard,
+    UiBadge,
+    UiButton
+  },
+  computed: {
+    venue() {
+      return MOCK_VENUES.find((v) => v.id === this.$route.params.venueId)
+    }
+  }
+}
+</script>

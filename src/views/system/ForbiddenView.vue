@@ -1,8 +1,3 @@
-<script setup>
-import UiCard from '../../components/common/UiCard.vue'
-import UiButton from '../../components/common/UiButton.vue'
-</script>
-
 <template>
   <UiCard>
     <div class="text-sm font-semibold text-slate-900">접근 권한이 없어요 (403)</div>
@@ -14,3 +9,15 @@ import UiButton from '../../components/common/UiButton.vue'
   </UiCard>
 </template>
 
+<script>
+import UiCard from '../../components/common/UiCard.vue'
+import UiButton from '../../components/common/UiButton.vue'
+
+export default {
+  name: 'ForbiddenView',
+  components: {
+    UiCard,
+    UiButton
+  }
+}
+</script>

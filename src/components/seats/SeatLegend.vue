@@ -1,7 +1,3 @@
-<script setup>
-import UiBadge from '../common/UiBadge.vue'
-</script>
-
 <template>
   <div class="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200 bg-white p-3 text-sm shadow-sm">
     <div class="text-xs font-semibold text-slate-500">Legend</div>
@@ -20,4 +16,15 @@ import UiBadge from '../common/UiBadge.vue'
     <div class="ml-auto text-xs text-slate-500">클릭해서 선택(AVAILABLE만)</div>
   </div>
 </template>
+
+<script>
+import UiBadge from '../common/UiBadge.vue'
+
+export default {
+  name: 'SeatLegend',
+  components: {
+    UiBadge
+  }
+}
+</script>
 

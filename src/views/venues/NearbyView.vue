@@ -1,43 +1,3 @@
-<script setup>
-import { computed, onMounted, ref, watch } from 'vue'
-import { MapPin, Navigation } from 'lucide-vue-next'
-import UiCard from '../../components/common/UiCard.vue'
-import UiButton from '../../components/common/UiButton.vue'
-import UiBadge from '../../components/common/UiBadge.vue'
-import EmptyState from '../../components/common/EmptyState.vue'
-import { useGeolocation } from '../../composables/useGeolocation'
-import { useApi } from '../../composables/useApi'
-import { ENDPOINTS } from '../../lib/api/endpoints'
-
-const api = useApi()
-const { coords, loading: geoLoading, error: geoError, manualQuery, getCurrentPosition } = useGeolocation()
-
-const radiusKm = ref(5)
-const loading = ref(false)
-const venues = ref([])
-
-const canLoad = computed(() => !!coords.value)
-
-async function load() {
-  if (!coords.value) return
-  loading.value = true
-  try {
-    const res = await api.get(
-      ENDPOINTS.venueAddress({ lat: coords.value.lat, lng: coords.value.lng, radiusKm: radiusKm.value }),
-    )
-    venues.value = res.items || []
-  } finally {
-    loading.value = false
-  }
-}
-
-onMounted(() => {
-  getCurrentPosition()
-})
-
-watch([coords, radiusKm], () => load())
-</script>
-
 <template>
   <div class="grid gap-4">
     <UiCard>
@@ -109,3 +69,90 @@ watch([coords, radiusKm], () => load())
   </div>
 </template>
 
+<script>
+import { MapPin, Navigation } from 'lucide-vue-next'
+import UiCard from '../../components/common/UiCard.vue'
+import UiButton from '../../components/common/UiButton.vue'
+import UiBadge from '../../components/common/UiBadge.vue'
+import EmptyState from '../../components/common/EmptyState.vue'
+import { useGeolocation } from '../../composables/useGeolocation'
+import { useApi } from '../../composables/useApi'
+import { ENDPOINTS } from '../../lib/api/endpoints'
+
+export default {
+  name: 'NearbyView',
+  components: {
+    MapPin,
+    Navigation,
+    UiCard,
+    UiButton,
+    UiBadge,
+    EmptyState
+  },
+  data() {
+    return {
+      radiusKm: 5,
+      loading: false,
+      venues: [],
+      api: null,
+      geolocation: null,
+      coords: null,
+      geoLoading: false,
+      geoError: null,
+      manualQuery: ''
+    }
+  },
+  computed: {
+    canLoad() {
+      return !!this.coords
+    }
+  },
+  watch: {
+    coords() {
+      this.load()
+    },
+    radiusKm() {
+      this.load()
+    }
+  },
+  created() {
+    this.api = useApi()
+    this.geolocation = useGeolocation()
+  },
+  mounted() {
+    this.getCurrentPosition()
+  },
+  methods: {
+    getCurrentPosition() {
+      this.geoLoading = true
+      this.geolocation.getCurrentPosition()
+      
+      // Watch for changes from the composable
+      const checkCoords = () => {
+        if (this.geolocation.coords.value) {
+          this.coords = this.geolocation.coords.value
+          this.geoLoading = false
+        } else if (this.geolocation.error.value) {
+          this.geoError = this.geolocation.error.value
+          this.geoLoading = false
+        } else {
+          setTimeout(checkCoords, 100)
+        }
+      }
+      checkCoords()
+    },
+    async load() {
+      if (!this.coords) return
+      this.loading = true
+      try {
+        const res = await this.api.get(
+          ENDPOINTS.venueAddress({ lat: this.coords.lat, lng: this.coords.lng, radiusKm: this.radiusKm })
+        )
+        this.venues = res.items || []
+      } finally {
+        this.loading = false
+      }
+    }
+  }
+}
+</script>

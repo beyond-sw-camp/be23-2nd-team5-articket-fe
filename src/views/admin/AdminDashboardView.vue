@@ -1,10 +1,3 @@
-<script setup>
-import StatCard from '../../components/common/StatCard.vue'
-import UiCard from '../../components/common/UiCard.vue'
-import UiBadge from '../../components/common/UiBadge.vue'
-import UiButton from '../../components/common/UiButton.vue'
-</script>
-
 <template>
   <div class="grid gap-4">
     <div class="flex items-end justify-between gap-3">
@@ -31,3 +24,19 @@ import UiButton from '../../components/common/UiButton.vue'
   </div>
 </template>
 
+<script>
+import StatCard from '../../components/common/StatCard.vue'
+import UiCard from '../../components/common/UiCard.vue'
+import UiBadge from '../../components/common/UiBadge.vue'
+import UiButton from '../../components/common/UiButton.vue'
+
+export default {
+  name: 'AdminDashboardView',
+  components: {
+    StatCard,
+    UiCard,
+    UiBadge,
+    UiButton
+  }
+}
+</script>

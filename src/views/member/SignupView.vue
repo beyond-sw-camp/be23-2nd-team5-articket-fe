@@ -14,7 +14,6 @@
         회원가입 완료! 이제 로그인할 수 있어요.
       </div>
 
-      <!-- @submit.prevent 제거, 각 버튼별 핸들러 -->
       <div class="mt-4 grid gap-3">
         <div class="grid gap-2">
           <label class="text-xs font-semibold text-slate-600">닉네임</label>
@@ -63,7 +62,6 @@
         </div>
 
         <div class="mt-1 flex items-center justify-between gap-2">
-          <!-- 로그인 버튼: 별도 핸들러 -->
           <UiButton 
             variant="ghost" 
             class="h-11 px-4" 
@@ -72,7 +70,6 @@
           >
             로그인
           </UiButton>
-          <!-- 가입 버튼: 별도 핸들러 -->
           <UiButton 
             class="h-11 px-6" 
             :disabled="loading" 
@@ -105,36 +102,45 @@ export default {
         password: '',
         phoneNumber: ''
       },
-      done: false
+      done: false,
+      loading: false,
+      error: '',
+      authApi: null
     }
   },
-  setup() {
-    const { loading, error, signup } = useAuthApi()
-    return { loading, error, signup }
+  created() {
+    this.authApi = useAuthApi()
   },
   methods: {
-    // 회원가입 핸들러 
     async handleSignup() {
       this.done = false
+      this.loading = true
+      this.error = ''
       
-      const success = await this.signup({ 
-        nickName: this.form.nickName, 
-        email: this.form.email, 
-        password: this.form.password,
-        phone_number: this.form.phoneNumber 
-      })
-      
-      if (success) {
-        this.form.nickName = ''
-        this.form.email = ''
-        this.form.password = ''
-        this.form.phoneNumber = ''
+      try {
+        const success = await this.authApi.signup({ 
+          nickName: this.form.nickName, 
+          email: this.form.email, 
+          password: this.form.password,
+          phone_number: this.form.phoneNumber 
+        })
+        
+        if (success) {
+          this.form.nickName = ''
+          this.form.email = ''
+          this.form.password = ''
+          this.form.phoneNumber = ''
+          this.done = true
+        } else {
+          this.error = this.authApi.error.value || '회원가입에 실패했어요.'
+        }
+      } catch (e) {
+        this.error = e.message || '회원가입에 실패했어요.'
+      } finally {
+        this.loading = false
       }
-      
-      this.done = success
     },
 
-    // 로그인 핸들러
     goToLogin() {
       this.$router.push('/member/doLogin')
     }

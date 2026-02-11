@@ -1,36 +1,3 @@
-<script setup>
-import { onMounted, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { MapPin, LayoutGrid } from 'lucide-vue-next'
-import UiCard from '../../components/common/UiCard.vue'
-import UiButton from '../../components/common/UiButton.vue'
-import UiBadge from '../../components/common/UiBadge.vue'
-import EmptyState from '../../components/common/EmptyState.vue'
-import { useApi } from '../../composables/useApi'
-import { ENDPOINTS } from '../../lib/api/endpoints'
-
-const api = useApi()
-const route = useRoute()
-const router = useRouter()
-
-const loading = ref(false)
-const venue = ref(null)
-const concerts = ref([])
-
-async function load() {
-  loading.value = true
-  try {
-    venue.value = await api.get(ENDPOINTS.venue(route.params.venueId))
-    const res = await api.get(ENDPOINTS.venueConcerts(route.params.venueId))
-    concerts.value = res.items || []
-  } finally {
-    loading.value = false
-  }
-}
-
-onMounted(load)
-</script>
-
 <template>
   <div class="grid gap-4">
     <UiCard v-if="loading">
@@ -52,8 +19,8 @@ onMounted(load)
         </div>
 
         <div class="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <UiButton variant="ghost" class="h-11 px-4" @click="router.push('/nearby')">내 주변으로</UiButton>
-          <UiButton class="h-11 px-5" @click="router.push('/admin/seat-maps/' + (venue.seatMapIds?.[0] || 'sm-olympic-1'))">
+          <UiButton variant="ghost" class="h-11 px-4" @click="$router.push('/nearby')">내 주변으로</UiButton>
+          <UiButton class="h-11 px-5" @click="$router.push('/admin/seat-maps/' + (venue.seatMapIds && venue.seatMapIds[0] ? venue.seatMapIds[0] : 'sm-olympic-1'))">
             <LayoutGrid class="h-4 w-4" />
             <span class="ml-2">좌석맵 미리보기</span>
           </UiButton>
@@ -62,7 +29,7 @@ onMounted(load)
 
       <div class="flex items-center justify-between">
         <div class="text-sm font-semibold text-slate-900">해당 공연장 전체공연 (오픈예정 포함)</div>
-        <UiBadge tone="soft">GET /venues/{{ route.params.venueId }}/concerts</UiBadge>
+        <UiBadge tone="soft">GET /venues/{{ $route.params.venueId }}/concerts</UiBadge>
       </div>
 
       <EmptyState v-if="concerts.length === 0" title="등록된 공연이 없어요" description="mock 데이터에서 추가할 수 있어요." />
@@ -73,7 +40,7 @@ onMounted(load)
           :key="c.id"
           class="cursor-pointer transition hover:shadow-lg"
           :padded="false"
-          @click="router.push(`/concerts/${c.id}`)"
+          @click="$router.push(`/concerts/${c.id}`)"
         >
           <div class="overflow-hidden rounded-2xl">
             <img class="h-40 w-full object-cover" :src="c.posterUrl" :alt="c.title" />
@@ -91,3 +58,50 @@ onMounted(load)
   </div>
 </template>
 
+<script>
+import { MapPin, LayoutGrid } from 'lucide-vue-next'
+import UiCard from '../../components/common/UiCard.vue'
+import UiButton from '../../components/common/UiButton.vue'
+import UiBadge from '../../components/common/UiBadge.vue'
+import EmptyState from '../../components/common/EmptyState.vue'
+import { useApi } from '../../composables/useApi'
+import { ENDPOINTS } from '../../lib/api/endpoints'
+
+export default {
+  name: 'VenueDetailView',
+  components: {
+    MapPin,
+    LayoutGrid,
+    UiCard,
+    UiButton,
+    UiBadge,
+    EmptyState
+  },
+  data() {
+    return {
+      loading: false,
+      venue: null,
+      concerts: [],
+      api: null
+    }
+  },
+  created() {
+    this.api = useApi()
+  },
+  mounted() {
+    this.load()
+  },
+  methods: {
+    async load() {
+      this.loading = true
+      try {
+        this.venue = await this.api.get(ENDPOINTS.venue(this.$route.params.venueId))
+        const res = await this.api.get(ENDPOINTS.venueConcerts(this.$route.params.venueId))
+        this.concerts = res.items || []
+      } finally {
+        this.loading = false
+      }
+    }
+  }
+}
+</script>
