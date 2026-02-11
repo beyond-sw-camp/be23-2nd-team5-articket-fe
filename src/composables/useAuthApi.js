@@ -8,7 +8,7 @@ const error = ref('')
 
 export function useAuthApi() {
   const api = useApi()
-  const { setRole } = useRole()
+  const { syncFromToken } = useRole()
 
   async function signup(payload) {
     loading.value = true
@@ -24,20 +24,22 @@ export function useAuthApi() {
     }
   }
 
-  async function login(payload, nextRole = 'USER') {
+  async function login(payload) {
     loading.value = true
     error.value = ''
     try {
-      // 1. Role 설정 API
-      await api.post(ENDPOINTS.login(), payload)
-      setRole(nextRole)
+      const raw = await api.post(ENDPOINTS.login(), payload)
+      const body = raw?.data != null ? raw.data : raw
 
-      // 2. Token 발급 API (동일 payload 재사용)
-      const token = await api.post('/member/doLogin', payload)
+      const accessToken = body.access_token ?? body.accessToken
+      const refreshToken = body.refresh_token ?? body.refreshToken
+      if (!accessToken) {
+        throw new Error('로그인 응답에 토큰이 없습니다.')
+      }
 
-      // 3. localStorage 저장
-      localStorage.setItem('accessToken', token.access_token)
-      localStorage.setItem('refreshToken', token.refresh_token)
+      localStorage.setItem('accessToken', accessToken)
+      localStorage.setItem('refreshToken', refreshToken ?? '')
+      syncFromToken()
 
       return true
     } catch (e) {

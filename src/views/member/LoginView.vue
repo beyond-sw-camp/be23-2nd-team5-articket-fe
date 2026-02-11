@@ -30,18 +30,6 @@
             minlength="6"
           />
         </div>
-        
-        <div class="grid gap-2">
-          <label class="text-xs font-semibold text-slate-600">성공 시 Role</label>
-          <select
-            v-model="form.nextRole"
-            class="h-11 rounded-2xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-900 shadow-sm focus:outline-none"
-          >
-            <option value="USER">USER (고객)</option>
-            <option value="ORGANIZER">ORGANIZER (주최자)</option>
-            <option value="ADMIN">ADMIN (관리자)</option>
-          </select>
-        </div>
 
         <div v-if="error" class="rounded-2xl border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">
           {{ error }}
@@ -115,7 +103,6 @@
 import UiCard from '../../components/common/UiCard.vue'
 import UiButton from '../../components/common/UiButton.vue'
 import { useAuthApi } from '../../composables/useAuthApi'
-import { useRole } from '../../composables/useRole'
 
 export default {
   name: 'MemberLogin',
@@ -127,8 +114,7 @@ export default {
     return {
       form: {
         email: null,
-        password: null,
-        nextRole: 'USER'
+        password: null
       },
       loading: false,
       socialLoading: null, // 'kakao' | 'google' | null
@@ -151,7 +137,7 @@ export default {
       this.error = ''
       
       try {
-        const success = await this.authApi.login(data, this.form.nextRole)
+        const success = await this.authApi.login(data)
         
         if (success) {
           const redirect = this.$route.query.redirect || '/me'

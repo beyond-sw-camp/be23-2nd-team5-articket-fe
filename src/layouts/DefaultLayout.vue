@@ -33,18 +33,38 @@
             </UiButton>
 
             <div class="flex items-center gap-2">
-              <div class="flex items-center gap-1 rounded-2xl border border-slate-200 bg-white px-2 py-1 shadow-sm">
-                <span class="text-xs font-semibold text-slate-700">Role</span>
-                <select
-                  class="bg-transparent text-xs font-semibold text-slate-900 focus:outline-none"
-                  :value="role"
-                  @change="setRole($event.target.value)"
+              <!-- ORGANIZER 메뉴 (JWT role 기준) -->
+              <div v-if="roleValue === 'ORGANIZER'" class="relative inline-block">
+                <UiButton variant="tonal" class="h-10 px-3 rounded-xl text-slate-800" @click="organizerMenuOpen = !organizerMenuOpen">
+                  주최자
+                </UiButton>
+                <div
+                  v-show="organizerMenuOpen"
+                  class="absolute right-0 top-full z-50 mt-1 min-w-[140px] rounded-xl border border-slate-200 bg-white py-1 shadow-lg"
                 >
-                  <option v-for="r in roles" :key="r" :value="r">{{ r }}</option>
-                </select>
+                  <RouterLink to="/organizer" class="block px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" @click="organizerMenuOpen = false">대시보드</RouterLink>
+                  <RouterLink to="/organizer/concerts" class="block px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" @click="organizerMenuOpen = false">공연 목록</RouterLink>
+                  <RouterLink to="/organizer/concerts/new" class="block px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" @click="organizerMenuOpen = false">공연 등록</RouterLink>
+                </div>
               </div>
 
-              <UiBadge v-if="role !== 'GUEST'" tone="solid">{{ role }}</UiBadge>
+              <!-- ADMIN 메뉴 (JWT role 기준) -->
+              <div v-if="roleValue === 'ADMIN'" class="relative inline-block">
+                <UiButton variant="tonal" class="h-10 px-3 rounded-xl text-slate-800" @click="adminMenuOpen = !adminMenuOpen">
+                  관리자
+                </UiButton>
+                <div
+                  v-show="adminMenuOpen"
+                  class="absolute right-0 top-full z-50 mt-1 min-w-[140px] rounded-xl border border-slate-200 bg-white py-1 shadow-lg"
+                >
+                  <RouterLink to="/admin" class="block px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" @click="adminMenuOpen = false">대시보드</RouterLink>
+                  <RouterLink to="/admin/venues" class="block px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" @click="adminMenuOpen = false">공연장</RouterLink>
+                  <RouterLink to="/admin/users" class="block px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" @click="adminMenuOpen = false">회원관리</RouterLink>
+                  <RouterLink to="/admin/orders" class="block px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" @click="adminMenuOpen = false">주문</RouterLink>
+                </div>
+              </div>
+
+              <UiBadge v-if="roleValue !== 'GUEST'" tone="solid">{{ roleValue }}</UiBadge>
               <UiBadge v-else tone="soft">GUEST</UiBadge>
 
               <!-- 토큰 기반 로그인 UI -->
@@ -141,7 +161,6 @@ export default {
   data() {
     return {
       q: this.$route.query.q || '',
-      roles: ['GUEST', 'USER', 'ORGANIZER', 'ADMIN'],
       categories: [
         { key: 'all', label: '전체', to: { path: '/', query: {} } },
         { key: 'musical', label: '뮤지컬', to: { path: '/', query: { cat: 'musical' } } },
@@ -152,7 +171,9 @@ export default {
         { key: 'leisure', label: '레저', to: { path: '/', query: { cat: 'leisure' } } }
       ],
 
-      tokenVersion: 0
+      tokenVersion: 0,
+      adminMenuOpen: false,
+      organizerMenuOpen: false
     }
   },
   computed: {
@@ -165,13 +186,16 @@ export default {
     },
     isLoggedIn() {
       return !!this.accessToken
+    },
+    roleValue() {
+      return this.role?.value ?? this.role ?? 'GUEST'
     }
   },
   created() {
-    const { role, setRole, logout } = useRole()
+    const { role, logout, syncFromToken } = useRole()
     this.role = role
-    this.setRole = setRole
     this._logoutComposable = logout
+    this._syncFromToken = syncFromToken
 
     window.addEventListener('storage', this.onStorage)
     this.bumpTokenVersion()
@@ -184,6 +208,8 @@ export default {
       this.q = v || ''
     },
     $route() {
+      this.adminMenuOpen = false
+      this.organizerMenuOpen = false
       this.bumpTokenVersion()
     }
   },
@@ -193,6 +219,7 @@ export default {
     },
     onStorage(e) {
       if (e.key === 'accessToken' || e.key === 'refreshToken') {
+        if (typeof this._syncFromToken === 'function') this._syncFromToken()
         this.bumpTokenVersion()
       }
     },
@@ -205,8 +232,6 @@ export default {
 
       if (typeof this._logoutComposable === 'function') {
         await this._logoutComposable()
-      } else if (typeof this.setRole === 'function') {
-        this.setRole('GUEST')
       }
 
       this.bumpTokenVersion()

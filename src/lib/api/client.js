@@ -13,6 +13,14 @@ export function createApiClient(opts = {}) {
     timeout: 10000,
   })
 
+  api.interceptors.request.use((config) => {
+    const token = typeof localStorage !== 'undefined' ? localStorage.getItem('accessToken') : null
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`
+    }
+    return config
+  })
+
   async function request(method, path, body) {
     try {
       let response
@@ -34,10 +42,16 @@ export function createApiClient(opts = {}) {
       }
       return response.data
     } catch (error) {
-      const errMsg = error.response?.data?.message || error.message
-      throw Object.assign(new Error(errMsg || 'API Error'), {
-        status: error.response?.status || 500
-      })
+      const status = error.response?.status
+      const data = error.response?.data
+      const errMsg =
+        data?.message ??
+        (typeof data === 'string' ? data : null) ??
+        error.message
+      const err = new Error(errMsg || `API Error (${status ?? 'network'})`)
+      err.status = status
+      err.responseData = data
+      throw err
     }
   }
 
