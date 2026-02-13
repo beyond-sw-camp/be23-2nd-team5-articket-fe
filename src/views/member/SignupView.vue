@@ -16,10 +16,10 @@
 
       <div class="mt-4 grid gap-3">
         <div class="grid gap-2">
-          <label class="text-xs font-semibold text-slate-600">닉네임</label>
+          <label class="text-xs font-semibold text-slate-600">이름</label>
           <input
-            v-model="form.nickName"
-            placeholder="닉네임을 입력하세요"
+            v-model="form.name"
+            placeholder="이름을 입력하세요"
             class="h-11 rounded-2xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-red-200"
           />
         </div>
@@ -97,7 +97,7 @@ export default {
   data() {
     return {
       form: {
-        nickName: '',
+        name: '',
         email: '',
         password: '',
         phoneNumber: ''
@@ -119,14 +119,14 @@ export default {
       
       try {
         const success = await this.authApi.signup({ 
-          nickName: this.form.nickName, 
+          name: this.form.name, 
           email: this.form.email, 
           password: this.form.password,
           phone_number: this.form.phoneNumber 
         })
         
         if (success) {
-          this.form.nickName = ''
+          this.form.name = ''
           this.form.email = ''
           this.form.password = ''
           this.form.phoneNumber = ''
