@@ -86,6 +86,8 @@ SeatFlow는 위 문제를 해결하기 위해 “실시간 좌석 반영 → 좌
 
 ## Entity Relationship Diagram (ERD)
 <p align="center"> 
+	<img width="2632" height="1310" alt="erd수정본" src="https://github.com/user-attachments/assets/8b0ead50-ade3-442c-bfb3-c7f764d5cbc2" />
+
 	<img width="2213" height="1067" alt="er-diagram" src="./asset/erd.png"/>
 </p>
 
