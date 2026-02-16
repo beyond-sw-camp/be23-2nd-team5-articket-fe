@@ -60,7 +60,7 @@
           </svg>
           <span>{{ socialLoading === 'kakao' ? '카카오 로그인 중...' : '카카오로 시작하기' }}</span>
         </button>
-    
+
         <button type="button"
           class="flex h-12 w-full items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-200"
           :disabled="socialLoading" @click="handleGoogleLogin">
@@ -99,6 +99,15 @@ export default {
         email: null,
         password: null
       },
+      googleUrl: "https://accounts.google.com/o/oauth2/auth",
+      googleClientId: "599309681059-fednm54eedpe0j7pnnbcu46qivi3pc8a.apps.googleusercontent.com",
+      googleRedirectUrl: "http://localhost:3000/oauth/google/redirect",
+      // openid는 요청하지 않아도 기본적으로 제공. email과 profile은 요청시 제공.
+      googleScope: "openid email profile",
+      kakaoUrl: "https://kauth.kakao.com/oauth/authorize",
+      kakaoClientId: "565c6e3d28006bfb16e10acd001d4074",
+      kakaoRedirectUrl: "http://localhost:3000/oauth/kakao/redirect",
+
       loading: false,
       socialLoading: null, // 'kakao' | 'google' | null
       error: '',
@@ -127,7 +136,7 @@ export default {
           // this.$router.push(redirect)
           try {
             const accessToken = localStorage.getItem("accessToken")
-            await axios.get('http://localhost:8082/member/isVerified',{
+            await axios.get('http://localhost:8082/member/isVerified', {
               headers: {
                 // 반드시 'Bearer ' 뒤에 한 칸 띄우고 토큰을 붙여야 합니다.
                 Authorization: `Bearer ${accessToken}`
@@ -137,7 +146,7 @@ export default {
           } catch (e) {
             console.log(e)
           }
-          window.location.href=redirect;
+          window.location.href = redirect;
         } else {
           this.error = this.authApi.error.value || '로그인에 실패했어요.'
         }
@@ -148,16 +157,18 @@ export default {
       }
     },
 
-    // 카카오 간편 로그인 (더미)
-    handleKakaoLogin() {
-      const redirect = this.$route.query.redirect || '/me'
-      this.$router.push(redirect)
+    handleGoogleLogin() {
+      // const redirect = this.$route.query.redirect || '/me'
+      // this.$router.push(redirect)
+      const auth_uri = `${this.googleUrl}?client_id=${this.googleClientId}&redirect_uri=${this.googleRedirectUrl}&response_type=code&scope=${this.googleScope}`;
+      window.location.href = auth_uri;
     },
 
-    // 구글 간편 로그인 (더미)
-    handleGoogleLogin() {
-      const redirect = this.$route.query.redirect || '/me'
-      this.$router.push(redirect)
+    handleKakaoLogin() {
+      // const redirect = this.$route.query.redirect || '/me'
+      // this.$router.push(redirect)
+      const auth_uri = `${this.kakaoUrl}?client_id=${this.kakaoClientId}&redirect_uri=${this.kakaoRedirectUrl}&response_type=code`;
+      window.location.href = auth_uri;
     },
 
     goToSignup() {

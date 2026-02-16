@@ -56,6 +56,8 @@ import AdminStubTableView from '../views/admin/AdminStubTableView.vue'
 // errors
 import ForbiddenView from '../views/system/ForbiddenView.vue'
 import NotFoundView from '../views/system/NotFoundView.vue'
+import GoogleRedirect from '../views/member/oauth/GoogleRedirect.vue'
+import KakaoRedirect from '../views/member/oauth/KakaoRedirect.vue'
 
 const withLayout = (component, meta = {}) => ({
   component: DefaultLayout,
@@ -75,6 +77,9 @@ const routes = [
 
   { path: '/member/doLogin', ...withLayout(LoginView, { roleScope: 'auth' }) },
   { path: '/member/create', ...withLayout(SignupView, { roleScope: 'auth' }) },
+
+  { path: '/oauth/google/redirect', ...withLayout(GoogleRedirect, { roleScope: 'auth' }) },
+  { path: '/oauth/kakao/redirect', ...withLayout(KakaoRedirect, { roleScope: 'auth' }) },
 
   { path: '/me', ...withLayout(ProfileView, { requiresAuth: true, requiredRole: 'USER' }) },
   { path: '/me/orders', ...withLayout(MyOrdersView, { requiresAuth: true, requiredRole: 'USER' }) },
