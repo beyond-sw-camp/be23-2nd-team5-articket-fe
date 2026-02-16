@@ -60,13 +60,7 @@
           </svg>
           <span>{{ socialLoading === 'kakao' ? '카카오 로그인 중...' : '카카오로 시작하기' }}</span>
         </button>
-        <button type="button"
-          class="flex h-12 w-full items-center justify-center gap-3 rounded-2xl border border-gray-300 bg-white px-4 text-sm font-semibold text-[#191919] shadow-sm transition hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-200"
-          :disabled="socialLoading" @click="inicisCreate">
-          <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-          </svg>
-          <span>{{ socialLoading === 'inicis' ? '본인인증 중...' : '본인인증하기' }}</span>
-        </button>
+    
         <button type="button"
           class="flex h-12 w-full items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-200"
           :disabled="socialLoading" @click="handleGoogleLogin">
@@ -91,7 +85,7 @@
 import UiCard from '../../components/common/UiCard.vue'
 import UiButton from '../../components/common/UiButton.vue'
 import { useAuthApi } from '../../composables/useAuthApi'
-import PortOne from '@portone/browser-sdk/v2';
+import axios from 'axios';
 
 export default {
   name: 'MemberLogin',
@@ -130,7 +124,20 @@ export default {
 
         if (success) {
           const redirect = this.$route.query.redirect || '/me'
-          this.$router.push(redirect)
+          // this.$router.push(redirect)
+          try {
+            const accessToken = localStorage.getItem("accessToken")
+            await axios.get('http://localhost:8082/member/isVerified',{
+              headers: {
+                // 반드시 'Bearer ' 뒤에 한 칸 띄우고 토큰을 붙여야 합니다.
+                Authorization: `Bearer ${accessToken}`
+              }
+            });
+            localStorage.setItem("isVerified", true);
+          } catch (e) {
+            console.log(e)
+          }
+          window.location.href=redirect;
         } else {
           this.error = this.authApi.error.value || '로그인에 실패했어요.'
         }
@@ -152,28 +159,7 @@ export default {
       const redirect = this.$route.query.redirect || '/me'
       this.$router.push(redirect)
     },
-    async inicisCreate() {
-      const response = await PortOne.requestIdentityVerification({
-        // 고객사 storeId로 변경해주세요.
-        storeId: "store-6ac42987-375b-44fc-bbc9-d9650b676666",
-        identityVerificationId: `identity-verification-${crypto.randomUUID()}`,
-        // 연동 정보 메뉴의 채널 관리 탭에서 확인 가능합니다.
-        channelKey: "channel-key-a0fb163c-2bae-4ed0-9d2e-06bba0d3d8bb",
-      });
-      // 프로세스가 제대로 완료되지 않은 경우 에러 코드가 존재합니다
-      if (response.code !== undefined) {
-        return alert(response.message);
-      }
 
-      // 인증코드를 받아 서버로 인증확인 요청보내기
-      const verificationResult = await fetch("http://localhost:8082/member/inicis", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          identityVerificationId: response.identityVerificationId,
-        }),
-      });
-    },
     goToSignup() {
       this.$router.push('/member/create')
     }
