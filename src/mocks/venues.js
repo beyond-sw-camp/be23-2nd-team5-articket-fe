@@ -28,41 +28,32 @@ export const MOCK_VENUES = [
   },
 ]
 
+// ERD 기반: seat_map 테이블 구조
+// id, version (NULL 가능), status (DRAFT/PUBLISHED/ARCHIVED, NULL 가능), row_count (NOT NULL), col_count (NOT NULL), venue_id (NOT NULL)
 export const MOCK_SEAT_MAPS = [
   {
     id: 'sm-olympic-1',
-    venueId: 'v-olympic',
-    name: '체조경기장 기본맵',
+    venue_id: 'v-olympic',
+    row_count: 22,
+    col_count: 10,
     version: 1,
     status: 'PUBLISHED',
-    sections: [
-      { key: 'A', rows: 8, cols: 10 },
-      { key: 'B', rows: 8, cols: 10 },
-      { key: 'C', rows: 6, cols: 8 },
-    ],
   },
   {
     id: 'sm-blue-1',
-    venueId: 'v-blue',
-    name: '블루스퀘어 1층 기본',
+    venue_id: 'v-blue',
+    row_count: 16,
+    col_count: 12,
     version: 1,
     status: 'PUBLISHED',
-    sections: [
-      { key: '1F', rows: 10, cols: 12 },
-      { key: '2F', rows: 6, cols: 10 },
-    ],
   },
   {
     id: 'sm-sejong-1',
-    venueId: 'v-sejong',
-    name: '세종 대극장 기본',
+    venue_id: 'v-sejong',
+    row_count: 24,
+    col_count: 12,
     version: 1,
     status: 'PUBLISHED',
-    sections: [
-      { key: 'R', rows: 10, cols: 12 },
-      { key: 'S', rows: 8, cols: 12 },
-      { key: 'A', rows: 6, cols: 10 },
-    ],
   },
 ]
 

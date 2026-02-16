@@ -57,5 +57,7 @@ export const ENDPOINTS = {
   venueAddress: ({ lat, lng, radiusKm }) => `/venue/address?lat=${lat}&lng=${lng}&radiusKm=${radiusKm}`,
   venue: (venueId) => `/venues/${venueId}`,
   venueConcerts: (venueId) => `/venues/${venueId}/concerts`,
+  venues: () => `/venues`,
+  venueSeatMaps: (venueId) => `/venues/${venueId}/seat-maps`,
 }
 

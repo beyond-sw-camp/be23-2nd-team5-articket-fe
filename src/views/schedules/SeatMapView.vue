@@ -11,20 +11,36 @@
             <LayoutGrid class="h-4 w-4 text-slate-600" />
             좌석맵 구조
           </div>
-          <div class="mt-1 text-sm text-slate-500">{{ seatMap.name }} · v{{ seatMap.version }}</div>
+          <div class="mt-1 text-sm text-slate-500">
+            ID: {{ seatMap.id }} · 
+            <span v-if="seatMap.version">v{{ seatMap.version }}</span>
+            <span v-else>버전 없음</span>
+            <span v-if="seatMap.row_count && seatMap.col_count">
+              · {{ seatMap.row_count }}행 × {{ seatMap.col_count }}열
+            </span>
+          </div>
         </div>
         <UiBadge tone="soft">{{ seatMap.status }}</UiBadge>
       </div>
 
-      <div class="mt-4 grid gap-3 sm:grid-cols-3">
-        <div
-          v-for="sec in seatMap.sections"
-          :key="sec.key"
-          class="rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm"
-        >
-          <div class="text-sm font-semibold text-slate-900">Section {{ sec.key }}</div>
-          <div class="mt-1 text-sm text-slate-500">{{ sec.rows }} rows · {{ sec.cols }} cols</div>
+      <!-- ERD 기반: row_count/col_count 표시 -->
+      <div v-if="seatMap.row_count && seatMap.col_count" class="mt-4">
+        <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm">
+          <div class="text-sm font-semibold text-slate-900">좌석 배치 (ERD: row_count × col_count)</div>
+          <div class="mt-2 text-sm text-slate-500">
+            <span class="font-semibold">{{ seatMap.row_count }}</span>행 × 
+            <span class="font-semibold">{{ seatMap.col_count }}</span>열
+          </div>
+          <div class="mt-3 text-xs text-slate-400">
+            총 {{ seatMap.row_count * seatMap.col_count }}석
+          </div>
         </div>
+      </div>
+      
+      <!-- 좌석맵 정보가 없는 경우 -->
+      <div v-else class="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-6 text-center">
+        <div class="text-sm font-semibold text-slate-900">좌석맵 정보가 없습니다</div>
+        <div class="mt-1 text-xs text-slate-500">공연장의 좌석맵이 등록되지 않았습니다</div>
       </div>
 
       <div class="mt-4">
@@ -69,7 +85,46 @@ export default {
     async load() {
       this.loading = true
       try {
-        this.seatMap = await this.api.get(ENDPOINTS.seatMap(this.$route.params.scheduleId))
+        const scheduleId = this.$route.params.scheduleId
+        let seatMap
+        
+        try {
+          seatMap = await this.api.get(ENDPOINTS.seatMap(scheduleId))
+        } catch (err) {
+          // API 실패 시 더미 데이터에서 좌석맵 찾기
+          console.warn('API call failed, using dummy data', err)
+          
+          // 회차 정보에서 좌석맵 정보 가져오기
+          const schedules = JSON.parse(localStorage.getItem('createdSchedules') || '[]')
+          const schedule = schedules.find((s) => s.id === scheduleId)
+          
+          if (schedule) {
+            // 공연 정보에서 seat_map_id 가져오기
+            const concerts = JSON.parse(localStorage.getItem('createdConcerts') || '[]')
+            const concert = concerts.find((c) => c.id === schedule.concert_id)
+            
+            if (concert && concert.seat_map_id) {
+              // 좌석맵 정보 가져오기 (localStorage + MOCK)
+              const createdSeatMaps = JSON.parse(localStorage.getItem('createdSeatMaps') || '[]')
+              const { MOCK_SEAT_MAPS } = await import('../../mocks/venues')
+              const allSeatMaps = [...createdSeatMaps, ...MOCK_SEAT_MAPS]
+              
+              // 문자열/숫자 모두 비교
+              seatMap = allSeatMaps.find((sm) => 
+                sm.id === concert.seat_map_id || 
+                String(sm.id) === String(concert.seat_map_id)
+              )
+            }
+          }
+          
+          // 기본 더미 좌석맵 사용 (좌석맵 정보가 없을 경우)
+          if (!seatMap) {
+            const { MOCK_SEAT_MAPS } = await import('../../mocks/venues')
+            seatMap = MOCK_SEAT_MAPS[0] || null
+          }
+        }
+        
+        this.seatMap = seatMap
       } finally {
         this.loading = false
       }

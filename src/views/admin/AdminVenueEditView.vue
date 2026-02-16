@@ -9,14 +9,28 @@
     </div>
 
     <form id="venue-edit-form" class="mt-4 grid gap-4" @submit.prevent="submitUpdate">
-      <div>
-        <label class="block text-xs font-semibold text-slate-500">공연장명 (name)</label>
-        <input
-          v-model="form.name"
-          type="text"
-          class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
-          placeholder="공연장 이름"
-        />
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-semibold text-slate-500">공연장명 (name) *</label>
+          <input
+            v-model="form.name"
+            type="text"
+            required
+            class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+            placeholder="공연장 이름"
+          />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-500">상태 (status) *</label>
+          <select
+            v-model="form.status"
+            required
+            class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+          >
+            <option value="ACTIVE">ACTIVE</option>
+            <option value="INACTIVE">INACTIVE</option>
+          </select>
+        </div>
       </div>
       <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
         <div class="text-xs font-semibold text-slate-600">venueAddressReqDto</div>
@@ -157,6 +171,7 @@ export default {
       api: null,
       form: {
         name: '',
+        status: 'ACTIVE',
         venueAddressReqDto: defaultAddress()
       },
       saving: false,
@@ -179,6 +194,7 @@ export default {
         if (!v) return
         this.form = {
           name: v.name,
+          status: v.status || 'ACTIVE',
           venueAddressReqDto: {
             ...defaultAddress(),
             formattedAddress: v.address || '',
@@ -201,6 +217,7 @@ export default {
       this.saving = true
       const payload = {
         name: this.form.name,
+        status: this.form.status || 'ACTIVE',
         venueAddressReqDto: {
           formattedAddress: this.form.venueAddressReqDto.formattedAddress ?? '',
           road: this.form.venueAddressReqDto.road ?? '',

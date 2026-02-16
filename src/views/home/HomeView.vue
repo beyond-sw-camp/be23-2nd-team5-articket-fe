@@ -141,8 +141,69 @@ export default {
     async load() {
       this.loading = true
       try {
-        const res = await this.api.get(`${ENDPOINTS.concerts()}?cat=${encodeURIComponent(this.cat)}&q=${encodeURIComponent(this.q)}`)
-        this.items = res.items || []
+        let res
+        try {
+          res = await this.api.get(`${ENDPOINTS.concerts()}?cat=${encodeURIComponent(this.cat)}&q=${encodeURIComponent(this.q)}`)
+        } catch (err) {
+          console.warn('API call failed, using dummy data', err)
+          res = { items: [] }
+        }
+        
+        const apiItems = res.items || []
+        
+        // localStorage의 더미 공연 데이터도 함께 로드 (PUBLISHED 상태만)
+        const stored = JSON.parse(localStorage.getItem('createdConcerts') || '[]')
+        const publishedConcerts = stored.filter((c) => c.status === 'PUBLISHED')
+        
+        // 공연 데이터를 화면 표시 형식으로 변환
+        // ERD: seat_map_id를 통해 venue 찾기
+        const createdSeatMaps = JSON.parse(localStorage.getItem('createdSeatMaps') || '[]')
+        const { MOCK_SEAT_MAPS, MOCK_VENUES } = await import('../../mocks/venues')
+        const allSeatMaps = [...createdSeatMaps, ...MOCK_SEAT_MAPS]
+        const createdVenues = JSON.parse(localStorage.getItem('createdVenues') || '[]')
+        const allVenues = [...createdVenues, ...MOCK_VENUES]
+        
+        const dummyItems = publishedConcerts.map((c) => {
+          let venue = { id: null, name: '공연장', address: '' }
+          if (c.seat_map_id) {
+            const seatMap = allSeatMaps.find((sm) => sm.id === c.seat_map_id)
+            if (seatMap && seatMap.venue_id) {
+              venue = allVenues.find((v) => v.id === seatMap.venue_id) || { id: null, name: '공연장', address: '' }
+            }
+          }
+          return {
+            id: c.id,
+            title: c.title,
+            shortDesc: '새로 등록된 공연입니다',
+            category: '콘서트',
+            rating: '4.5',
+            priceRange: '₩50,000 ~ ₩150,000',
+            posterUrl: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?auto=format&fit=crop&w=800&q=60',
+            statusBadge: '예매중',
+            venue
+          }
+        })
+        
+        // 중복 제거 및 병합
+        const allItems = [...apiItems]
+        dummyItems.forEach((item) => {
+          if (!allItems.find((i) => i.id === item.id)) {
+            allItems.push(item)
+          }
+        })
+        
+        // 검색 필터링
+        let filtered = allItems
+        if (this.q) {
+          filtered = filtered.filter((item) => 
+            item.title.toLowerCase().includes(this.q.toLowerCase())
+          )
+        }
+        if (this.cat) {
+          filtered = filtered.filter((item) => item.category === this.cat)
+        }
+        
+        this.items = filtered
       } finally {
         this.loading = false
       }

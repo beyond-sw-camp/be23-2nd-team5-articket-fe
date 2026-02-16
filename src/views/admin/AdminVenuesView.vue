@@ -30,14 +30,28 @@
 
     <UiModal :open="createModalOpen" title="공연장 생성" @close="closeCreateModal">
       <form id="venue-create-form" class="grid gap-4" @submit.prevent="submitCreate">
-        <div>
-          <label class="block text-xs font-semibold text-slate-500">공연장명 (name)</label>
-          <input
-            v-model="form.name"
-            type="text"
-            class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
-            placeholder="세종문화회관 중극장"
-          />
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-500">공연장명 (name) *</label>
+            <input
+              v-model="form.name"
+              type="text"
+              required
+              class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+              placeholder="세종문화회관 중극장"
+            />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-500">상태 (status) *</label>
+            <select
+              v-model="form.status"
+              required
+              class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+            >
+              <option value="ACTIVE">ACTIVE</option>
+              <option value="INACTIVE">INACTIVE</option>
+            </select>
+          </div>
         </div>
         <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
           <div class="text-xs font-semibold text-slate-600">venueAddressReqDto</div>
@@ -180,6 +194,7 @@ const DUMMY_VENUE_ADDRESS = {
 function getDefaultForm() {
   return {
     name: '세종문화회관 중극장',
+    status: 'ACTIVE',
     venueAddressReqDto: { ...DUMMY_VENUE_ADDRESS }
   }
 }
@@ -230,6 +245,7 @@ export default {
       const addr = this.form.venueAddressReqDto || {}
       const payload = {
         name: this.form.name || '세종문화회관 중극장',
+        status: this.form.status || 'ACTIVE',
         venueAddressReqDto: {
           formattedAddress: addr.formattedAddress || DUMMY_VENUE_ADDRESS.formattedAddress,
           road: addr.road || DUMMY_VENUE_ADDRESS.road,
@@ -247,6 +263,7 @@ export default {
       const venue = {
         id,
         name: payload.name,
+        status: payload.status,
         address: payload.venueAddressReqDto.formattedAddress,
         lat: payload.venueAddressReqDto.latitude,
         lng: payload.venueAddressReqDto.longitude,
