@@ -112,8 +112,82 @@ export default {
     async load() {
       this.loading = true
       try {
-        const res = await this.api.get(ENDPOINTS.seats(this.$route.params.scheduleId))
+        const scheduleId = this.$route.params.scheduleId
+        let res
+        try {
+          res = await this.api.get(ENDPOINTS.seats(scheduleId))
+        } catch (err) {
+          // API 실패 시 더미 좌석 데이터 생성
+          console.warn('API call failed, generating dummy seats', err)
+          
+          // 회차 정보에서 좌석맵 정보 가져오기
+          const schedules = JSON.parse(localStorage.getItem('createdSchedules') || '[]')
+          const schedule = schedules.find((s) => s.id === scheduleId)
+          
+          if (schedule) {
+            // 공연 정보에서 seat_map_id 가져오기
+            const concerts = JSON.parse(localStorage.getItem('createdConcerts') || '[]')
+            const concert = concerts.find((c) => c.id === schedule.concert_id)
+            
+            if (concert && concert.seat_map_id) {
+              // 좌석맵 정보 가져오기 (localStorage + MOCK)
+              const createdSeatMaps = JSON.parse(localStorage.getItem('createdSeatMaps') || '[]')
+              const { MOCK_SEAT_MAPS } = await import('../../mocks/venues')
+              const allSeatMaps = [...createdSeatMaps, ...MOCK_SEAT_MAPS]
+              // 문자열/숫자 모두 비교
+              const seatMap = allSeatMaps.find((sm) => 
+                sm.id === concert.seat_map_id || 
+                String(sm.id) === String(concert.seat_map_id)
+              )
+              
+              if (seatMap) {
+                // 좌석 데이터 생성
+                const { buildInitialSeatsForSeatMap } = await import('../../mocks/seats')
+                let seats = buildInitialSeatsForSeatMap(seatMap)
+                
+                // localStorage에 저장된 좌석 상태가 있으면 사용
+                const savedSeats = JSON.parse(localStorage.getItem(`scheduleSeats_${scheduleId}`) || '[]')
+                if (savedSeats.length > 0) {
+                  // 저장된 좌석 상태로 업데이트
+                  seats = seats.map((seat) => {
+                    const saved = savedSeats.find((s) => s.id === seat.id)
+                    return saved ? { ...seat, ...saved } : seat
+                  })
+                } else {
+                  // localStorage에 저장된 선점/판매 정보 반영
+                  const holds = JSON.parse(localStorage.getItem('seatHolds') || '[]')
+                  const scheduleHolds = holds.filter((h) => h.scheduleId === scheduleId)
+                  
+                  scheduleHolds.forEach((hold) => {
+                    hold.seats.forEach((seatId) => {
+                      const seat = seats.find((s) => s.id === seatId)
+                      if (seat) {
+                        seat.status = SEAT_STATUS.HOLD
+                      }
+                    })
+                  })
+                }
+                
+                res = { items: seats }
+              }
+            }
+          }
+          
+          // 기본 더미 좌석 생성 (좌석맵 정보가 없을 경우)
+          if (!res || !res.items) {
+            const { buildInitialSeatsForSeatMap } = await import('../../mocks/seats')
+            const { MOCK_SEAT_MAPS } = await import('../../mocks/venues')
+            const defaultSeatMap = MOCK_SEAT_MAPS[0]
+            res = { items: buildInitialSeatsForSeatMap(defaultSeatMap) }
+          }
+        }
+        
         this.seats = res.items || []
+        
+        // localStorage에 좌석 데이터 저장 (다음 로드 시 상태 유지)
+        if (this.seats.length > 0) {
+          localStorage.setItem(`scheduleSeats_${scheduleId}`, JSON.stringify(this.seats))
+        }
       } finally {
         this.loading = false
       }
@@ -142,7 +216,23 @@ export default {
       this.holdLoading = true
       this.holdError = null
       try {
-        const res = await this.seatHoldMock.createHold({ scheduleId: this.$route.params.scheduleId, seats: this.selected })
+        const scheduleId = this.$route.params.scheduleId
+        const res = await this.seatHoldMock.createHold({ scheduleId, seats: this.selected })
+        
+        // 선점된 좌석 상태를 로컬에서도 업데이트
+        this.selected.forEach((seatId) => {
+          const seat = this.seats.find((s) => s.id === seatId)
+          if (seat) {
+            seat.status = SEAT_STATUS.HOLD
+          }
+        })
+        
+        // localStorage 업데이트
+        localStorage.setItem(`scheduleSeats_${scheduleId}`, JSON.stringify(this.seats))
+        
+        // 선택 초기화
+        this.selected = []
+        
         this.$router.push(`/hold/${res.holdId}`)
       } catch (e) {
         this.holdError = e.message

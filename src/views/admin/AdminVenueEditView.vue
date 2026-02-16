@@ -3,26 +3,138 @@
     <div class="flex items-start justify-between gap-3">
       <div>
         <div class="text-sm font-semibold text-slate-900">공연장 수정</div>
-        <div class="mt-1 text-sm text-slate-500">{{ venue.name }}</div>
+        <div class="mt-1 text-sm text-slate-500">PUT /admin/venues/{{ venueId }}</div>
       </div>
       <UiBadge tone="soft">ADMIN</UiBadge>
     </div>
 
-    <div class="mt-4 grid gap-3 sm:grid-cols-2">
-      <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm">
-        <div class="text-xs font-semibold text-slate-500">주소</div>
-        <div class="mt-1 text-sm font-semibold text-slate-900">{{ venue.address }}</div>
+    <form id="venue-edit-form" class="mt-4 grid gap-4" @submit.prevent="submitUpdate">
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-semibold text-slate-500">공연장명 (name) *</label>
+          <input
+            v-model="form.name"
+            type="text"
+            required
+            class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+            placeholder="공연장 이름"
+          />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-500">상태 (status) *</label>
+          <select
+            v-model="form.status"
+            required
+            class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+          >
+            <option value="ACTIVE">ACTIVE</option>
+            <option value="INACTIVE">INACTIVE</option>
+          </select>
+        </div>
       </div>
-      <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm">
-        <div class="text-xs font-semibold text-slate-500">좌표</div>
-        <div class="mt-1 text-sm font-semibold text-slate-900">{{ venue.lat }}, {{ venue.lng }}</div>
+      <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+        <div class="text-xs font-semibold text-slate-600">venueAddressReqDto</div>
+        <div class="mt-3 grid gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-500">전체주소 (formattedAddress)</label>
+            <input
+              v-model="form.venueAddressReqDto.formattedAddress"
+              type="text"
+              class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+            />
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-xs font-semibold text-slate-500">도로명 (road)</label>
+              <input
+                v-model="form.venueAddressReqDto.road"
+                type="text"
+                class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+              />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-500">건물번호 (houseNumber)</label>
+              <input
+                v-model="form.venueAddressReqDto.houseNumber"
+                type="text"
+                class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+              />
+            </div>
+          </div>
+          <div class="grid grid-cols-3 gap-2">
+            <div>
+              <label class="block text-xs font-semibold text-slate-500">시도 (sido)</label>
+              <input
+                v-model="form.venueAddressReqDto.sido"
+                type="text"
+                class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+              />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-500">시군구 (sigungu)</label>
+              <input
+                v-model="form.venueAddressReqDto.sigungu"
+                type="text"
+                class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+              />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-500">읍면동 (eupmyeondong)</label>
+              <input
+                v-model="form.venueAddressReqDto.eupmyeondong"
+                type="text"
+                class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+              />
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-xs font-semibold text-slate-500">우편번호 (postCode)</label>
+              <input
+                v-model="form.venueAddressReqDto.postCode"
+                type="text"
+                class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+              />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-500">상세주소 (addressDetail)</label>
+              <input
+                v-model="form.venueAddressReqDto.addressDetail"
+                type="text"
+                class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+              />
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-xs font-semibold text-slate-500">위도 (latitude)</label>
+              <input
+                v-model.number="form.venueAddressReqDto.latitude"
+                type="number"
+                step="any"
+                class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+              />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-500">경도 (longitude)</label>
+              <input
+                v-model.number="form.venueAddressReqDto.longitude"
+                type="number"
+                step="any"
+                class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+              />
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
-
-    <div class="mt-4 flex gap-2">
-      <UiButton variant="ghost" class="h-11 px-4" @click="$router.push('/admin/venues')">목록</UiButton>
-      <UiButton class="h-11 px-5" @click="$router.push(`/admin/venues/${venue.id}/seat-maps`)">좌석맵 관리</UiButton>
-    </div>
+      <p v-if="errorMessage" class="text-sm text-red-600">{{ errorMessage }}</p>
+      <p v-if="successMessage" class="text-sm text-green-600">{{ successMessage }}</p>
+      <div class="flex gap-2">
+        <UiButton variant="ghost" type="button" class="h-11 px-4" @click="$router.push('/admin/venues')">목록</UiButton>
+        <UiButton type="button" class="h-11 px-4" @click="$router.push(`/admin/venues/${venue.id}/seat-maps`)">좌석맵 관리</UiButton>
+        <UiButton as="button" type="submit" class="h-11 px-5" :disabled="saving">저장 (PUT)</UiButton>
+      </div>
+    </form>
   </UiCard>
 </template>
 
@@ -31,6 +143,21 @@ import UiCard from '../../components/common/UiCard.vue'
 import UiBadge from '../../components/common/UiBadge.vue'
 import UiButton from '../../components/common/UiButton.vue'
 import { MOCK_VENUES } from '../../mocks/venues'
+import { useApi } from '../../composables/useApi'
+import { ENDPOINTS } from '../../lib/api/endpoints'
+
+const defaultAddress = () => ({
+  formattedAddress: '',
+  road: '',
+  houseNumber: '',
+  sido: '',
+  sigungu: '',
+  eupmyeondong: '',
+  postCode: '',
+  addressDetail: '',
+  latitude: null,
+  longitude: null
+})
 
 export default {
   name: 'AdminVenueEditView',
@@ -39,9 +166,79 @@ export default {
     UiBadge,
     UiButton
   },
+  data() {
+    return {
+      api: null,
+      form: {
+        name: '',
+        status: 'ACTIVE',
+        venueAddressReqDto: defaultAddress()
+      },
+      saving: false,
+      errorMessage: '',
+      successMessage: ''
+    }
+  },
   computed: {
+    venueId() {
+      return this.$route.params.venueId
+    },
     venue() {
-      return MOCK_VENUES.find((v) => v.id === this.$route.params.venueId)
+      return MOCK_VENUES.find((v) => v.id === this.venueId)
+    }
+  },
+  watch: {
+    venue: {
+      immediate: true,
+      handler(v) {
+        if (!v) return
+        this.form = {
+          name: v.name,
+          status: v.status || 'ACTIVE',
+          venueAddressReqDto: {
+            ...defaultAddress(),
+            formattedAddress: v.address || '',
+            latitude: v.lat ?? null,
+            longitude: v.lng ?? null
+          }
+        }
+        this.errorMessage = ''
+        this.successMessage = ''
+      }
+    }
+  },
+  created() {
+    this.api = useApi()
+  },
+  methods: {
+    async submitUpdate() {
+      this.errorMessage = ''
+      this.successMessage = ''
+      this.saving = true
+      const payload = {
+        name: this.form.name,
+        status: this.form.status || 'ACTIVE',
+        venueAddressReqDto: {
+          formattedAddress: this.form.venueAddressReqDto.formattedAddress ?? '',
+          road: this.form.venueAddressReqDto.road ?? '',
+          houseNumber: this.form.venueAddressReqDto.houseNumber ?? '',
+          sido: this.form.venueAddressReqDto.sido ?? '',
+          sigungu: this.form.venueAddressReqDto.sigungu ?? '',
+          eupmyeondong: this.form.venueAddressReqDto.eupmyeondong ?? '',
+          postCode: this.form.venueAddressReqDto.postCode ?? '',
+          addressDetail: this.form.venueAddressReqDto.addressDetail ?? '',
+          latitude: Number(this.form.venueAddressReqDto.latitude) ?? null,
+          longitude: Number(this.form.venueAddressReqDto.longitude) ?? null
+        }
+      }
+      try {
+        await this.api.put(ENDPOINTS.adminUpdateVenue(this.venueId), payload)
+        this.successMessage = '저장되었습니다.'
+      } catch (err) {
+        this.errorMessage = err.message || '저장에 실패했습니다.'
+      } finally {
+        this.saving = false
+      }
     }
   }
 }
