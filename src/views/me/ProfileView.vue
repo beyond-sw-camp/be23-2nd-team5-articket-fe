@@ -16,7 +16,6 @@
         </div>
         <UiBadge v-if="profile.grade" tone="soft">{{ profile.grade }}</UiBadge>
       </div>
-
       <div class="mt-4 grid gap-3 sm:grid-cols-2">
         <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm">
           <div class="text-xs font-semibold text-slate-500">이름</div>
@@ -28,12 +27,17 @@
         </div>
         <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm sm:col-span-2">
           <div class="text-xs font-semibold text-slate-500">연락처</div>
-          <div class="mt-1 text-sm font-semibold text-slate-900">{{ profile.phone || '-' }}</div>
+          <div class="mt-1 text-sm font-semibold text-slate-900">{{ profile.phoneNumber || '-' }}</div>
         </div>
       </div>
-
       <div class="mt-4 flex gap-2">
         <UiButton class="h-11 px-5" @click="$router.push('/me/orders')">내 주문 목록</UiButton>
+        <UiButton v-if="!isVerified" variant="ghost" class="h-10 px-3" @click="inicis">
+          <span class="ml-2 text-sm">본인인증</span>
+        </UiButton>
+        <UiButton v-if="isVerified" variant="ghost" class="h-10 px-3">
+          <span class="ml-2 text-sm">본인인증 완료</span>
+        </UiButton>
         <UiButton variant="ghost" class="h-11 px-5" @click="$router.push('/')">둘러보기</UiButton>
       </div>
     </UiCard>
@@ -46,6 +50,7 @@ import UiBadge from '../../components/common/UiBadge.vue'
 import UiButton from '../../components/common/UiButton.vue'
 import { useApi } from '../../composables/useApi'
 import { ENDPOINTS } from '../../lib/api/endpoints'
+import PortOne from '@portone/browser-sdk/v2'
 
 export default {
   name: 'ProfileView',
@@ -59,16 +64,24 @@ export default {
       profile: null,
       loading: false,
       error: '',
-      api: null
+      api: null,
+      isVerified: null
     }
   },
   created() {
-    this.api = useApi()
+    this.api = useApi(),
+      this.isVerifiedAge()
   },
   mounted() {
     this.load()
   },
   methods: {
+    async isVerifiedAge() {
+      const iV = localStorage.getItem("isVerified");
+      if (iV) {
+        this.isVerified = true;
+      }
+    },
     async load() {
       this.loading = true
       this.error = ''
@@ -80,7 +93,38 @@ export default {
       } finally {
         this.loading = false
       }
-    }
-  }
+    },
+    async inicis() {
+      const response = await PortOne.requestIdentityVerification({
+        // 고객사 storeId로 변경해주세요.
+        storeId: "store-6ac42987-375b-44fc-bbc9-d9650b676666",
+        identityVerificationId: `identity-verification-${crypto.randomUUID()}`,
+        // 연동 정보 메뉴의 채널 관리 탭에서 확인 가능합니다.
+        channelKey: "channel-key-a0fb163c-2bae-4ed0-9d2e-06bba0d3d8bb",
+      });
+      // 프로세스가 제대로 완료되지 않은 경우 에러 코드가 존재합니다
+      if (response.code !== undefined) {
+        return alert(response.message);
+      }
+
+      // 인증코드를 받아 서버로 인증확인 요청보내기
+      const accessToken = localStorage.getItem('accessToken');
+      try {
+        const verificationResult = await fetch("http://localhost:8082/member/inicis", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${accessToken}` },
+          body: JSON.stringify({
+            identityVerificationId: response.identityVerificationId,
+          }),
+        });
+        localStorage.setItem('isVerified', true);
+        this.isVerified = true;
+      } catch (e) {
+
+      }
+
+    },
+  },
+
 }
 </script>

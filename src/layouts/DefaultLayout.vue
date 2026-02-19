@@ -12,13 +12,12 @@
           </RouterLink>
 
           <form class="ml-2 flex flex-1 items-center gap-2" @submit.prevent="submitSearch">
-            <div class="flex w-full items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 shadow-sm">
+            <div
+              class="flex w-full items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 shadow-sm">
               <Search class="h-4 w-4 text-slate-500" />
-              <input
-                v-model="q"
+              <input v-model="q"
                 class="w-full bg-transparent text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none"
-                placeholder="공연, 아티스트, 공연장 검색"
-              />
+                placeholder="공연, 아티스트, 공연장 검색" />
             </div>
           </form>
 
@@ -35,32 +34,43 @@
             <div class="flex items-center gap-2">
               <!-- ORGANIZER 메뉴 (JWT role 기준) -->
               <div v-if="roleValue === 'ORGANIZER'" class="relative inline-block">
-                <UiButton variant="tonal" class="h-10 px-3 rounded-xl text-slate-800" @click="organizerMenuOpen = !organizerMenuOpen">
+                <UiButton variant="tonal" class="h-10 px-3 rounded-xl text-slate-800"
+                  @click="organizerMenuOpen = !organizerMenuOpen">
                   주최자
                 </UiButton>
-                <div
-                  v-show="organizerMenuOpen"
-                  class="absolute right-0 top-full z-50 mt-1 min-w-[140px] rounded-xl border border-slate-200 bg-white py-1 shadow-lg"
-                >
-                  <RouterLink to="/organizer" class="block px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" @click="organizerMenuOpen = false">대시보드</RouterLink>
-                  <RouterLink to="/organizer/concerts" class="block px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" @click="organizerMenuOpen = false">공연 목록</RouterLink>
-                  <RouterLink to="/organizer/concerts/new" class="block px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" @click="organizerMenuOpen = false">공연 등록</RouterLink>
+                <div v-show="organizerMenuOpen"
+                  class="absolute right-0 top-full z-50 mt-1 min-w-[140px] rounded-xl border border-slate-200 bg-white py-1 shadow-lg">
+                  <RouterLink to="/organizer"
+                    class="block px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                    @click="organizerMenuOpen = false">대시보드</RouterLink>
+                  <RouterLink to="/organizer/concerts"
+                    class="block px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                    @click="organizerMenuOpen = false">공연 목록</RouterLink>
+                  <RouterLink to="/organizer/concerts/new"
+                    class="block px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                    @click="organizerMenuOpen = false">공연 등록</RouterLink>
                 </div>
               </div>
 
               <!-- ADMIN 메뉴 (JWT role 기준) -->
               <div v-if="roleValue === 'ADMIN'" class="relative inline-block">
-                <UiButton variant="tonal" class="h-10 px-3 rounded-xl text-slate-800" @click="adminMenuOpen = !adminMenuOpen">
+                <UiButton variant="tonal" class="h-10 px-3 rounded-xl text-slate-800"
+                  @click="adminMenuOpen = !adminMenuOpen">
                   관리자
                 </UiButton>
-                <div
-                  v-show="adminMenuOpen"
-                  class="absolute right-0 top-full z-50 mt-1 min-w-[140px] rounded-xl border border-slate-200 bg-white py-1 shadow-lg"
-                >
-                  <RouterLink to="/admin" class="block px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" @click="adminMenuOpen = false">대시보드</RouterLink>
-                  <RouterLink to="/admin/venues" class="block px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" @click="adminMenuOpen = false">공연장</RouterLink>
-                  <RouterLink to="/admin/users" class="block px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" @click="adminMenuOpen = false">회원관리</RouterLink>
-                  <RouterLink to="/admin/orders" class="block px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" @click="adminMenuOpen = false">주문</RouterLink>
+                <div v-show="adminMenuOpen"
+                  class="absolute right-0 top-full z-50 mt-1 min-w-[140px] rounded-xl border border-slate-200 bg-white py-1 shadow-lg">
+                  <RouterLink to="/admin" class="block px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                    @click="adminMenuOpen = false">대시보드</RouterLink>
+                  <RouterLink to="/admin/venues"
+                    class="block px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                    @click="adminMenuOpen = false">공연장</RouterLink>
+                  <RouterLink to="/admin/users"
+                    class="block px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                    @click="adminMenuOpen = false">회원관리</RouterLink>
+                  <RouterLink to="/admin/orders"
+                    class="block px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                    @click="adminMenuOpen = false">주문</RouterLink>
                 </div>
               </div>
 
@@ -68,32 +78,17 @@
               <UiBadge v-else tone="soft">GUEST</UiBadge>
 
               <!-- 토큰 기반 로그인 UI -->
-              <UiButton
-                v-if="!isLoggedIn"
-                variant="ghost"
-                class="h-10 px-3"
-                @click="$router.push('/member/doLogin')"
-              >
+              <UiButton v-if="!isLoggedIn" variant="ghost" class="h-10 px-3" @click="$router.push('/member/doLogin')">
                 <LogIn class="h-4 w-4" />
                 <span class="ml-2 text-sm">로그인</span>
               </UiButton>
 
-              <UiButton
-                v-else
-                variant="ghost"
-                class="h-10 px-3"
-                @click="$router.push('/me')"
-              >
+              <UiButton v-else variant="ghost" class="h-10 px-3" @click="$router.push('/me')">
                 <User class="h-4 w-4" />
                 <span class="ml-2 text-sm">내정보</span>
               </UiButton>
 
-              <UiButton
-                v-if="isLoggedIn"
-                variant="ghost"
-                class="h-10 px-3"
-                @click="handleLogout"
-              >
+              <UiButton v-if="isLoggedIn" variant="ghost" class="h-10 px-3" @click="handleLogout">
                 <ShieldAlert class="h-4 w-4" />
                 <span class="ml-2 text-sm">로그아웃</span>
               </UiButton>
@@ -102,17 +97,11 @@
         </div>
 
         <nav class="flex items-center gap-2 overflow-x-auto pb-3">
-          <RouterLink
-            v-for="c in categories"
-            :key="c.key"
-            :to="c.to"
-            class="whitespace-nowrap rounded-2xl border px-3 py-2 text-sm font-semibold shadow-sm transition"
-            :class="
-              currentCat === c.key
-                ? 'border-red-200 bg-red-50 text-red-700'
-                : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
-            "
-          >
+          <RouterLink v-for="c in categories" :key="c.key" :to="c.to"
+            class="whitespace-nowrap rounded-2xl border px-3 py-2 text-sm font-semibold shadow-sm transition" :class="currentCat === c.key
+              ? 'border-red-200 bg-red-50 text-red-700'
+              : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+              ">
             {{ c.label }}
           </RouterLink>
 
@@ -145,6 +134,7 @@ import { Search, Bell, User, LogIn, MapPin, ShieldAlert } from 'lucide-vue-next'
 import UiButton from '../components/common/UiButton.vue'
 import UiBadge from '../components/common/UiBadge.vue'
 import { useRole } from '../composables/useRole'
+import PortOne from '@portone/browser-sdk/v2';
 
 export default {
   name: 'DefaultLayout',
@@ -173,7 +163,8 @@ export default {
 
       tokenVersion: 0,
       adminMenuOpen: false,
-      organizerMenuOpen: false
+      organizerMenuOpen: false,
+
     }
   },
   computed: {
@@ -199,6 +190,7 @@ export default {
 
     window.addEventListener('storage', this.onStorage)
     this.bumpTokenVersion()
+
   },
   beforeUnmount() {
     window.removeEventListener('storage', this.onStorage)
@@ -214,6 +206,7 @@ export default {
     }
   },
   methods: {
+
     bumpTokenVersion() {
       this.tokenVersion++
     },
@@ -226,10 +219,11 @@ export default {
     submitSearch() {
       this.$router.push({ path: '/', query: { ...this.$route.query, q: this.q || undefined } })
     },
+
     async handleLogout() {
       localStorage.removeItem('accessToken')
       localStorage.removeItem('refreshToken')
-
+      localStorage.removeItem('isVerified')
       if (typeof this._logoutComposable === 'function') {
         await this._logoutComposable()
       }
