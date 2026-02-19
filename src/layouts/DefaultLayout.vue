@@ -92,12 +92,6 @@
                 <ShieldAlert class="h-4 w-4" />
                 <span class="ml-2 text-sm">로그아웃</span>
               </UiButton>
-
-              <UiButton v-if="isLoggedIn && !isVerified" variant="ghost" class="h-10 px-3" @click="inicis">
-                <ShieldAlert class="h-4 w-4" />
-                <span class="ml-2 text-sm">본인인증</span>
-              </UiButton>
-
             </div>
           </div>
         </div>
@@ -171,7 +165,6 @@ export default {
       adminMenuOpen: false,
       organizerMenuOpen: false,
 
-      isVerified: null
     }
   },
   computed: {
@@ -197,7 +190,6 @@ export default {
 
     window.addEventListener('storage', this.onStorage)
     this.bumpTokenVersion()
-    this.isVerifiedAge()
 
   },
   beforeUnmount() {
@@ -214,12 +206,7 @@ export default {
     }
   },
   methods: {
-    async isVerifiedAge() {
-       const iV = localStorage.getItem("isVerified");
-        if (iV) {
-            this.isVerified = true;
-        }
-    },
+
     bumpTokenVersion() {
       this.tokenVersion++
     },
@@ -232,40 +219,11 @@ export default {
     submitSearch() {
       this.$router.push({ path: '/', query: { ...this.$route.query, q: this.q || undefined } })
     },
-    async inicis() {
-      const response = await PortOne.requestIdentityVerification({
-        // 고객사 storeId로 변경해주세요.
-        storeId: "store-6ac42987-375b-44fc-bbc9-d9650b676666",
-        identityVerificationId: `identity-verification-${crypto.randomUUID()}`,
-        // 연동 정보 메뉴의 채널 관리 탭에서 확인 가능합니다.
-        channelKey: "channel-key-a0fb163c-2bae-4ed0-9d2e-06bba0d3d8bb",
-      });
-      // 프로세스가 제대로 완료되지 않은 경우 에러 코드가 존재합니다
-      if (response.code !== undefined) {
-        return alert(response.message);
-      }
-      console.log(response)
-      // 인증코드를 받아 서버로 인증확인 요청보내기
-       const accessToken = localStorage.getItem('accessToken');
-      try {
-        const verificationResult = await fetch('http://localhost:8082/member/inicis', {
-          method: "POST",
-          headers: { "Content-Type": "application/json" , "Authorization":  `Bearer ${accessToken}`},
-          body: JSON.stringify({
-            identityVerificationId: response.identityVerificationId,
-          }),
-        });
-        localStorage.setItem('isVerified',true);
-        this.isVerified = true;
-      } catch (e) {
-        console.log(e);
-      }
-    },
+
     async handleLogout() {
       localStorage.removeItem('accessToken')
       localStorage.removeItem('refreshToken')
       localStorage.removeItem('isVerified')
-      this.isVerified = false;
       if (typeof this._logoutComposable === 'function') {
         await this._logoutComposable()
       }
