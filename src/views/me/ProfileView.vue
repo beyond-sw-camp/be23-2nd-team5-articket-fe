@@ -107,20 +107,15 @@ export default {
         return alert(response.message);
       }
 
-      // 인증코드를 받아 서버로 인증확인 요청보내기
-      const accessToken = localStorage.getItem('accessToken');
+      // 인증코드를 받아 서버로 인증확인 요청보내기 (axios 통일)
       try {
-        const verificationResult = await fetch("http://localhost:8082/member/inicis", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${accessToken}` },
-          body: JSON.stringify({
-            identityVerificationId: response.identityVerificationId,
-          }),
-        });
-        localStorage.setItem('isVerified', true);
-        this.isVerified = true;
+        await this.api.post(ENDPOINTS.inicis(), {
+          identityVerificationId: response.identityVerificationId
+        })
+        localStorage.setItem('isVerified', true)
+        this.isVerified = true
       } catch (e) {
-
+        this.error = e?.message || '본인인증 확인에 실패했습니다.'
       }
 
     },

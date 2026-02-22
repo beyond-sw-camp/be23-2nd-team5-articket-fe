@@ -10,6 +10,7 @@ export const ENDPOINTS = {
   // AUTH
   signup: () => `/member/create`,
   login: () => `/member/doLogin`,
+  inicis: () => `/member/inicis`,
 
   // USER
   me: () => `/users/me`,
