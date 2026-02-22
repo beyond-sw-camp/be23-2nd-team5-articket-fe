@@ -83,39 +83,14 @@ export default {
     async load() {
       this.loading = true
       try {
-        let res
-        try {
-          res = await this.api.get(ENDPOINTS.organizerConcerts())
-        } catch (err) {
-          // API 실패 시 localStorage에서 더미 데이터 로드
-          console.warn('API call failed, using dummy data', err)
-          const stored = JSON.parse(localStorage.getItem('createdConcerts') || '[]')
-          res = { items: stored }
-        }
-        
-        const apiItems = res.items || []
-        
-        // localStorage의 더미 데이터도 함께 로드
-        const stored = JSON.parse(localStorage.getItem('createdConcerts') || '[]')
-        
-        // 중복 제거 (id 기준)
-        const allItems = [...apiItems]
-        stored.forEach((item) => {
-          if (!allItems.find((i) => i.id === item.id)) {
-            // 회차 수 계산
-            const schedules = JSON.parse(localStorage.getItem('createdSchedules') || '[]')
-            const scheduleCount = schedules.filter((s) => s.concert_id === item.id).length
-            
-            allItems.push({
-              ...item,
-              scheduleCount: scheduleCount || 0,
-              orderCount: 0,
-              revenue: 0
-            })
-          }
-        })
-        
-        this.items = allItems
+        const res = await this.api.get(ENDPOINTS.organizerConcerts())
+        const list = Array.isArray(res) ? res : (res.items ?? res.content ?? [])
+        this.items = list.map((item) => ({
+          ...item,
+          scheduleCount: item.scheduleCount ?? 0,
+          orderCount: item.orderCount ?? 0,
+          revenue: item.revenue ?? 0
+        }))
       } finally {
         this.loading = false
       }

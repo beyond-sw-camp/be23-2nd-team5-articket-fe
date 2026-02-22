@@ -119,7 +119,7 @@ export default {
       this.loading = true
       try {
         const res = await this.api.get(ENDPOINTS.organizerConcerts())
-        this.concerts = res.items || []
+        this.concerts = Array.isArray(res) ? res : (res.items ?? res.content ?? [])
       } finally {
         this.loading = false
       }

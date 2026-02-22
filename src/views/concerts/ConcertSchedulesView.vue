@@ -87,33 +87,20 @@ export default {
       this.loading = true
       try {
         const concertId = this.$route.params.concertId
-        
-        // 공연 정보 로드
         try {
           this.concert = await this.api.get(ENDPOINTS.concert(concertId))
-        } catch (err) {
-          const stored = JSON.parse(localStorage.getItem('createdConcerts') || '[]')
-          this.concert = stored.find((c) => c.id === concertId) || { title: '공연' }
+        } catch {
+          this.concert = { title: '공연', id: concertId }
         }
-        
-        // 회차 목록 로드
-        let res
-        try {
-          res = await this.api.get(ENDPOINTS.concertSchedules(concertId))
-        } catch (err) {
-          console.warn('API call failed, using dummy data', err)
-          const stored = JSON.parse(localStorage.getItem('createdSchedules') || '[]')
-          res = { items: stored.filter((s) => s.concert_id === concertId) }
-        }
-        
-        // ERD 필드명 사용
-        this.schedules = (res.items || []).map((s) => ({
+        const res = await this.api.get(`${ENDPOINTS.concertSchedules(concertId)}?page=0&size=50&sort=playTime,asc`)
+        const list = res.content ?? res.items ?? []
+        this.schedules = list.map((s) => ({
           ...s,
-          summary: {
-            minPrice: 50000,
-            maxPrice: 150000
-          }
+          play_time: s.playTime ?? s.play_time,
+          summary: s.summary ?? { minPrice: 50000, maxPrice: 150000 }
         }))
+      } catch (err) {
+        this.schedules = []
       } finally {
         this.loading = false
       }

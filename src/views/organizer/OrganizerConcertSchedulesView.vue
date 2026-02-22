@@ -179,16 +179,16 @@ export default {
       this.loading = true
       try {
         const concertId = this.$route.params.concertId
-        let res
-        try {
-          res = await this.api.get(ENDPOINTS.organizerConcertSchedules(concertId))
-        } catch (err) {
-          // API 실패 시 localStorage에서 더미 데이터 로드
-          console.warn('API call failed, using dummy data', err)
-          const stored = JSON.parse(localStorage.getItem('createdSchedules') || '[]')
-          res = { items: stored.filter((s) => s.concert_id === concertId) }
-        }
-        this.items = res.items || []
+        const res = await this.api.get(`${ENDPOINTS.organizerConcertSchedules(concertId)}?page=0&size=50&sort=playTime,asc`)
+        const raw = res.content ?? res.items ?? []
+        this.items = raw.map((s) => ({
+          ...s,
+          play_time: s.playTime ?? s.play_time,
+          occupancy: s.occupancy ?? 0,
+          sold: s.sold ?? 0,
+          hold: s.hold ?? 0,
+          total: s.total ?? 0
+        }))
       } finally {
         this.loading = false
       }
@@ -202,46 +202,20 @@ export default {
     },
     async submitCreate() {
       const concertId = this.$route.params.concertId
-      const payload = {
-        play_time: this.form.play_time,
-        booking_start: this.form.booking_start,
-        booking_end: this.form.booking_end,
+      const schedulePayload = {
+        playTime: this.form.play_time,
+        bookingStart: this.form.booking_start,
+        bookingEnd: this.form.booking_end,
         status: this.form.status
       }
-      if (this.form.concert_thum_img_url) {
-        payload.concert_thum_img_url = this.form.concert_thum_img_url
-      }
-      if (this.form.concert_detail_img_url) {
-        payload.concert_detail_img_url = this.form.concert_detail_img_url
-      }
-      
+      const formData = new FormData()
+      formData.append('schedule', new Blob([JSON.stringify(schedulePayload)], { type: 'application/json' }))
       try {
-        // 더미: API 호출 시도하되 실패해도 localStorage에 저장
-        let scheduleId
-        try {
-          const res = await this.api.post(ENDPOINTS.organizerCreateSchedule(concertId), payload)
-          scheduleId = res.id || `schedule-${Date.now()}`
-        } catch (err) {
-          scheduleId = `schedule-${Date.now()}`
-          console.warn('API call failed, using dummy data', err)
-        }
-        
-        // 더미 데이터 저장 (ERD 필드명만 사용)
-        const schedule = {
-          id: scheduleId,
-          concert_id: concertId,
-          ...payload,
-          created_at: new Date().toISOString()
-        }
-        
-        // localStorage에 저장
-        const stored = JSON.parse(localStorage.getItem('createdSchedules') || '[]')
-        stored.push(schedule)
-        localStorage.setItem('createdSchedules', JSON.stringify(stored))
-        
+        await this.api.post(ENDPOINTS.organizerCreateSchedule(concertId), formData)
         this.closeCreateModal()
         this.load()
       } catch (err) {
+        this.$emit('error', err.message)
         console.error('Failed to create schedule', err)
       }
     }
