@@ -3,14 +3,14 @@
     <div class="flex items-end justify-between gap-3">
       <div>
         <div class="text-sm font-semibold text-slate-900">공연장 생성/목록</div>
-        <div class="mt-1 text-sm text-slate-500">POST /admin/venues (stub) · 목록은 mock + 생성 더미</div>
+        <div class="mt-1 text-sm text-slate-500">POST /admin/venues/create · GET /admin/venues/list</div>
       </div>
       <UiBadge tone="soft">ADMIN</UiBadge>
     </div>
 
     <UiCard>
       <div class="flex items-center justify-between gap-3">
-        <div class="text-sm text-slate-600">새 공연장을 등록합니다. (더미 데이터로 생성 후 목록에 반영)</div>
+        <div class="text-sm text-slate-600">새 공연장을 등록하고 실제 서버 목록을 갱신합니다.</div>
         <UiButton class="h-11 px-5" @click="openCreateModal">공연장 생성</UiButton>
       </div>
     </UiCard>
@@ -162,7 +162,7 @@
       <template #footer>
         <div class="flex justify-end gap-2">
           <UiButton variant="ghost" @click="closeCreateModal">취소</UiButton>
-          <UiButton as="button" type="submit" form="venue-create-form">생성 (더미)</UiButton>
+          <UiButton as="button" type="submit" form="venue-create-form">생성</UiButton>
         </div>
       </template>
     </UiModal>
@@ -175,7 +175,8 @@ import UiTable from '../../components/common/UiTable.vue'
 import UiButton from '../../components/common/UiButton.vue'
 import UiBadge from '../../components/common/UiBadge.vue'
 import UiModal from '../../components/common/UiModal.vue'
-import { MOCK_VENUES } from '../../mocks/venues'
+import { useApi } from '../../composables/useApi'
+import { ENDPOINTS } from '../../lib/api/endpoints'
 
 // venue/create API 스펙 (id 자동채번)
 const DUMMY_VENUE_ADDRESS = {
@@ -215,25 +216,47 @@ export default {
         { key: 'address', label: '주소' },
         { key: 'seatMaps', label: '좌석맵' }
       ],
+      api: null,
+      rows: [],
       createModalOpen: false,
       form: getDefaultForm(),
-      createdVenues: []
+      loading: false
     }
   },
-  computed: {
-    rows() {
-      const base = MOCK_VENUES.map((v) => ({
-        ...v,
-        seatMaps: (v.seatMapIds || []).length
-      }))
-      const added = this.createdVenues.map((v) => ({
-        ...v,
-        seatMaps: (v.seatMapIds || []).length
-      }))
-      return [...base, ...added]
-    }
+  created() {
+    this.api = useApi()
+    this.loadVenues()
   },
   methods: {
+    toVenueRow(item) {
+      const addressObj = item?.venueAddressResDto || item?.venueAddress || {}
+      const address =
+        item?.address ||
+        item?.formattedAddress ||
+        addressObj?.formattedAddress ||
+        [addressObj?.sido, addressObj?.sigungu, addressObj?.eupmyeondong, addressObj?.road, addressObj?.houseNumber]
+          .filter(Boolean)
+          .join(' ')
+      return {
+        id: item?.id,
+        name: item?.name || '-',
+        address: address || '-',
+        seatMaps: item?.seatMapCount ?? (Array.isArray(item?.seatMapIds) ? item.seatMapIds.length : 0)
+      }
+    },
+    normalizeVenueListResponse(res) {
+      const list = Array.isArray(res) ? res : res?.content || res?.items || []
+      return list.map(this.toVenueRow)
+    },
+    async loadVenues() {
+      this.loading = true
+      try {
+        const res = await this.api.get(ENDPOINTS.adminVenueList({ page: 0, size: 100 }))
+        this.rows = this.normalizeVenueListResponse(res)
+      } finally {
+        this.loading = false
+      }
+    },
     openCreateModal() {
       this.form = getDefaultForm()
       this.createModalOpen = true
@@ -241,7 +264,7 @@ export default {
     closeCreateModal() {
       this.createModalOpen = false
     },
-    submitCreate() {
+    async submitCreate() {
       const addr = this.form.venueAddressReqDto || {}
       const payload = {
         name: this.form.name || '세종문화회관 중극장',
@@ -255,23 +278,17 @@ export default {
           eupmyeondong: addr.eupmyeondong || DUMMY_VENUE_ADDRESS.eupmyeondong,
           postCode: addr.postCode || DUMMY_VENUE_ADDRESS.postCode,
           addressDetail: addr.addressDetail || DUMMY_VENUE_ADDRESS.addressDetail,
-          latitude: Number(addr.latitude) ?? DUMMY_VENUE_ADDRESS.latitude,
-          longitude: Number(addr.longitude) ?? DUMMY_VENUE_ADDRESS.longitude
+          latitude: Number.isFinite(Number(addr.latitude)) ? Number(addr.latitude) : DUMMY_VENUE_ADDRESS.latitude,
+          longitude: Number.isFinite(Number(addr.longitude)) ? Number(addr.longitude) : DUMMY_VENUE_ADDRESS.longitude
         }
       }
-      const id = `v-dummy-${Date.now()}`
-      const venue = {
-        id,
-        name: payload.name,
-        status: payload.status,
-        address: payload.venueAddressReqDto.formattedAddress,
-        lat: payload.venueAddressReqDto.latitude,
-        lng: payload.venueAddressReqDto.longitude,
-        seatMapIds: [],
-        _createPayload: payload
+      try {
+        await this.api.post(ENDPOINTS.adminCreateVenue(), payload)
+        this.closeCreateModal()
+        await this.loadVenues()
+      } catch (err) {
+        console.warn('Failed to create venue', err)
       }
-      this.createdVenues.push(venue)
-      this.closeCreateModal()
     }
   }
 }

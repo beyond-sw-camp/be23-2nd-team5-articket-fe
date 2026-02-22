@@ -8,44 +8,49 @@ const error = ref('')
 export function useSeatHoldMock() {
   const api = useApi()
 
+  function normalizeSeatId(seatId) {
+    if (seatId == null) return null
+    const num = Number(seatId)
+    return Number.isFinite(num) ? num : seatId
+  }
+
+  function parseHoldIdToSeatIds(holdId) {
+    if (!holdId) return []
+    return String(holdId)
+      .split(',')
+      .map((id) => id.trim())
+      .filter(Boolean)
+  }
+
+  function buildHoldId(seatIds) {
+    return seatIds.map(String).join(',')
+  }
+
   async function createHold({ scheduleId, seats }) {
     loading.value = true
     error.value = ''
     try {
-      // API 호출 시도
-      let result
-      try {
-        result = await api.post(ENDPOINTS.seatHolds(), { scheduleId, seats })
-      } catch (e) {
-        // API 실패 시 더미 데이터 생성
-        console.warn('API call failed, using dummy data', e)
-        const holdId = `hold-${Date.now()}`
-        const expiresAt = new Date(Date.now() + 5 * 60 * 1000) // 5분 후
-        
-        result = {
-          holdId,
-          scheduleId,
-          seats,
-          expiresAt: expiresAt.toISOString(),
-          createdAt: new Date().toISOString()
-        }
-        
-        // localStorage에 저장
-        const stored = JSON.parse(localStorage.getItem('seatHolds') || '[]')
-        stored.push(result)
-        localStorage.setItem('seatHolds', JSON.stringify(stored))
-        
-        // 좌석 상태를 HOLD로 업데이트
-        const scheduleSeats = JSON.parse(localStorage.getItem(`scheduleSeats_${scheduleId}`) || '[]')
-        seats.forEach((seatId) => {
-          const seat = scheduleSeats.find((s) => s.id === seatId)
-          if (seat) {
-            seat.status = 'HOLD'
-          }
-        })
-        localStorage.setItem(`scheduleSeats_${scheduleId}`, JSON.stringify(scheduleSeats))
+      const seatIds = (Array.isArray(seats) ? seats : [])
+        .map(normalizeSeatId)
+        .filter((id) => id !== null)
+      if (seatIds.length === 0) {
+        throw new Error('선점할 좌석을 선택해주세요.')
       }
-      
+
+      // 백엔드 스펙: POST /seat-holds/{seatId}
+      await Promise.all(seatIds.map((seatId) => api.post(ENDPOINTS.seatHold(seatId))))
+
+      // 상세 화면 유지용 로컬 메타데이터
+      const result = {
+        holdId: buildHoldId(seatIds),
+        scheduleId,
+        seats: seatIds,
+        expiresAt: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+        createdAt: new Date().toISOString()
+      }
+      const stored = JSON.parse(localStorage.getItem('seatHolds') || '[]')
+      stored.push(result)
+      localStorage.setItem('seatHolds', JSON.stringify(stored))
       return result
     } catch (e) {
       error.value = e?.message || '선점에 실패했어요.'
@@ -56,11 +61,31 @@ export function useSeatHoldMock() {
   }
 
   async function getHold(holdId) {
-    return await api.get(ENDPOINTS.seatHold(holdId))
+    const seatIds = parseHoldIdToSeatIds(holdId)
+    const stored = JSON.parse(localStorage.getItem('seatHolds') || '[]')
+    const found = stored.find((item) => String(item.holdId) === String(holdId))
+    if (found) return found
+    if (seatIds.length > 0) {
+      return {
+        holdId,
+        scheduleId: null,
+        seats: seatIds,
+        expiresAt: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+        createdAt: new Date().toISOString()
+      }
+    }
+    throw new Error('선점 정보를 찾을 수 없습니다.')
   }
 
   async function releaseHold(holdId) {
-    return await api.del(ENDPOINTS.seatHold(holdId))
+    const seatIds = parseHoldIdToSeatIds(holdId).map(normalizeSeatId).filter((id) => id !== null)
+    if (seatIds.length === 0) return null
+    // 백엔드 스펙: DELETE /seat-holds/{seatId}
+    await Promise.all(seatIds.map((seatId) => api.del(ENDPOINTS.seatHold(seatId))))
+    const stored = JSON.parse(localStorage.getItem('seatHolds') || '[]')
+    const filtered = stored.filter((item) => String(item.holdId) !== String(holdId))
+    localStorage.setItem('seatHolds', JSON.stringify(filtered))
+    return null
   }
 
   return { loading, error, createHold, getHold, releaseHold }

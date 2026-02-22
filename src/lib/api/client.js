@@ -18,6 +18,9 @@ export function createApiClient(opts = {}) {
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
+    if (typeof FormData !== 'undefined' && config.data instanceof FormData) {
+      delete config.headers['Content-Type']
+    }
     return config
   })
 
@@ -33,6 +36,9 @@ export function createApiClient(opts = {}) {
           break
         case 'PUT':
           response = await api.put(path, body)
+          break
+        case 'PATCH':
+          response = await api.patch(path, body)
           break
         case 'DELETE':
           response = await api.delete(path, body || {})
@@ -59,6 +65,7 @@ export function createApiClient(opts = {}) {
     get: (path) => request('GET', path),
     post: (path, body) => request('POST', path, body),
     put: (path, body) => request('PUT', path, body),
+    patch: (path, body) => request('PATCH', path, body),
     del: (path, body) => request('DELETE', path, body),
   }
 }

@@ -16,7 +16,10 @@
       <div class="flex items-start justify-between gap-3">
         <div>
           <div class="text-sm font-semibold text-slate-900">좌석 선점</div>
-          <div class="mt-1 text-sm text-slate-500">{{ item.holdId }} · schedule {{ item.scheduleId }}</div>
+          <div class="mt-1 text-sm text-slate-500">
+            {{ item.holdId }}
+            <span v-if="item.scheduleId !== null && item.scheduleId !== undefined"> · schedule {{ item.scheduleId }}</span>
+          </div>
         </div>
         <UiBadge :tone="expired ? 'solid' : 'soft'" :color="expired ? 'slate' : 'red'">
           {{ expired ? 'EXPIRED' : 'HOLDING' }}
@@ -129,9 +132,13 @@ export default {
       }
     },
     async cancelHold() {
-      await this.seatHoldMock.releaseHold(this.$route.params.holdId)
-      this.open = false
-      this.$router.push('/')
+      try {
+        await this.seatHoldMock.releaseHold(this.$route.params.holdId)
+        this.open = false
+        this.$router.push('/')
+      } catch (e) {
+        this.error = e?.message || '좌석 해제에 실패했어요.'
+      }
     }
   }
 }

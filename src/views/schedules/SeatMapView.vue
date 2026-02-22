@@ -86,45 +86,9 @@ export default {
       this.loading = true
       try {
         const scheduleId = this.$route.params.scheduleId
-        let seatMap
-        
-        try {
-          seatMap = await this.api.get(ENDPOINTS.seatMap(scheduleId))
-        } catch (err) {
-          // API 실패 시 더미 데이터에서 좌석맵 찾기
-          console.warn('API call failed, using dummy data', err)
-          
-          // 회차 정보에서 좌석맵 정보 가져오기
-          const schedules = JSON.parse(localStorage.getItem('createdSchedules') || '[]')
-          const schedule = schedules.find((s) => s.id === scheduleId)
-          
-          if (schedule) {
-            // 공연 정보에서 seat_map_id 가져오기
-            const concerts = JSON.parse(localStorage.getItem('createdConcerts') || '[]')
-            const concert = concerts.find((c) => c.id === schedule.concert_id)
-            
-            if (concert && concert.seat_map_id) {
-              // 좌석맵 정보 가져오기 (localStorage + MOCK)
-              const createdSeatMaps = JSON.parse(localStorage.getItem('createdSeatMaps') || '[]')
-              const { MOCK_SEAT_MAPS } = await import('../../mocks/venues')
-              const allSeatMaps = [...createdSeatMaps, ...MOCK_SEAT_MAPS]
-              
-              // 문자열/숫자 모두 비교
-              seatMap = allSeatMaps.find((sm) => 
-                sm.id === concert.seat_map_id || 
-                String(sm.id) === String(concert.seat_map_id)
-              )
-            }
-          }
-          
-          // 기본 더미 좌석맵 사용 (좌석맵 정보가 없을 경우)
-          if (!seatMap) {
-            const { MOCK_SEAT_MAPS } = await import('../../mocks/venues')
-            seatMap = MOCK_SEAT_MAPS[0] || null
-          }
-        }
-        
-        this.seatMap = seatMap
+        this.seatMap = await this.api.get(ENDPOINTS.seatMap(scheduleId))
+      } catch (err) {
+        this.seatMap = null
       } finally {
         this.loading = false
       }

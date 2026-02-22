@@ -106,7 +106,7 @@
         <p v-if="successMessage" class="text-sm text-green-600">{{ successMessage }}</p>
         <div class="flex justify-end gap-2">
           <UiButton variant="ghost" type="button" class="h-11 px-4" @click="$router.push('/organizer/concerts')">취소</UiButton>
-          <UiButton as="button" type="submit" form="concert-create-form" class="h-11 px-5" :disabled="saving">생성 (더미)</UiButton>
+          <UiButton as="button" type="submit" form="concert-create-form" class="h-11 px-5" :disabled="saving">공연 생성</UiButton>
         </div>
       </form>
     </UiCard>
@@ -201,7 +201,6 @@ import UiBadge from '../../components/common/UiBadge.vue'
 import UiModal from '../../components/common/UiModal.vue'
 import { useApi } from '../../composables/useApi'
 import { ENDPOINTS } from '../../lib/api/endpoints'
-import { MOCK_VENUES, MOCK_SEAT_MAPS } from '../../mocks/venues'
 
 // ERD: concert 테이블
 // 필수: title, status (DRAFT/PUBLISHED), seat_map_id
@@ -279,15 +278,11 @@ export default {
     async loadVenues() {
       this.loadingVenues = true
       try {
-        // 실제 API 호출 또는 mock 데이터 사용
-        const res = await this.api.get(ENDPOINTS.venues()).catch(() => {
-          // API가 없으면 mock 데이터 사용
-          return { items: MOCK_VENUES }
-        })
-        this.venues = res.items || res || MOCK_VENUES
+        const res = await this.api.get(ENDPOINTS.venues())
+        this.venues = Array.isArray(res) ? res : res?.content || res?.items || []
       } catch (err) {
-        console.warn('Failed to load venues, using mock data', err)
-        this.venues = MOCK_VENUES
+        console.warn('Failed to load venues', err)
+        this.venues = []
       } finally {
         this.loadingVenues = false
       }
@@ -301,20 +296,12 @@ export default {
       this.loadingSeatMaps = true
       this.form.seat_map_id = null
       try {
-        // 실제 API 호출 또는 mock 데이터 사용
-        const res = await this.api.get(ENDPOINTS.venueSeatMaps(this.form.venue_id)).catch(() => {
-          // API가 없으면 mock 데이터에서 필터링
-          // ERD: venue_id 필드로 필터링
-          const filtered = MOCK_SEAT_MAPS.filter((sm) => sm.venue_id === this.form.venue_id)
-          return { items: filtered }
-        })
-        // PUBLISHED 상태인 좌석맵만 표시 (주최자가 사용 가능한 것만)
-        const allSeatMaps = res.items || res || []
+        const res = await this.api.get(ENDPOINTS.venueSeatMaps(this.form.venue_id))
+        const allSeatMaps = Array.isArray(res) ? res : res?.content || res?.items || []
         this.seatMaps = allSeatMaps.filter((sm) => sm.status === 'PUBLISHED' || !sm.status)
       } catch (err) {
-        console.warn('Failed to load seat maps, using mock data', err)
-        const filtered = MOCK_SEAT_MAPS.filter((sm) => sm.venue_id === this.form.venue_id)
-        this.seatMaps = filtered.filter((sm) => sm.status === 'PUBLISHED' || !sm.status)
+        console.warn('Failed to load seat maps', err)
+        this.seatMaps = []
       } finally {
         this.loadingSeatMaps = false
       }
@@ -323,45 +310,27 @@ export default {
       this.errorMessage = ''
       this.successMessage = ''
       this.saving = true
-      
       const payload = {
         title: this.form.title || DUMMY_CONCERT.title,
         status: this.form.status || DUMMY_CONCERT.status,
-        seat_map_id: this.form.seat_map_id
+        seatMapId: this.form.seat_map_id
       }
       if (this.form.age_limit !== null && this.form.age_limit !== undefined && this.form.age_limit !== '') {
-        payload.age_limit = Number(this.form.age_limit)
+        payload.ageLimit = Number(this.form.age_limit)
       }
-      
       try {
-        // 더미: API 호출 시도하되 실패해도 localStorage에 저장
-        let concertId
-        try {
-          const res = await this.api.post(ENDPOINTS.organizerCreateConcert(), payload)
-          concertId = res.id || `concert-${Date.now()}`
-        } catch (err) {
-          // API 실패 시 더미 ID 생성
-          concertId = `concert-${Date.now()}`
-          console.warn('API call failed, using dummy data', err)
+        const res = await this.api.post(ENDPOINTS.organizerCreateConcert(), payload)
+        let concertId = res?.id ?? res?.concertId
+        if (concertId == null) {
+          const list = await this.api.get(ENDPOINTS.organizerConcerts()).catch(() => [])
+          const arr = Array.isArray(list) ? list : (list?.items ?? list?.content ?? [])
+          const found = arr.find((c) => c.title === payload.title)
+          concertId = found?.id
         }
-        
-        // 더미 데이터 저장 (ERD 필드명만 사용)
-        const concert = {
-          id: concertId,
-          ...payload,
-          member_id: 1, // 더미
-          created_at: new Date().toISOString()
-        }
-        
-        // localStorage에 저장
-        const stored = JSON.parse(localStorage.getItem('createdConcerts') || '[]')
-        stored.push(concert)
-        localStorage.setItem('createdConcerts', JSON.stringify(stored))
-        
-        this.createdConcert = concert
-        this.successMessage = '공연이 생성되었습니다. 회차를 추가하세요.'
-        
-        // 회차 생성 모달 열기
+        this.createdConcert = { id: concertId, title: payload.title, ...res }
+        this.successMessage = concertId
+          ? '공연이 생성되었습니다. 회차를 추가하세요.'
+          : '공연이 생성되었습니다. 목록에서 해당 공연을 선택해 회차를 추가하세요.'
         this.scheduleForm = getDefaultScheduleForm()
         this.scheduleModalOpen = true
       } catch (err) {
@@ -371,54 +340,28 @@ export default {
       }
     },
     async submitSchedule() {
-      if (!this.createdConcert) return
-      
+      if (!this.createdConcert?.id) {
+        this.errorMessage = '공연 ID를 확인할 수 없습니다. 목록에서 해당 공연을 선택한 뒤 회차를 추가하세요.'
+        return
+      }
       this.savingSchedule = true
       const concertId = this.createdConcert.id
-      
-      const payload = {
-        play_time: this.scheduleForm.play_time,
-        booking_start: this.scheduleForm.booking_start,
-        booking_end: this.scheduleForm.booking_end,
+      const schedulePayload = {
+        playTime: this.scheduleForm.play_time,
+        bookingStart: this.scheduleForm.booking_start,
+        bookingEnd: this.scheduleForm.booking_end,
         status: this.scheduleForm.status
       }
-      if (this.scheduleForm.concert_thum_img_url) {
-        payload.concert_thum_img_url = this.scheduleForm.concert_thum_img_url
-      }
-      if (this.scheduleForm.concert_detail_img_url) {
-        payload.concert_detail_img_url = this.scheduleForm.concert_detail_img_url
-      }
-      
+      const formData = new FormData()
+      formData.append('schedule', new Blob([JSON.stringify(schedulePayload)], { type: 'application/json' }))
       try {
-        // 더미: API 호출 시도하되 실패해도 localStorage에 저장
-        let scheduleId
-        try {
-          const res = await this.api.post(ENDPOINTS.organizerCreateSchedule(concertId), payload)
-          scheduleId = res.id || `schedule-${Date.now()}`
-        } catch (err) {
-          scheduleId = `schedule-${Date.now()}`
-          console.warn('API call failed, using dummy data', err)
-        }
-        
-        // 더미 데이터 저장
-        const schedule = {
-          id: scheduleId,
-          concert_id: concertId,
-          ...payload,
-          created_at: new Date().toISOString()
-        }
-        
-        // localStorage에 저장
-        const stored = JSON.parse(localStorage.getItem('createdSchedules') || '[]')
-        stored.push(schedule)
-        localStorage.setItem('createdSchedules', JSON.stringify(stored))
-        
+        await this.api.post(ENDPOINTS.organizerCreateSchedule(concertId), formData)
         this.successMessage = '공연과 회차가 생성되었습니다!'
         setTimeout(() => {
           this.$router.push(`/organizer/concerts/${concertId}/schedules`)
         }, 1500)
       } catch (err) {
-        console.error('Failed to create schedule', err)
+        this.errorMessage = err.message || '회차 생성에 실패했습니다.'
       } finally {
         this.savingSchedule = false
       }

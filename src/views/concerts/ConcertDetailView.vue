@@ -99,50 +99,20 @@ export default {
     async load() {
       this.loading = true
       try {
-        let concert
-        try {
-          concert = await this.api.get(ENDPOINTS.concert(this.$route.params.concertId))
-        } catch (err) {
-          // API 실패 시 localStorage에서 더미 데이터 로드
-          console.warn('API call failed, using dummy data', err)
-          const stored = JSON.parse(localStorage.getItem('createdConcerts') || '[]')
-          concert = stored.find((c) => c.id === this.$route.params.concertId)
-          
-          if (concert) {
-            // 화면 표시 형식으로 변환
-            // ERD: concert.seat_map_id를 통해 venue 찾기
-            let venue = { name: '공연장', address: '' }
-            if (concert.seat_map_id) {
-              const createdSeatMaps = JSON.parse(localStorage.getItem('createdSeatMaps') || '[]')
-              const { MOCK_SEAT_MAPS, MOCK_VENUES } = await import('../../mocks/venues')
-              const allSeatMaps = [...createdSeatMaps, ...MOCK_SEAT_MAPS]
-              const seatMap = allSeatMaps.find((sm) => sm.id === concert.seat_map_id)
-              if (seatMap && seatMap.venue_id) {
-                const createdVenues = JSON.parse(localStorage.getItem('createdVenues') || '[]')
-                const allVenues = [...createdVenues, ...MOCK_VENUES]
-                venue = allVenues.find((v) => v.id === seatMap.venue_id) || { name: '공연장', address: '' }
-              }
-            }
-            
-            concert = {
-              ...concert,
-              shortDesc: '새로 등록된 공연입니다',
-              description: '공연 상세 정보를 확인하세요.',
-              category: '콘서트',
-              rating: '4.5',
-              priceRange: '₩50,000 ~ ₩150,000',
-              posterUrl: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?auto=format&fit=crop&w=800&q=60',
-              tags: ['인기', '신규'],
-              venue: {
-                id: venue.id,
-                name: venue.name,
-                address: venue.address || ''
-              }
-            }
-          }
+        const concert = await this.api.get(ENDPOINTS.concert(this.$route.params.concertId))
+        this.item = {
+          ...concert,
+          shortDesc: concert.shortDesc ?? concert.description ?? '',
+          description: concert.description ?? '',
+          category: concert.category ?? '콘서트',
+          rating: concert.rating ?? '0',
+          priceRange: concert.priceRange ?? '',
+          posterUrl: concert.posterUrl ?? concert.thumbnailUrl ?? concert.imageUrl ?? 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?auto=format&fit=crop&w=800&q=60',
+          tags: concert.tags ?? [],
+          venue: concert.venue ?? { id: null, name: '공연장', address: '' }
         }
-        
-        this.item = concert
+      } catch (err) {
+        this.item = null
       } finally {
         this.loading = false
       }
