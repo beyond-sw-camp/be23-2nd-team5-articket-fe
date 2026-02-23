@@ -19,7 +19,7 @@ export const ENDPOINTS = {
   seatHold: (seatId) => `/seat-holds/${seatId}`,
   orders: () => `/orders`,
   payments: () => `/payments`,
-  order: (orderId) => `/orders/${orderId}`,
+  order: (orderId) => `/order/${orderId}`,
   orderCancel: (orderId) => `/orders/${orderId}/cancel`,
 
   // ORGANIZER
