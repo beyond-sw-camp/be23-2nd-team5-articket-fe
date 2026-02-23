@@ -69,8 +69,8 @@ export default {
     }
   },
   created() {
-    this.api = useApi(),
-      this.isVerifiedAge()
+    this.api = useApi()
+    this.isVerifiedAge()
   },
   mounted() {
     this.load()

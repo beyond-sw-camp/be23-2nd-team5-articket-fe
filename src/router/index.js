@@ -58,6 +58,7 @@ import ForbiddenView from '../views/system/ForbiddenView.vue'
 import NotFoundView from '../views/system/NotFoundView.vue'
 import GoogleRedirect from '../views/member/oauth/GoogleRedirect.vue'
 import KakaoRedirect from '../views/member/oauth/KakaoRedirect.vue'
+import Ordering from '../views/me/Ordering.vue'
 
 const withLayout = (component, meta = {}) => ({
   component: DefaultLayout,
@@ -89,6 +90,8 @@ const routes = [
   { path: '/checkout', ...withLayout(CheckoutView, { requiresAuth: true, requiredRole: 'USER' }) },
   { path: '/orders/:orderId', ...withLayout(OrderStatusView, { requiresAuth: true, requiredRole: 'USER' }) },
   { path: '/orders/:orderId/cancel', ...withLayout(OrderCancelView, { requiresAuth: true, requiredRole: 'USER' }) },
+
+  { path: '/ordering', ...withLayout(Ordering, { requiresAuth: true, requiredRole: 'USER' }) },
 
   { path: '/organizer', ...withLayout(OrganizerDashboardView, { requiresAuth: true, requiredRole: 'ORGANIZER' }) },
   { path: '/organizer/concerts', ...withLayout(OrganizerConcertsView, { requiresAuth: true, requiredRole: 'ORGANIZER' }) },

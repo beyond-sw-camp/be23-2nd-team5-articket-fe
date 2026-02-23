@@ -59,7 +59,7 @@ export default {
         { key: 'status', label: '상태' },
         { key: 'createdAt', label: '생성일' },
         { key: 'totalAmount', label: '금액' }
-      ]
+      ],
     }
   },
   created() {
@@ -72,7 +72,7 @@ export default {
     async load() {
       this.loading = true
       try {
-        const res = await this.api.get(ENDPOINTS.myOrders())
+        const res = await this.api.get(ENDPOINTS.order())
         this.items = res.items || []
       } finally {
         this.loading = false
