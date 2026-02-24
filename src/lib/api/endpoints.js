@@ -87,5 +87,29 @@ export const ENDPOINTS = {
   venueConcerts: (venueId) => `/venues/${venueId}/concerts`,
   venues: () => `/venues`,
   venueSeatMaps: (venueId, params) => ENDPOINTS.venueSeatMapsList(venueId, params || {}),
+
+  // PERFORMERS (COMMON / MEMBER / ORGANIZER)
+  performers: (params = {}) => {
+    const p = new URLSearchParams()
+    if (params.name != null && params.name !== '') p.set('name', params.name)
+    if (params.page != null) p.set('page', params.page)
+    if (params.size != null) p.set('size', params.size)
+    const q = p.toString()
+    return `/performers${q ? `?${q}` : ''}`
+  },
+  performerDetail: (performerId) => `/performers/${performerId}`,
+  performerConcerts: (performerId) => `/performers/${performerId}/concerts`,
+  performerSchedules: (performerId) => `/performers/${performerId}/schedules`,
+  performerLike: () => `/performers/like`,
+  performerDeleteLike: () => `/performers/deleteLike`,
+  performerLikeList: () => `/performers/likeList`,
+  performerCreate: () => `/performers/create`,
+
+  // SCHEDULE CASTINGS (COMMON read / ORGANIZER write)
+  schedulePerformers: (scheduleId) => `/schedules/${scheduleId}/performers`,
+  schedulePerformerDetail: (scheduleId, performerId) => `/schedules/${scheduleId}/performers/${performerId}`,
+  scheduleOrganizerAddPerformer: (scheduleId) => `/schedules/organizer/${scheduleId}/performers`,
+  scheduleOrganizerUpdatePerformer: (scheduleId, performerId) => `/schedules/organizer/${scheduleId}/performers/${performerId}`,
+  scheduleOrganizerDeletePerformer: (scheduleId, performerId) => `/schedules/organizer/${scheduleId}/performers/${performerId}`,
 }
 

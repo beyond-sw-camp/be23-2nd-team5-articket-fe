@@ -1,8 +1,11 @@
 <template>
   <div class="min-h-screen bg-slate-50">
-    <header class="fixed inset-x-0 top-0 z-50 border-b border-slate-200 bg-white/85 backdrop-blur">
-      <div class="mx-auto max-w-6xl px-4">
-        <div class="flex items-center gap-3 py-3">
+    <header
+      class="fixed inset-x-0 top-0 z-50 border-b transition-all duration-500"
+      :class="scrolled ? 'border-slate-200 bg-white/85 py-4 shadow-sm backdrop-blur-xl' : 'border-transparent bg-transparent py-6'"
+    >
+      <div class="mx-auto max-w-6xl px-4 py-1">
+        <div class="flex items-center gap-3">
           <RouterLink to="/" class="flex items-center gap-2">
             <div class="h-9 w-9 rounded-xl bg-red-600 shadow-sm"></div>
             <div class="leading-tight">
@@ -49,6 +52,9 @@
                   <RouterLink to="/organizer/concerts/new"
                     class="block px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
                     @click="organizerMenuOpen = false">공연 등록</RouterLink>
+                  <RouterLink to="/organizer/performers"
+                    class="block px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                    @click="organizerMenuOpen = false">아티스트 관리</RouterLink>
                 </div>
               </div>
 
@@ -96,7 +102,7 @@
           </div>
         </div>
 
-        <nav class="flex items-center gap-2 overflow-x-auto pb-3">
+        <nav class="mt-3 flex items-center gap-2 overflow-x-auto py-3">
           <RouterLink v-for="c in categories" :key="c.key" :to="c.to"
             class="whitespace-nowrap rounded-2xl border px-3 py-2 text-sm font-semibold shadow-sm transition" :class="currentCat === c.key
               ? 'border-red-200 bg-red-50 text-red-700'
@@ -113,7 +119,7 @@
       </div>
     </header>
 
-    <main class="mx-auto max-w-6xl px-4 pb-16 pt-32">
+    <main class="mx-auto max-w-6xl px-4 pb-16 pt-40">
       <slot />
       <RouterView />
     </main>
@@ -157,6 +163,7 @@ export default {
         { key: 'concert', label: '콘서트', to: { path: '/', query: { cat: 'concert' } } },
         { key: 'play', label: '연극', to: { path: '/', query: { cat: 'play' } } },
         { key: 'classic', label: '클래식', to: { path: '/', query: { cat: 'classic' } } },
+
         { key: 'sports', label: '스포츠', to: { path: '/', query: { cat: 'sports' } } },
         { key: 'leisure', label: '레저', to: { path: '/', query: { cat: 'leisure' } } }
       ],
@@ -164,7 +171,7 @@ export default {
       tokenVersion: 0,
       adminMenuOpen: false,
       organizerMenuOpen: false,
-
+      scrolled: false
     }
   },
   computed: {
@@ -187,13 +194,16 @@ export default {
     this.role = role
     this._logoutComposable = logout
     this._syncFromToken = syncFromToken
-
     window.addEventListener('storage', this.onStorage)
     this.bumpTokenVersion()
-
+  },
+  mounted() {
+    window.addEventListener('scroll', this.onScroll, { passive: true })
+    this.onScroll()
   },
   beforeUnmount() {
     window.removeEventListener('storage', this.onStorage)
+    window.removeEventListener('scroll', this.onScroll)
   },
   watch: {
     '$route.query.q'(v) {
@@ -206,7 +216,9 @@ export default {
     }
   },
   methods: {
-
+    onScroll() {
+      this.scrolled = window.scrollY > 20
+    },
     bumpTokenVersion() {
       this.tokenVersion++
     },
