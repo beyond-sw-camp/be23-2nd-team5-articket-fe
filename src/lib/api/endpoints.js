@@ -19,7 +19,7 @@ export const ENDPOINTS = {
   myOrder: (orderId) => `/users/me/orders/${orderId}`,
   seatHold: (seatId) => `/seat-holds/${seatId}`,
   orders: () => `/orders`,
-  payments: () => `/payments`,
+  payment: () => `/payment`,
   order: (orderId) => `/order/${orderId}`,
   orderCancel: (orderId) => `/orders/${orderId}/cancel`,
 
