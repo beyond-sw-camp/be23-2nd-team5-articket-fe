@@ -1,5 +1,27 @@
 import axios from 'axios'
 
+/**
+ * 서버 에러 응답 body에서 메시지 문자열 추출 (CommonErrorDto, Spring 등 다양한 형식 지원)
+ * @param {any} data - error.response.data (객체 또는 문자열)
+ * @returns {string|null}
+ */
+export function getMessageFromResponse(data) {
+  if (data == null) return null
+  if (typeof data === 'string' && data.trim()) return data.trim()
+  if (typeof data !== 'object') return null
+  const msg =
+    data.error_message ??
+    data.message ??
+    data.error ??
+    data.msg ??
+    data.errorMessage ??
+    data.errorDescription ??
+    data.reason ??
+    (Array.isArray(data.details) ? data.details[0]?.reason : null) ??
+    (Array.isArray(data.errors) ? (data.errors[0]?.defaultMessage ?? data.errors[0]?.message ?? (typeof data.errors[0] === 'string' ? data.errors[0] : null)) : null)
+  return msg != null && String(msg).trim() ? String(msg).trim() : null
+}
+
 const DEFAULTS = {
   baseUrl: import.meta.env.VITE_API_BASE || 'http://localhost:8082',
 }
@@ -106,11 +128,8 @@ export function createApiClient(opts = {}) {
     } catch (error) {
       const status = error.response?.status
       const data = error.response?.data
-      const errMsg =
-        data?.message ??
-        (typeof data === 'string' ? data : null) ??
-        error.message
-      const err = new Error(errMsg || `API Error (${status ?? 'network'})`)
+      const errMsg = getMessageFromResponse(data) ?? error.message ?? `API Error (${status ?? 'network'})`
+      const err = new Error(errMsg)
       err.status = status
       err.responseData = data
       throw err

@@ -30,6 +30,28 @@
           <div class="mt-1 text-sm font-semibold text-slate-900">{{ profile.phoneNumber || '-' }}</div>
         </div>
       </div>
+
+      <!-- 주최자 신청 현황 (organizerStatus 있을 때만) -->
+      <div
+        v-if="profile.organizerStatus"
+        class="mt-4 rounded-2xl border p-4 shadow-sm"
+        :class="organizerStatusClass"
+      >
+        <div class="text-xs font-semibold text-slate-500">주최자 신청 현황</div>
+        <div class="mt-1 flex items-center gap-2">
+          <span class="text-sm font-semibold">{{ organizerStatusLabel }}</span>
+          <UiBadge v-if="profile.organizerStatus === 'PENDING'" tone="soft">검토 중</UiBadge>
+          <UiBadge v-else-if="profile.organizerStatus === 'APPROVED'" tone="solid">승인됨</UiBadge>
+          <UiBadge v-else-if="profile.organizerStatus === 'REJECTED'" tone="soft" class="bg-red-50 text-red-700">거절됨</UiBadge>
+        </div>
+        <p v-if="profile.organizerStatus === 'PENDING'" class="mt-2 text-xs text-slate-600">
+          관리자 검토 후 승인되면 공연 등록·관리 메뉴를 이용하실 수 있습니다.
+        </p>
+        <p v-else-if="profile.organizerStatus === 'REJECTED'" class="mt-2 text-xs text-slate-600">
+          문의 사항이 있으시면 고객센터로 연락해 주세요.
+        </p>
+      </div>
+
       <div class="mt-4 flex flex-wrap gap-2">
         <UiButton class="h-11 px-5" @click="$router.push('/me/orders')">내 주문 목록</UiButton>
         <UiButton variant="tonal" class="h-11 px-5" @click="$router.push('/me/performers/likes')">좋아요한 아티스트</UiButton>
@@ -66,7 +88,23 @@ export default {
       loading: false,
       error: '',
       api: null,
-      isVerified: null
+      isVerified: null,
+    }
+  },
+  computed: {
+    organizerStatusLabel() {
+      const s = this.profile?.organizerStatus
+      if (s === 'PENDING') return '검토 중'
+      if (s === 'APPROVED') return '승인됨'
+      if (s === 'REJECTED') return '거절됨'
+      return this.profile?.organizerStatus ?? '-'
+    },
+    organizerStatusClass() {
+      const s = this.profile?.organizerStatus
+      if (s === 'PENDING') return 'border-amber-200 bg-amber-50'
+      if (s === 'APPROVED') return 'border-green-200 bg-green-50'
+      if (s === 'REJECTED') return 'border-red-200 bg-red-50'
+      return 'border-slate-200 bg-slate-50'
     }
   },
   created() {
@@ -118,9 +156,7 @@ export default {
       } catch (e) {
         this.error = e?.message || '본인인증 확인에 실패했습니다.'
       }
-
-    },
-  },
-
+    }
+  }
 }
 </script>

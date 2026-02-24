@@ -97,9 +97,14 @@ export default {
   },
   methods: {
     async load() {
+      const concertId = this.$route.params.concertId
+      if (concertId == null || concertId === '') {
+        this.item = null
+        return
+      }
       this.loading = true
       try {
-        const concert = await this.api.get(ENDPOINTS.concert(this.$route.params.concertId))
+        const concert = await this.api.get(ENDPOINTS.concert(concertId))
         this.item = {
           ...concert,
           shortDesc: concert.shortDesc ?? concert.description ?? '',

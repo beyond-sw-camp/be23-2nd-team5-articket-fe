@@ -223,6 +223,7 @@ export default {
   },
   methods: {
     async loadVenue() {
+      if (this.venueId == null || this.venueId === '') return
       this.errorMessage = ''
       this.successMessage = ''
       try {
@@ -233,6 +234,7 @@ export default {
       }
     },
     async submitUpdate() {
+      if (this.venueId == null || this.venueId === '') return
       this.errorMessage = ''
       this.successMessage = ''
       this.saving = true

@@ -63,6 +63,7 @@ export default {
   },
   methods: {
     async loadDetail() {
+      if (this.seatMapId == null || this.seatMapId === '') return
       try {
         const detail = await this.api.get(ENDPOINTS.adminSeatMapDetail(this.seatMapId))
         this.currentStatus = detail?.status || ''
@@ -71,6 +72,7 @@ export default {
       }
     },
     async updateStatus(status) {
+      if (this.seatMapId == null || this.seatMapId === '') return
       this.loading = true
       this.errorMessage = ''
       this.successMessage = ''

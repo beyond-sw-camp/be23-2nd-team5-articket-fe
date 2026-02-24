@@ -35,8 +35,18 @@
             </UiButton>
 
             <div class="flex items-center gap-2">
+              <!-- 주최자 승인 대기 (USER + organizerStatus PENDING): 클릭 시 모달 -->
+              <div v-if="isOrganizerPending" class="inline-block">
+                <UiButton
+                  variant="tonal"
+                  class="h-10 rounded-xl px-3 text-slate-600"
+                  @click="showOrganizerPendingModal = true"
+                >
+                  주최자 (승인 대기)
+                </UiButton>
+              </div>
               <!-- ORGANIZER 메뉴 (JWT role 기준) -->
-              <div v-if="roleValue === 'ORGANIZER'" class="relative inline-block">
+              <div v-else-if="roleValue === 'ORGANIZER'" class="relative inline-block">
                 <UiButton variant="tonal" class="h-10 px-3 rounded-xl text-slate-800"
                   @click="organizerMenuOpen = !organizerMenuOpen">
                   주최자
@@ -77,6 +87,9 @@
                   <RouterLink to="/admin/orders"
                     class="block px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
                     @click="adminMenuOpen = false">주문</RouterLink>
+                  <RouterLink to="/admin/pending-organizers"
+                    class="block px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                    @click="adminMenuOpen = false">주최자 승인</RouterLink>
                 </div>
               </div>
 
@@ -119,10 +132,46 @@
       </div>
     </header>
 
-    <main class="mx-auto max-w-6xl px-4 pb-16 pt-40">
+    <!-- 주최자 신청 검토 중 배너 (오늘 하루 닫기) -->
+    <div
+      v-if="showOrganizerBanner"
+      class="fixed left-0 right-0 top-[var(--header-height,140px)] z-40 border-b border-amber-200 bg-amber-50 px-4 py-3 shadow-sm"
+    >
+      <div class="mx-auto flex max-w-6xl items-center justify-between gap-3">
+        <p class="text-sm font-medium text-amber-900">
+          주최자 신청이 검토 중입니다. 승인 후 공연 등록 메뉴를 이용할 수 있습니다.
+        </p>
+        <button
+          type="button"
+          class="shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold text-amber-800 hover:bg-amber-100"
+          @click="dismissOrganizerBanner"
+        >
+          오늘 하루 닫기
+        </button>
+      </div>
+    </div>
+
+    <main
+      class="mx-auto max-w-6xl px-4 pb-16 transition-[padding]"
+      :class="showOrganizerBanner ? 'pt-52' : 'pt-40'"
+    >
       <slot />
       <RouterView />
     </main>
+
+    <!-- 주최자 승인 대기 모달 (USER + PENDING일 때 주최자 메뉴 대신 클릭 시) -->
+    <UiModal
+      :open="showOrganizerPendingModal"
+      title="주최자 메뉴"
+      @close="showOrganizerPendingModal = false"
+    >
+      <p class="text-sm text-slate-700">
+        승인 후 이용 가능합니다. 현재 검토 중입니다.
+      </p>
+      <template #footer>
+        <UiButton class="h-10 px-4" @click="showOrganizerPendingModal = false">확인</UiButton>
+      </template>
+    </UiModal>
 
     <footer class="border-t border-slate-200 bg-white">
       <div class="mx-auto max-w-6xl px-4 py-8">
@@ -139,7 +188,9 @@
 import { Search, Bell, User, LogIn, MapPin, ShieldAlert } from 'lucide-vue-next'
 import UiButton from '../components/common/UiButton.vue'
 import UiBadge from '../components/common/UiBadge.vue'
+import UiModal from '../components/common/UiModal.vue'
 import { useRole } from '../composables/useRole'
+import { useMe } from '../composables/useMe'
 import PortOne from '@portone/browser-sdk/v2';
 
 export default {
@@ -152,11 +203,15 @@ export default {
     MapPin,
     ShieldAlert,
     UiButton,
-    UiBadge
+    UiBadge,
+    UiModal
   },
   data() {
     return {
       q: this.$route.query.q || '',
+      _me: null,
+      organizerBannerDismissed: false,
+      showOrganizerPendingModal: false,
       categories: [
         { key: 'all', label: '전체', to: { path: '/', query: {} } },
         { key: 'musical', label: '뮤지컬', to: { path: '/', query: { cat: 'musical' } } },
@@ -187,6 +242,23 @@ export default {
     },
     roleValue() {
       return this.role?.value ?? this.role ?? 'GUEST'
+    },
+    meProfile() {
+      return this._me?.profile?.value ?? null
+    },
+    isOrganizerPending() {
+      return this.meProfile?.organizerStatus === 'PENDING'
+    },
+    showOrganizerBanner() {
+      if (!this.isLoggedIn || this.organizerBannerDismissed) return false
+      if (this.meProfile?.organizerStatus !== 'PENDING') return false
+      const key = 'organizerBannerDismissed'
+      try {
+        const dismissed = sessionStorage.getItem(key)
+        const today = new Date().toISOString().slice(0, 10)
+        if (dismissed === today) return false
+      } catch {}
+      return true
     }
   },
   created() {
@@ -194,10 +266,18 @@ export default {
     this.role = role
     this._logoutComposable = logout
     this._syncFromToken = syncFromToken
+    this._me = useMe()
+    const key = 'organizerBannerDismissed'
+    try {
+      const dismissed = sessionStorage.getItem(key)
+      const today = new Date().toISOString().slice(0, 10)
+      if (dismissed === today) this.organizerBannerDismissed = true
+    } catch {}
     window.addEventListener('storage', this.onStorage)
     this.bumpTokenVersion()
   },
   mounted() {
+    if (this.isLoggedIn && this._me?.refetch) this._me.refetch()
     window.addEventListener('scroll', this.onScroll, { passive: true })
     this.onScroll()
   },
@@ -213,6 +293,9 @@ export default {
       this.adminMenuOpen = false
       this.organizerMenuOpen = false
       this.bumpTokenVersion()
+    },
+    isLoggedIn(v) {
+      if (v && this._me?.refetch) this._me.refetch()
     }
   },
   methods: {
@@ -231,6 +314,12 @@ export default {
     submitSearch() {
       this.$router.push({ path: '/', query: { ...this.$route.query, q: this.q || undefined } })
     },
+    dismissOrganizerBanner() {
+      try {
+        sessionStorage.setItem('organizerBannerDismissed', new Date().toISOString().slice(0, 10))
+      } catch {}
+      this.organizerBannerDismissed = true
+    },
 
     async handleLogout() {
       localStorage.removeItem('accessToken')
@@ -238,6 +327,9 @@ export default {
       localStorage.removeItem('isVerified')
       if (typeof this._logoutComposable === 'function') {
         await this._logoutComposable()
+      }
+      if (typeof this._me?.clear === 'function') {
+        this._me.clear()
       }
 
       this.bumpTokenVersion()

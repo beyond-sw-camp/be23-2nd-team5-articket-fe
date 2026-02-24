@@ -247,13 +247,15 @@ export default {
       this.load()
     },
     async toggleLike(row) {
+      const id = row?.id
+      if (id == null || id === '') return
       try {
         if (row.liked) {
-          await this.api.del(ENDPOINTS.performerDeleteLike() + '?id=' + row.id)
+          await this.api.del(ENDPOINTS.performerDeleteLike() + '?id=' + id)
           row.liked = false
           if (row.likeCount != null) row.likeCount--
         } else {
-          await this.api.post(ENDPOINTS.performerLike() + '?id=' + row.id)
+          await this.api.post(ENDPOINTS.performerLike() + '?id=' + id)
           row.liked = true
           if (row.likeCount != null) row.likeCount++
         }

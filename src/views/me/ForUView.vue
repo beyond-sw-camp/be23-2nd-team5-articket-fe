@@ -54,17 +54,17 @@
           <!-- 좋아요한 아티스트 -->
           <button
             v-for="p in likedPerformers"
-            :key="p.id"
+            :key="p.performerId"
             class="shrink-0 flex flex-col items-center gap-1.5"
-            @click="selectedId = p.id"
+            @click="selectedId = p.performerId"
           >
             <div class="relative">
               <img
-                v-if="p.profileImgUrl"
-                :src="p.profileImgUrl"
-                :alt="p.name"
+                v-if="p.performerProfileImgUrl"
+                :src="p.performerProfileImgUrl"
+                :alt="p.performerName"
                 class="h-14 w-14 rounded-full object-cover border-2 transition"
-                :class="selectedId === p.id
+                :class="selectedId === p.performerId
                   ? 'border-red-500 scale-105 shadow-md'
                   : 'border-slate-200 hover:border-red-300'"
               />
@@ -72,19 +72,19 @@
                 v-else
                 class="h-14 w-14 rounded-full border-2 flex items-center justify-center text-white text-lg font-bold transition"
                 :style="{ background: 'linear-gradient(135deg, #f43f5e, #ec4899)' }"
-                :class="selectedId === p.id ? 'border-red-500 scale-105 shadow-md' : 'border-transparent'"
+                :class="selectedId === p.performerId ? 'border-red-500 scale-105 shadow-md' : 'border-transparent'"
               >
-                {{ p.name?.charAt(0) ?? '?' }}
+                {{ (p.performerName || '?').charAt(0) }}
               </div>
               <div
-                v-if="selectedId === p.id"
+                v-if="selectedId === p.performerId"
                 class="absolute -bottom-0.5 left-1/2 -translate-x-1/2 h-1.5 w-1.5 rounded-full bg-red-500"
               ></div>
             </div>
             <span
               class="max-w-[56px] truncate text-xs font-medium whitespace-nowrap"
-              :class="selectedId === p.id ? 'text-red-600' : 'text-slate-500'"
-            >{{ p.name }}</span>
+              :class="selectedId === p.performerId ? 'text-red-600' : 'text-slate-500'"
+            >{{ p.performerName }}</span>
           </button>
 
           <!-- 추가 슬롯 -->
@@ -194,25 +194,25 @@
             <ul class="grid gap-1">
               <li
                 v-for="p in likedPerformers.slice(0, 5)"
-                :key="p.id"
+                :key="p.performerId"
                 class="flex cursor-pointer items-center gap-3 rounded-xl px-2 py-2 transition hover:bg-slate-50"
-                @click="$router.push(`/performers/${p.id}`)"
+                @click="$router.push(`/performers/${p.performerId}`)"
               >
                 <img
-                  v-if="p.profileImgUrl"
-                  :src="p.profileImgUrl"
-                  :alt="p.name"
+                  v-if="p.performerProfileImgUrl"
+                  :src="p.performerProfileImgUrl"
+                  :alt="p.performerName"
                   class="h-9 w-9 shrink-0 rounded-full border border-slate-200 object-cover"
                 />
                 <div
                   v-else
                   class="h-9 w-9 shrink-0 rounded-full bg-gradient-to-br from-red-400 to-pink-500 flex items-center justify-center text-sm font-bold text-white"
                 >
-                  {{ p.name?.charAt(0) ?? '?' }}
+                  {{ (p.performerName || '?').charAt(0) }}
                 </div>
                 <div class="min-w-0 flex-1">
-                  <div class="truncate text-sm font-semibold text-slate-800">{{ p.name }}</div>
-                  <div class="text-xs text-slate-400">좋아요 {{ p.likeCount.toLocaleString() }}명</div>
+                  <div class="truncate text-sm font-semibold text-slate-800">{{ p.performerName }}</div>
+                  <div class="text-xs text-slate-400">좋아요한 아티스트</div>
                 </div>
                 <ChevronRight class="h-4 w-4 shrink-0 text-slate-300" />
               </li>
@@ -269,7 +269,7 @@ export default {
   computed: {
     selectedIdx() {
       if (this.selectedId === null) return 0
-      const idx = this.likedPerformers.findIndex((p) => p.id === this.selectedId)
+      const idx = this.likedPerformers.findIndex((p) => p.performerId === this.selectedId)
       return idx === -1 ? 0 : idx + 1
     },
     filteredSchedules() {
@@ -302,30 +302,31 @@ export default {
         const likedArr = Array.isArray(likedRes) ? likedRes : likedRes?.content ?? []
         this.likedPerformers = likedArr.map((item) => ({
           id: item.id,
-          name: item.name ?? '-',
-          profileImgUrl: item.profileImgUrl ?? null,
-          likeCount: item.likeCount ?? 0
+          performerId: item.performerId,
+          performerName: item.performerName ?? '-',
+          performerProfileImgUrl: item.performerProfileImgUrl ?? null
         }))
 
-        // 각 아티스트의 스케줄 병렬 로딩
-        if (this.likedPerformers.length > 0) {
+        // 각 아티스트의 스케줄 병렬 로딩 (PerformerMemberListDto.performerId 사용)
+        const withId = (this.likedPerformers || []).filter((p) => p?.performerId != null && p.performerId !== '')
+        if (withId.length > 0) {
           const results = await Promise.all(
-            this.likedPerformers.map((p) =>
-              this.api.get(ENDPOINTS.performerSchedules(p.id)).catch(() => [])
+            withId.map((p) =>
+              this.api.get(ENDPOINTS.performerSchedules(p.performerId)).catch(() => [])
             )
           )
 
           const allSchedules = []
           results.forEach((res, idx) => {
             const arr = Array.isArray(res) ? res : res?.content ?? []
-            const p = this.likedPerformers[idx]
+            const p = withId[idx]
             arr.forEach((s) => {
               allSchedules.push({
-                key: `${p.id}-${s.scheduleId ?? s.id}`,
+                key: `${p.performerId}-${s.scheduleId ?? s.id}`,
                 scheduleId: s.scheduleId ?? s.id ?? null,
-                performerId: p.id,
-                performerName: p.name,
-                performerImg: p.profileImgUrl,
+                performerId: p.performerId,
+                performerName: p.performerName,
+                performerImg: p.performerProfileImgUrl,
                 title: s.concertTitle ?? s.title ?? '공연',
                 displayText: s.displayText ?? s.startAt ?? '',
                 role: s.role ?? null

@@ -186,9 +186,13 @@ export default {
   },
   methods: {
     async load() {
+      const concertId = this.$route.params.concertId
+      if (concertId == null || concertId === '') {
+        this.loading = false
+        return
+      }
       this.loading = true
       try {
-        const concertId = this.$route.params.concertId
         const res = await this.api.get(`${ENDPOINTS.organizerConcertSchedules(concertId)}?page=0&size=50&sort=playTime,asc`)
         const raw = res.content ?? res.items ?? []
         this.items = raw.map((s) => ({
@@ -212,6 +216,7 @@ export default {
     },
     async submitCreate() {
       const concertId = this.$route.params.concertId
+      if (concertId == null || concertId === '') return
       const schedulePayload = {
         playTime: this.form.play_time,
         bookingStart: this.form.booking_start,

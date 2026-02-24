@@ -15,6 +15,7 @@ export const ENDPOINTS = {
 
   // USER
   me: () => `/users/me`,
+  requestOrganizer: () => `/users/requestOrganizer`,
   myOrders: () => `/users/me/orders`,
   myOrder: (orderId) => `/users/me/orders/${orderId}`,
   seatHold: (seatId) => `/seat-holds/${seatId}`,
@@ -79,6 +80,15 @@ export const ENDPOINTS = {
   adminBlocklist: () => `/admin/blocklist`,
   adminUnblock: (id) => `/admin/blocklist/${id}`,
   adminAuditLogs: () => `/admin/audit-logs`,
+  adminPendingOrganizers: (params = {}) => {
+    const p = new URLSearchParams()
+    if (params.page != null) p.set('page', params.page)
+    if (params.size != null) p.set('size', params.size)
+    const q = p.toString()
+    return `/admin/pending-organizers${q ? `?${q}` : ''}`
+  },
+  adminApproveOrganizer: (id) => `/admin/organizer-requests/${id}/approve`,
+  adminRejectOrganizer: (id) => `/admin/organizer-requests/${id}/reject`,
 
   // GEO / VENUES
   venueNearby: ({ latitude, longitude, radiusKm, page, size }) =>

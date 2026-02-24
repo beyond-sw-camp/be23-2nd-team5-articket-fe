@@ -17,6 +17,7 @@ import PerformersListView from '../views/performers/PerformersListView.vue'
 import PerformerDetailView from '../views/performers/PerformerDetailView.vue'
 import LoginView from '../views/member/LoginView.vue'
 import SignupView from '../views/member/SignupView.vue'
+import SignupCompleteView from '../views/member/SignupCompleteView.vue'
 
 // user
 import ProfileView from '../views/me/ProfileView.vue'
@@ -56,6 +57,7 @@ import AdminSeatMapPreviewView from '../views/admin/AdminSeatMapPreviewView.vue'
 import AdminSeatMapPublishView from '../views/admin/AdminSeatMapPublishView.vue'
 import AdminBlocklistView from '../views/admin/AdminBlocklistView.vue'
 import AdminAuditLogsView from '../views/admin/AdminAuditLogsView.vue'
+import AdminPendingOrganizersView from '../views/admin/AdminPendingOrganizersView.vue'
 import AdminStubTableView from '../views/admin/AdminStubTableView.vue'
 
 // errors
@@ -85,6 +87,7 @@ const routes = [
 
   { path: '/member/doLogin', ...withLayout(LoginView, { roleScope: 'auth' }) },
   { path: '/member/create', ...withLayout(SignupView, { roleScope: 'auth' }) },
+  { path: '/member/complete', ...withLayout(SignupCompleteView, { roleScope: 'auth' }) },
 
   { path: '/oauth/google/redirect', ...withLayout(GoogleRedirect, { roleScope: 'auth' }) },
   { path: '/oauth/kakao/redirect', ...withLayout(KakaoRedirect, { roleScope: 'auth' }) },
@@ -127,6 +130,7 @@ const routes = [
   { path: '/admin/seat-maps/:seatMapId/publish', ...withLayout(AdminSeatMapPublishView, { requiresAuth: true, requiredRole: 'ADMIN' }) },
   { path: '/admin/blocklist', ...withLayout(AdminBlocklistView, { requiresAuth: true, requiredRole: 'ADMIN' }) },
   { path: '/admin/audit-logs', ...withLayout(AdminAuditLogsView, { requiresAuth: true, requiredRole: 'ADMIN' }) },
+  { path: '/admin/pending-organizers', ...withLayout(AdminPendingOrganizersView, { requiresAuth: true, requiredRole: 'ADMIN' }) },
 
   // stub table pages (ADMIN)
   { path: '/admin/users', ...withLayout(AdminStubTableView, { requiresAuth: true, requiredRole: 'ADMIN', stubKey: 'users' }) },

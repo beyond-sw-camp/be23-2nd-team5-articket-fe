@@ -698,6 +698,7 @@ export default {
     // 2) GET /concerts?status=PUBLISHED   → 전체 PUBLISHED 공연
     // 3) concert.concertSeatMapResDto.id ∈ seatMapIds 인 것만 추출
     async loadConcertsByVenue(venueId) {
+      if (venueId == null || venueId === '') return
       this.concertsLoading = true
       try {
         // 1. seatMap 목록
@@ -790,14 +791,16 @@ export default {
 
     // ── 주변 공연장 API ───────────────────────────────────────────
     async load() {
-      if (!this.coords) return
+      const lat = this.coords?.lat
+      const lng = this.coords?.lng
+      if (lat == null || lng == null || !Number.isFinite(Number(lat)) || !Number.isFinite(Number(lng))) return
       this.loading = true
       try {
         const res = await this.api.get(
           ENDPOINTS.venueNearby({
-            latitude: this.coords.lat,
-            longitude: this.coords.lng,
-            radiusKm: this.radiusKm,
+            latitude: lat,
+            longitude: lng,
+            radiusKm: this.radiusKm ?? 5,
             page: 0,
             size: 20
           })

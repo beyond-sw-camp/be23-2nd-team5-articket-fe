@@ -69,9 +69,14 @@ export default {
   },
   methods: {
     async load() {
+      const orderId = this.$route.params.orderId
+      if (orderId == null || orderId === '') {
+        this.loading = false
+        return
+      }
       this.loading = true
       try {
-        this.item = await this.api.get(ENDPOINTS.myOrder(this.$route.params.orderId))
+        this.item = await this.api.get(ENDPOINTS.myOrder(orderId))
       } finally {
         this.loading = false
       }

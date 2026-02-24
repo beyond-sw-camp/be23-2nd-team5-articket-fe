@@ -118,10 +118,15 @@ export default {
   },
   methods: {
     async load() {
+      const orderId = this.$route.params.orderId
+      if (orderId == null || orderId === '') {
+        this.error = '주문 정보를 찾을 수 없습니다.'
+        return
+      }
       this.loading = true
       this.error = ''
       try {
-        this.item = await this.api.get(ENDPOINTS.order(this.$route.params.orderId))
+        this.item = await this.api.get(ENDPOINTS.order(orderId))
       } catch (e) {
         this.error = e?.message || '주문 조회에 실패했어요.'
       } finally {

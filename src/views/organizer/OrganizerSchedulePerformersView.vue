@@ -134,6 +134,7 @@ export default {
   },
   methods: {
     async load() {
+      if (this.scheduleId == null || this.scheduleId === '') return
       this.loading = true
       try {
         const list = await this.api.get(ENDPOINTS.schedulePerformers(this.scheduleId))
@@ -157,6 +158,7 @@ export default {
       this.addModalOpen = false
     },
     async submitAdd() {
+      if (this.scheduleId == null || this.scheduleId === '') return
       try {
         await this.api.post(ENDPOINTS.scheduleOrganizerAddPerformer(this.scheduleId), {
           performerId: this.addForm.performerId,
@@ -176,8 +178,11 @@ export default {
       this.editModalOpen = false
     },
     async submitEdit() {
+      if (this.scheduleId == null || this.scheduleId === '') return
+      const performerId = this.editForm?.performerId
+      if (performerId == null || performerId === '') return
       try {
-        await this.api.put(ENDPOINTS.scheduleOrganizerUpdatePerformer(this.scheduleId, this.editForm.performerId), {
+        await this.api.put(ENDPOINTS.scheduleOrganizerUpdatePerformer(this.scheduleId, performerId), {
           role: this.editForm.role?.trim() || null
         })
         this.closeEditModal()
@@ -191,6 +196,8 @@ export default {
       this.doDelete(row.performerId)
     },
     async doDelete(performerId) {
+      if (this.scheduleId == null || this.scheduleId === '') return
+      if (performerId == null || performerId === '') return
       try {
         await this.api.del(ENDPOINTS.scheduleOrganizerDeletePerformer(this.scheduleId, performerId))
         await this.load()

@@ -219,13 +219,15 @@ export default {
     },
     async toggleLike() {
       if (!this.item || !this.canLike) return
+      const id = this.item?.id
+      if (id == null || id === '') return
       try {
         if (this.item.liked) {
-          await this.api.del(ENDPOINTS.performerDeleteLike() + '?id=' + this.item.id)
+          await this.api.del(ENDPOINTS.performerDeleteLike() + '?id=' + id)
           this.item.liked = false
           this.item.likeCount--
         } else {
-          await this.api.post(ENDPOINTS.performerLike() + '?id=' + this.item.id)
+          await this.api.post(ENDPOINTS.performerLike() + '?id=' + id)
           this.item.liked = true
           this.item.likeCount++
         }
