@@ -49,6 +49,9 @@
                   <RouterLink to="/organizer/concerts/new"
                     class="block px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
                     @click="organizerMenuOpen = false">공연 등록</RouterLink>
+                  <RouterLink to="/organizer/performers"
+                    class="block px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                    @click="organizerMenuOpen = false">공연자 관리</RouterLink>
                 </div>
               </div>
 
@@ -157,6 +160,7 @@ export default {
         { key: 'concert', label: '콘서트', to: { path: '/', query: { cat: 'concert' } } },
         { key: 'play', label: '연극', to: { path: '/', query: { cat: 'play' } } },
         { key: 'classic', label: '클래식', to: { path: '/', query: { cat: 'classic' } } },
+        { key: 'performers', label: '공연자', to: { path: '/performers', query: {} } },
         { key: 'sports', label: '스포츠', to: { path: '/', query: { cat: 'sports' } } },
         { key: 'leisure', label: '레저', to: { path: '/', query: { cat: 'leisure' } } }
       ],

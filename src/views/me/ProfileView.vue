@@ -30,8 +30,9 @@
           <div class="mt-1 text-sm font-semibold text-slate-900">{{ profile.phoneNumber || '-' }}</div>
         </div>
       </div>
-      <div class="mt-4 flex gap-2">
+      <div class="mt-4 flex flex-wrap gap-2">
         <UiButton class="h-11 px-5" @click="$router.push('/me/orders')">내 주문 목록</UiButton>
+        <UiButton variant="tonal" class="h-11 px-5" @click="$router.push('/me/performers/likes')">좋아요한 공연자</UiButton>
         <UiButton v-if="!isVerified" variant="ghost" class="h-10 px-3" @click="inicis">
           <span class="ml-2 text-sm">본인인증</span>
         </UiButton>

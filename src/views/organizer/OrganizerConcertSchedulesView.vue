@@ -26,6 +26,15 @@
           {{ row.status }}
         </UiBadge>
       </template>
+      <template #cell:performers="{ row }">
+        <UiButton
+          variant="ghost"
+          class="h-8 px-2 text-sm"
+          @click="$router.push(`/organizer/schedules/${row.id}/performers`)"
+        >
+          출연진
+        </UiButton>
+      </template>
     </UiTable>
 
     <UiModal :open="createModalOpen" title="회차 생성 (더미)" @close="closeCreateModal">
@@ -164,7 +173,8 @@ export default {
         { key: 'occupancy', label: '판매율(%)' },
         { key: 'sold', label: 'SOLD' },
         { key: 'hold', label: 'HOLD' },
-        { key: 'total', label: '총 좌석' }
+        { key: 'total', label: '총 좌석' },
+        { key: 'performers', label: '출연진' }
       ]
     }
   },
