@@ -1,7 +1,7 @@
 <template>
   <div class="relative mx-auto max-w-5xl p-4 py-10 md:p-8">
     <div v-if="timer"
-      class="fixed right-8 top-24.5 z-[100000] flex items-center gap-2 rounded-xl border-2 border-red-500 bg-white px-4 py-2 text-lg font-bold text-red-600 shadow-lg">
+      class="fixed right-8 top-12 z-[100000] flex items-center gap-2 rounded-xl border-2 border-red-500 bg-white px-4 py-2 text-lg font-bold text-red-600 shadow-lg">
       <Clock class="h-5 w-5" />
       남은 시간: {{ timerText }}
     </div>
@@ -166,7 +166,6 @@ export default {
     try {
       const result = await this.api.get(ENDPOINTS.order(1));
       // const result = await axios.get("http://localhost:8082/order/1");
-      console.log(result);
       this.order = result;
     } catch (error) {
       console.error("주문 정보를 불러오는데 실패했습니다.", error);
@@ -207,10 +206,10 @@ export default {
             return alert(response.message);
           }
           const verificationResult = await this.api.get(ENDPOINTS.payment(), {
-
             // const verificationResult = await axios.post("http://localhost:8082/payment", {
             paymentId: response.paymentId,
           });
+
           console.log('결제 검증 완료', verificationResult);
           // 결제 완료 후 라우팅 로직 추가 필요 ($router.push('/success') 등)
 
