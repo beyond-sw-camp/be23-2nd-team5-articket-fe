@@ -80,7 +80,8 @@ export const ENDPOINTS = {
   adminAuditLogs: () => `/admin/audit-logs`,
 
   // GEO / VENUES
-  venueAddress: ({ lat, lng, radiusKm }) => `/venue/address?lat=${lat}&lng=${lng}&radiusKm=${radiusKm}`,
+  venueNearby: ({ latitude, longitude, radiusKm, page, size }) =>
+    `/venues/nearby?latitude=${latitude}&longitude=${longitude}&radiusKm=${radiusKm}&page=${page}&size=${size}`,
   venue: (venueId) => `/venues/${venueId}`,
   venueConcerts: (venueId) => `/venues/${venueId}/concerts`,
   venues: () => `/venues`,
