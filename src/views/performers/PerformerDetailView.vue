@@ -62,7 +62,7 @@
             </div>
 
             <RouterLink v-if="canLike" to="/me/performers/likes" class="mt-3 inline-block text-xs text-slate-400 hover:underline">
-              내가 좋아요한 공연자 보기 →
+              내가 좋아요한 아티스트 보기 →
             </RouterLink>
           </div>
         </div>
@@ -143,7 +143,7 @@
 
     <!-- 공연자 없음 -->
     <div v-else class="rounded-2xl border border-slate-200 bg-white p-10 text-center">
-      <p class="text-sm text-slate-500">공연자를 찾을 수 없습니다.</p>
+      <p class="text-sm text-slate-500">아티스트를 찾을 수 없습니다.</p>
       <UiButton variant="ghost" class="mt-3" @click="$router.push('/performers')">목록으로</UiButton>
     </div>
   </div>

@@ -23,6 +23,7 @@ import ProfileView from '../views/me/ProfileView.vue'
 import MyOrdersView from '../views/me/MyOrdersView.vue'
 import MyOrderDetailView from '../views/me/MyOrderDetailView.vue'
 import MyPerformerLikesView from '../views/me/MyPerformerLikesView.vue'
+import ForUView from '../views/me/ForUView.vue'
 import HoldCreateView from '../views/hold/HoldCreateView.vue'
 import HoldDetailView from '../views/hold/HoldDetailView.vue'
 import CheckoutView from '../views/checkout/CheckoutView.vue'
@@ -92,6 +93,7 @@ const routes = [
   { path: '/me/orders', ...withLayout(MyOrdersView, { requiresAuth: true, requiredRole: 'USER' }) },
   { path: '/me/orders/:orderId', ...withLayout(MyOrderDetailView, { requiresAuth: true, requiredRole: 'USER' }) },
   { path: '/me/performers/likes', ...withLayout(MyPerformerLikesView, { requiresAuth: true, requiredRole: 'USER' }) },
+  { path: '/me/foru', ...withLayout(ForUView, { requiresAuth: true }) },
   { path: '/hold', ...withLayout(HoldCreateView, { requiresAuth: true, requiredRole: 'USER' }) },
   { path: '/hold/:holdId', ...withLayout(HoldDetailView, { requiresAuth: true, requiredRole: 'USER' }) },
   { path: '/checkout', ...withLayout(CheckoutView, { requiresAuth: true, requiredRole: 'USER' }) },

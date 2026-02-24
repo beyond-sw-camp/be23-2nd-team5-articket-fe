@@ -43,7 +43,7 @@
     <UiModal :open="addModalOpen" title="출연진 추가" @close="closeAddModal">
       <form id="add-casting-form" class="grid gap-4" @submit.prevent="submitAdd">
         <div>
-          <label class="block text-xs font-semibold text-slate-500">공연자 ID (performerId) *</label>
+          <label class="block text-xs font-semibold text-slate-500">아티스트 ID (performerId) *</label>
           <input
             v-model.number="addForm.performerId"
             type="number"
@@ -108,7 +108,7 @@ export default {
   data() {
     return {
       castingColumns: [
-        { key: 'performerName', label: '공연자' },
+        { key: 'performerName', label: '아티스트' },
         { key: 'role', label: '역할' },
         { key: 'actions', label: '관리' }
       ],

@@ -2,8 +2,8 @@
   <div class="grid gap-4">
     <div class="flex items-end justify-between gap-3">
       <div>
-        <div class="text-lg font-bold text-slate-900">좋아요한 공연자</div>
-        <div class="mt-0.5 text-sm text-slate-500">내가 좋아요한 공연자 목록</div>
+        <div class="text-lg font-bold text-slate-900">좋아요한 아티스트</div>
+        <div class="mt-0.5 text-sm text-slate-500">내가 좋아요한 아티스트 목록</div>
       </div>
     </div>
 
@@ -14,8 +14,8 @@
     <template v-else>
       <!-- 빈 상태 -->
       <div v-if="rows.length === 0" class="rounded-2xl border border-slate-200 bg-slate-50 py-12 text-center">
-        <p class="text-sm text-slate-500">좋아요한 공연자가 없습니다.</p>
-        <UiButton variant="tonal" class="mt-4" @click="$router.push('/performers')">공연자 탐색</UiButton>
+        <p class="text-sm text-slate-500">좋아요한 아티스트가 없습니다.</p>
+        <UiButton variant="tonal" class="mt-4" @click="$router.push('/performers')">아티스트 탐색</UiButton>
       </div>
 
       <!-- 목록 -->

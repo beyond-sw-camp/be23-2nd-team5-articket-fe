@@ -3,10 +3,10 @@
     <!-- 헤더 -->
     <div class="flex flex-wrap items-end justify-between gap-3">
       <div>
-        <div class="text-lg font-bold text-slate-900">{{ canManage ? '공연자 관리' : '공연자' }}</div>
+        <div class="text-lg font-bold text-slate-900">{{ canManage ? '아티스트 관리' : '아티스트' }}</div>
         <div class="mt-0.5 text-sm text-slate-500">이름으로 검색 · 목록</div>
       </div>
-      <UiButton v-if="canManage" class="h-11 px-5" @click="openCreateModal">+ 공연자 등록</UiButton>
+      <UiButton v-if="canManage" class="h-11 px-5" @click="openCreateModal">+ 아티스트 등록</UiButton>
     </div>
 
     <!-- 검색 -->
@@ -14,7 +14,7 @@
       <input
         v-model="searchName"
         type="text"
-        placeholder="공연자 이름 검색"
+        placeholder="아티스트 이름 검색"
         class="h-10 flex-1 rounded-xl border border-slate-200 px-3 text-sm text-slate-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
       />
       <UiButton type="submit" class="h-10 px-4 text-sm">검색</UiButton>
@@ -29,7 +29,7 @@
     <template v-else>
       <!-- 빈 상태 -->
       <div v-if="rows.length === 0" class="rounded-2xl border border-slate-200 bg-slate-50 p-8 text-center text-sm text-slate-500">
-        {{ searchName ? `"${searchName}" 검색 결과가 없습니다.` : '등록된 공연자가 없습니다.' }}
+        {{ searchName ? `"${searchName}" 검색 결과가 없습니다.` : '등록된 아티스트가 없습니다.' }}
       </div>
 
       <!-- 순위 목록 -->
@@ -106,7 +106,7 @@
     </template>
 
     <!-- 공연자 등록 모달 (canManage만) -->
-    <UiModal v-if="canManage" :open="createModalOpen" title="공연자 등록" @close="closeCreateModal">
+    <UiModal v-if="canManage" :open="createModalOpen" title="아티스트 등록" @close="closeCreateModal">
       <div v-if="createError" class="mb-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
         {{ createError }}
       </div>
@@ -118,7 +118,7 @@
             type="text"
             required
             class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
-            placeholder="공연자 또는 팀명"
+            placeholder="아티스트 또는 팀명"
           />
         </div>
         <div>
