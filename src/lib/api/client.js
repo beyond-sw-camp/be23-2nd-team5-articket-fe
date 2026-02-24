@@ -4,6 +4,8 @@ const DEFAULTS = {
   baseUrl: import.meta.env.VITE_API_BASE || 'http://localhost:8082',
 }
 
+const REFRESH_PATH = '/member/refresh-at'
+
 export function createApiClient(opts = {}) {
   const baseUrl = opts.baseUrl || DEFAULTS.baseUrl
 
@@ -23,6 +25,60 @@ export function createApiClient(opts = {}) {
     }
     return config
   })
+
+  let refreshPromise = null
+
+  api.interceptors.response.use(
+    (res) => res,
+    async (err) => {
+      const originalRequest = err.config
+      const status = err.response?.status
+
+      if (status !== 401 || originalRequest._retried) {
+        return Promise.reject(err)
+      }
+      if (originalRequest.url?.includes(REFRESH_PATH) || originalRequest.baseURL + originalRequest.url === baseUrl + REFRESH_PATH) {
+        return Promise.reject(err)
+      }
+
+      const refreshToken = typeof localStorage !== 'undefined' ? localStorage.getItem('refreshToken') : null
+      if (!refreshToken) {
+        return Promise.reject(err)
+      }
+
+      if (!refreshPromise) {
+        refreshPromise = (async () => {
+          try {
+            const { data } = await axios.post(
+              baseUrl + REFRESH_PATH,
+              { refreshToken },
+              { headers: { 'Content-Type': 'application/json' }, timeout: 10000 }
+            )
+            const accessToken = data?.access_token ?? data?.accessToken
+            if (accessToken && typeof localStorage !== 'undefined') {
+              localStorage.setItem('accessToken', accessToken)
+            }
+          } finally {
+            refreshPromise = null
+          }
+        })()
+      }
+
+      try {
+        await refreshPromise
+      } catch {
+        if (typeof localStorage !== 'undefined') {
+          localStorage.removeItem('accessToken')
+          localStorage.removeItem('refreshToken')
+        }
+        return Promise.reject(err)
+      }
+
+      originalRequest._retried = true
+      originalRequest.headers.Authorization = `Bearer ${localStorage.getItem('accessToken')}`
+      return api.request(originalRequest)
+    }
+  )
 
   async function request(method, path, body) {
     try {
