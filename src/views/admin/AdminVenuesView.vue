@@ -258,17 +258,21 @@ import { useApi } from '../../composables/useApi'
 import { ENDPOINTS } from '../../lib/api/endpoints'
 
 // ─── 카카오 SDK 로더 ───────────────────────────────────────────────
-const kakaoKey = import.meta.env.VITE_KAKAO_MAP_APP_KEY
-console.log('Kakao Key:', kakaoKey) 
-
 function loadKakaoSdk() {
+  const appKey = (import.meta.env.VITE_KAKAO_MAP_APP_KEY || '').toString().trim()
+  if (!appKey) {
+    return Promise.reject(
+      new Error('카카오 지도 앱 키가 없습니다. .env에 VITE_KAKAO_MAP_APP_KEY를 설정해 주세요.')
+    )
+  }
+
   return new Promise((resolve, reject) => {
     if (window.kakao?.maps) {
       window.kakao.maps.load(() => resolve(window.kakao.maps))
       return
     }
     const script = document.createElement('script')
-    script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${kakaoKey}&libraries=services&autoload=false`
+    script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${appKey}&libraries=services&autoload=false`
     script.async = false
     script.onload = () => {
       window.kakao.maps.load(() => resolve(window.kakao.maps))
