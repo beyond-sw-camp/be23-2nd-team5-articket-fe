@@ -1,7 +1,7 @@
 <template>
   <div class="relative mx-auto max-w-5xl p-4 py-10 md:p-8">
     <div v-if="timer"
-      class="fixed right-5 top-5 z-[9999] flex items-center gap-2 rounded-xl border-2 border-red-500 bg-white px-4 py-2 text-lg font-bold text-red-600 shadow-lg">
+      class="fixed right-8 top-24.5 z-[100000] flex items-center gap-2 rounded-xl border-2 border-red-500 bg-white px-4 py-2 text-lg font-bold text-red-600 shadow-lg">
       <Clock class="h-5 w-5" />
       남은 시간: {{ timerText }}
     </div>
@@ -10,23 +10,22 @@
 
     <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
       <div class="space-y-6 md:col-span-2">
-
         <UiCard>
           <div class="mb-4 flex items-center gap-2 border-b border-slate-100 pb-3">
             <Ticket class="h-5 w-5 text-slate-500" />
             <span class="text-base font-semibold text-slate-800">티켓 주문상세</span>
           </div>
           <div class="p-2">
-            <div class="mb-1 text-lg font-bold text-slate-900">뮤지컬 〈빌리 엘리어트〉</div>
-            <div class="mb-4 text-sm text-slate-500">2026-04-12(일) 19:00 | 블루스퀘어 신한카드홀</div>
+            <div class="mb-1 text-lg font-bold text-slate-900" v-if="order">{{ order.concertName }}</div>
+            <div class="mb-4 text-sm text-slate-500" v-if="order">{{ order.scheduleDate }} | 블루스퀘어 신한카드홀</div>
 
-            <div class="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
-              <div class="flex items-center justify-between">
-                <div>
-                  <div class="font-semibold text-slate-800">R석 1매</div>
-                  <div class="mt-1 text-xs text-slate-500">객석 1층 20열 40번</div>
+            <div v-if="order" class="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <div v-for="(seat, index) in order.seatDetails" :key="index">
+                <div class="py-2 flex justify-between items-center">
+                  <div class="font-bold text-slate-900">{{ seat.seatDefName }} 1매</div>
+                  <div class="font-medium text-slate-700">{{ parseInt(seat.price).toLocaleString() }}원</div>
                 </div>
-                <div class="font-bold text-slate-900">140,000원</div>
+                <div v-if="index < order.seatDetails.length - 1" class="border-t border-slate-200"></div>
               </div>
             </div>
           </div>
@@ -85,7 +84,7 @@
         </UiCard>
       </div>
 
-      <div class="md:col-span-1">
+      <div class="md:col-span-1" v-if="order">
         <div class="sticky top-24">
           <UiCard class="shadow-md border-slate-200">
             <div class="mb-4 flex items-center gap-2 border-b border-slate-100 pb-3">
@@ -96,11 +95,12 @@
             <div class="space-y-3 p-2 text-sm text-slate-600">
               <div class="flex justify-between">
                 <span>티켓금액</span>
-                <span class="font-medium text-slate-800">140,000원</span>
+                <span class="font-medium text-slate-800">{{ parseInt(order.amount).toLocaleString() }}원</span>
               </div>
               <div class="flex justify-between">
                 <span>예매수수료</span>
-                <span class="font-medium text-slate-800">2,000원</span>
+                <span class="font-medium text-slate-800">{{ (2000 * order.seatDetails.length).toLocaleString()
+                }}원</span>
               </div>
             </div>
 
@@ -108,17 +108,18 @@
 
             <div class="mb-6 flex items-end justify-between p-2">
               <span class="font-bold text-slate-800">최종 결제금액</span>
-              <span class="text-2xl font-bold text-blue-600">142,000원</span>
+              <span class="text-2xl font-bold text-blue-600">
+                {{ (parseInt(order.amount) + 2000 * order.seatDetails.length).toLocaleString() }}원
+              </span>
             </div>
 
             <UiButton class="h-14 w-full bg-blue-600 text-base font-bold text-white hover:bg-blue-700"
               @click="handlePayment">
-              142,000원 결제하기
+              {{ (parseInt(order.amount) + 2000 * order.seatDetails.length).toLocaleString() }}원 결제하기
             </UiButton>
           </UiCard>
         </div>
       </div>
-
     </div>
   </div>
 </template>
@@ -128,7 +129,6 @@ import { Clock, Ticket, User, CreditCard, Receipt } from 'lucide-vue-next'
 import UiCard from '../../components/common/UiCard.vue'    // 경로 확인 필요
 import UiButton from '../../components/common/UiButton.vue' // 경로 확인 필요
 import PortOne from '@portone/browser-sdk/v2'
-import axios from 'axios'
 import { useApi } from '../../composables/useApi'
 import { ENDPOINTS } from '../../lib/api/endpoints'
 
@@ -186,12 +186,10 @@ export default {
 
       if (this.payMethod === 'CARD') {
         console.log('신용카드, 간편결제 로직 실행');
-
         let seatDefNames = "";
         for (let i = 0; i < this.order.seatDetails.length; i++) {
           seatDefNames += this.order.seatDetails[i].seatDefName + "\n";
         }
-
         try {
           const response = await PortOne.requestPayment({
             storeId: "store-6ac42987-375b-44fc-bbc9-d9650b676666",
@@ -200,7 +198,7 @@ export default {
             orderName: this.order.scheduleDate + "\n"
               + this.order.concertName + "\n"
               + seatDefNames,
-            totalAmount: this.order.amount,
+            totalAmount: Number(this.order.amount) + 2000 * this.order.seatDetails.length,
             currency: "CURRENCY_KRW",
             payMethod: "CARD",
           });
@@ -208,8 +206,9 @@ export default {
           if (response.code !== undefined) {
             return alert(response.message);
           }
+          const verificationResult = await this.api.get(ENDPOINTS.payment(), {
 
-          const verificationResult = await axios.post("http://localhost:8082/payment", {
+            // const verificationResult = await axios.post("http://localhost:8082/payment", {
             paymentId: response.paymentId,
           });
           console.log('결제 검증 완료', verificationResult);
