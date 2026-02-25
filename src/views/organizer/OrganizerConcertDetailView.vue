@@ -10,6 +10,7 @@
           <div class="mt-1 text-sm text-slate-500">{{ item.title }}</div>
         </div>
         <div class="flex gap-2">
+          <UiButton variant="ghost" class="h-11 px-4" @click="$router.push(`/organizer/concerts/${item.id}/policies`)">정책 설정</UiButton>
           <UiButton variant="ghost" class="h-11 px-4" @click="$router.push(`/organizer/concerts/${item.id}/schedules`)">회차 관리</UiButton>
           <UiButton variant="ghost" class="h-11 px-4" @click="$router.push(`/organizer/concerts/${item.id}/publish`)">게시하기</UiButton>
         </div>

@@ -25,26 +25,27 @@ export const ENDPOINTS = {
   orderCancel: (orderId) => `/orders/${orderId}/cancel`,
 
   // ORGANIZER
-  organizerConcerts: () => `/organizer/concerts`,
-  organizerConcertStats: (concertId) => `/organizer/concerts/${concertId}/stats`,
-  organizerScheduleStats: (scheduleId) => `/organizer/schedules/${scheduleId}/stats`,
-  organizerCreateConcert: () => `/organizer/concerts/create`,
-  organizerUpdateConcert: (concertId) => `/organizer/concerts/${concertId}`,
-  organizerConcert: (concertId) => `/organizer/concerts/${concertId}`,
-  organizerPublishConcert: (concertId) => `/organizer/concerts/${concertId}/publish`,
-  organizerCreateSchedule: (concertId) => `/organizer/concerts/${concertId}/schedules`,
-  organizerUpdateSchedule: (scheduleId) => `/organizer/concerts/schedules/${scheduleId}`,
-  organizerDeleteSchedule: (scheduleId) => `/organizer/schedules/${scheduleId}`,
-  organizerConcertSchedules: (concertId) => `/organizer/concerts/${concertId}/schedules`,
-  organizerSchedulePrices: (scheduleId) => `/organizer/schedules/${scheduleId}/prices`,
-  organizerCreatePolicy: (concertId) => `/organizer/concerts/${concertId}/policies`,
-  organizerUpdatePolicy: (policyId) => `/organizer/policies/${policyId}`,
-  organizerDeletePolicy: (policyId) => `/organizer/policies/${policyId}`,
-  organizerConcertPolicies: (concertId) => `/organizer/concerts/${concertId}/policies`,
-  organizerConcertOrders: (concertId) => `/organizer/concerts/${concertId}/orders`,
-  organizerOrder: (orderId) => `/organizer/orders/${orderId}`,
-  organizerPriceHistory: (concertId) => `/organizer/concerts/${concertId}/price-history`,
-  organizerPolicyHistory: (concertId) => `/organizer/concerts/${concertId}/policy-history`,
+  organizerConcerts: () => `/concerts/organizer`,                                         // GET  /concerts/organizer
+  organizerConcertStats: (concertId) => `/concerts/organizer/${concertId}/stats`,         // GET  /concerts/organizer/{id}/stats
+  organizerScheduleStats: (scheduleId) => `/concerts/organizer/schedules/${scheduleId}/stats`, // GET /concerts/organizer/schedules/{id}/stats
+  organizerCreateConcert: () => `/concerts/organizer/create`,                             // POST /concerts/organizer/create
+  organizerUpdateConcert: (concertId) => `/concerts/organizer/${concertId}`,              // PUT  /concerts/organizer/{id}
+  organizerConcert: (concertId) => `/concerts/${concertId}`,                              // GET  /concerts/{id} (공통)
+  organizerPublishConcert: (concertId) => `/concerts/organizer/${concertId}/publish`,     // POST /concerts/organizer/{id}/publish
+  organizerCreateSchedule: (concertId) => `/concerts/organizer/${concertId}/schedules`,  // POST /concerts/organizer/{id}/schedules
+  organizerUpdateSchedule: (scheduleId) => `/concerts/organizer/schedules/${scheduleId}`,// PUT  /concerts/organizer/schedules/{id}
+  organizerDeleteSchedule: (scheduleId) => `/concerts/organizer/schedules/${scheduleId}`, // DELETE /concerts/organizer/schedules/{id}
+  organizerConcertSchedules: (concertId) => `/concerts/${concertId}/schedules`,           // GET  /concerts/{id}/schedules (공통)
+  organizerSchedulePrices: (scheduleId) => `/concerts/organizer/schedules/${scheduleId}/prices`, // GET /concerts/organizer/schedules/{id}/prices
+  concertPolicies: (concertId) => `/concerts/${concertId}/policies`,
+  organizerCreatePolicy: (concertId) => `/concerts/organizer/${concertId}/policies`,
+  organizerUpdatePolicy: (policyId) => `/concerts/organizer/policies/${policyId}`,
+  organizerDeletePolicy: (policyId) => `/concerts/organizer/policies/${policyId}`,
+  organizerConcertPolicies: (concertId) => `/concerts/${concertId}/policies`,
+  organizerConcertOrders: (concertId) => `/concerts/organizer/${concertId}/orders`,        // GET /concerts/organizer/{id}/orders
+  organizerOrder: (orderId) => `/concerts/organizer/orders/${orderId}`,                   // GET /concerts/organizer/orders/{id}
+  organizerPriceHistory: (concertId) => `/concerts/organizer/${concertId}/prices/history`, // GET /concerts/organizer/{id}/prices/history
+  organizerPolicyHistory: (concertId) => `/concerts/organizer/${concertId}/policies/history`, // GET /concerts/organizer/{id}/policies/history
 
   // ADMIN (venue: base /venues, admin actions under /venues/admin/...)
   adminCreateVenue: () => `/venues/admin/create`,
