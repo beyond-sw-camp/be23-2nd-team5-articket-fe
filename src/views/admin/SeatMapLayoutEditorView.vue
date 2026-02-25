@@ -1004,16 +1004,20 @@ const loadLayout = async () => {
     const defaultStageY = Math.round(konvaStage.height() / 2 - 50)
     const stageObj = {
       id: uid(), type: 'stage', name: 'STAGE',
-      x: mapRes?.stageX ?? defaultStageX,
-      y: mapRes?.stageY ?? defaultStageY,
-      width: mapRes?.stageWidth || 400, height: mapRes?.stageHeight || 100,
-      rotation: mapRes?.stageRotation || 0
+      x: mapRes?.stageX ?? mapRes?.stage_x ?? defaultStageX,
+      y: mapRes?.stageY ?? mapRes?.stage_y ?? defaultStageY,
+      width: mapRes?.stageWidth ?? mapRes?.stage_width ?? 400,
+      height: mapRes?.stageHeight ?? mapRes?.stage_height ?? 100,
+      rotation: mapRes?.stageRotation ?? mapRes?.stage_rotation ?? 0
     }
 
     const gridObjs = await Promise.all((sections || []).map(async sec => {
       const defs = await api.get(`/seat-definitions/admin/sections/${sec.id}/definitions`)
-      const rows = sec.rows || 5
-      const cols = sec.seatsPerRow || 10
+      // 백엔드 응답 구조 디버그 (콘솔에서 실제 필드명 확인용)
+      console.log('[LOAD DEBUG] section raw:', JSON.stringify(sec))
+      // 백엔드 응답 필드명 다양성 대응 (rows/totalRow, seatsPerRow/totalCol 등)
+      const rows = sec.rows ?? sec.totalRow ?? sec.total_row ?? 5
+      const cols = sec.seatsPerRow ?? sec.seats_per_row ?? sec.totalCol ?? sec.total_col ?? 10
       const states = Array.from({ length: rows }, (_, r) =>
         Array.from({ length: cols }, (_, c) => {
           const d = (defs || []).find(d => d.rowNo === r + 1 && d.seatNo === c + 1)
@@ -1023,19 +1027,22 @@ const loadLayout = async () => {
       return {
         id: Number(sec.id),  // ← 숫자로 저장 (기존 구역 ID)
         type: 'seatGrid',
-        name: sec.name,
-        x: sec.xPos || 0, y: sec.yPos || 0,
+        name: sec.name ?? `구역 ${sec.id}`,
+        // 백엔드 필드명 다양성 대응 (xPos/x_pos/posX 등)
+        x: sec.xPos ?? sec.x_pos ?? sec.posX ?? sec.pos_x ?? 0,
+        y: sec.yPos ?? sec.y_pos ?? sec.posY ?? sec.pos_y ?? 0,
         rows, cols,
-        grade: defs?.[0]?.gradeDefault || 'R',
-        color: sec.displayColor || '#ef6b6b',
-        rotation: sec.rotation || 0,
-        shape: sec.shape || 'RECTANGLE',
+        grade: defs?.[0]?.gradeDefault ?? defs?.[0]?.grade ?? 'R',
+        color: sec.displayColor ?? sec.display_color ?? '#ef6b6b',
+        rotation: sec.rotation ?? 0,
+        shape: sec.shape ?? 'RECTANGLE',
         rowLabelType: 'left',
         states,
         seatDefs: (defs || []).map(d => ({
           id: d.id,
-          rowNo: d.rowNo, seatNo: d.seatNo,
-          grade: d.gradeDefault || 'R',
+          rowNo: d.rowNo ?? d.row_no,
+          seatNo: d.seatNo ?? d.seat_no,
+          grade: d.gradeDefault ?? d.grade ?? 'R',
           isVisible: d.isVisible ?? true
         }))
       }
@@ -1125,8 +1132,10 @@ const handleSave = async () => {
 
     console.log('[VUE DEBUG] Full payload:', JSON.stringify(payload, null, 2))
     await api.patch(`/seat-maps/admin/${seatMapId}/layout`, payload)
+    // reload 없이 상태만 업데이트 (reload 시 xPos/yPos가 복원되지 않는 문제 방지)
+    savedStatus.value = '저장됨'
+    seatMapVersion.value = (seatMapVersion.value || 1) + 1
     alert('저장되었습니다.')
-    window.location.reload()
   } catch (e) {
     console.error(e)
     alert('저장 실패')
@@ -1218,63 +1227,18 @@ onBeforeUnmount(() => {
 const captureLayoutDataUrl = () => {
   if (!konvaStage || !mainLayer || objects.value.length === 0) return null
 
-  // 현재 stage 변환 저장
-  const savedX = konvaStage.x()
-  const savedY = konvaStage.y()
-  const savedScale = konvaStage.scaleX()
-
-  // 모든 객체 경계박스 계산
-  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
-  objects.value.forEach(obj => {
-    const w = obj.width || (obj.cols * (SEAT_W + SEAT_GAP))
-    const h = obj.height || (obj.rows * (SEAT_H + SEAT_GAP))
-    minX = Math.min(minX, obj.x)
-    minY = Math.min(minY, obj.y)
-    maxX = Math.max(maxX, obj.x + w)
-    maxY = Math.max(maxY, obj.y + h)
-  })
-  if (!isFinite(minX)) return null
-
-  const PAD = 40
-  const contentW = maxX - minX + PAD * 2
-  const contentH = maxY - minY + PAD * 2
-  const stageW = konvaStage.width()
-  const stageH = konvaStage.height()
-  const scaleToFit = Math.min(stageW / contentW, stageH / contentH) * 0.9
-  const newX = (stageW - contentW * scaleToFit) / 2 - (minX - PAD) * scaleToFit
-  const newY = (stageH - contentH * scaleToFit) / 2 - (minY - PAD) * scaleToFit
-
-  // 트랜스포머, 선택 박스 임시 제거
+  // 트랜스포머, 선택 박스 임시 숨김 (캡처 이미지에 포함되지 않도록)
   const prevNodes = transformer.nodes()
   transformer.nodes([])
   selectionRect.visible(false)
-
-  // 다크 배경 임시 추가 (CSS radial-gradient는 Konva canvas에 포함 안 됨)
-  const bg = new Konva.Rect({
-    x: -(newX / scaleToFit),
-    y: -(newY / scaleToFit),
-    width: stageW / scaleToFit,
-    height: stageH / scaleToFit,
-    fill: '#0f172a',
-    listening: false
-  })
-  mainLayer.add(bg)
-  bg.moveToBottom()
-
-  // 콘텐츠 영역에 맞게 뷰 조정 후 캡처
-  konvaStage.position({ x: newX, y: newY })
-  konvaStage.scale({ x: scaleToFit, y: scaleToFit })
   mainLayer.draw()
 
-  // JPEG로 캡처 (PNG 대비 파일 크기 50~70% 절감)
+  // 현재 화면을 그대로 캡처 (stage 이동 없음 → 저장 중 화면 깜빡임 방지)
   const dataUrl = konvaStage.toDataURL({ mimeType: 'image/jpeg', quality: 0.85, pixelRatio: 1 })
 
-  // 복원 (JS 이벤트 루프가 idle되기 전 복원 → 유저에게 깜빡임 없음)
-  bg.destroy()
-  konvaStage.position({ x: savedX, y: savedY })
-  konvaStage.scale({ x: savedScale, y: savedScale })
+  // 복원
   transformer.nodes(prevNodes)
-  renderAll()
+  mainLayer.draw()
 
   return dataUrl
 }
