@@ -117,7 +117,7 @@ export default {
       this.loading = true
       this.errorMessage = ''
       try {
-        const list = await this.api.get(ENDPOINTS.organizerConcertPolicies(concertId))
+        const list = await this.api.get(ENDPOINTS.concertPolicies(concertId))
         const items = Array.isArray(list) ? list : (list.content ?? list.items ?? [])
         this.policy = items.find((p) => String(p.id) === String(policyId)) ?? null
         if (!this.policy) this.errorMessage = '해당 정책을 찾을 수 없습니다.'

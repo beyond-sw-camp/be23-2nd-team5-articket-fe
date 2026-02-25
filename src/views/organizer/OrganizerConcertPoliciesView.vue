@@ -248,7 +248,7 @@ export default {
       this.loading = true
       this.errorMessage = ''
       try {
-        const res = await this.api.get(ENDPOINTS.organizerConcertPolicies(concertId))
+        const res = await this.api.get(ENDPOINTS.concertPolicies(concertId))
         this.items = Array.isArray(res) ? res : (res.content ?? res.items ?? [])
       } catch (err) {
         this.errorMessage = err.message || '정책 목록을 불러오지 못했습니다.'
