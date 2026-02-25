@@ -117,7 +117,7 @@ export default {
       const performerId = row?.performerId
       if (performerId == null || performerId === '') return
       try {
-        await this.api.del(ENDPOINTS.performerDeleteLike() + '?id=' + performerId)
+        await this.api.del(ENDPOINTS.performerDeleteLike(performerId))
         this.rows = this.rows.filter((r) => r.performerId !== row.performerId)
       } catch (e) {
         console.warn('Like cancel failed', e)

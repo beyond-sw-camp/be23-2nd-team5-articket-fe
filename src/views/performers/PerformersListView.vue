@@ -247,11 +247,11 @@ export default {
       if (id == null || id === '') return
       try {
         if (row.liked) {
-          await this.api.del(ENDPOINTS.performerDeleteLike() + '?id=' + id)
+          await this.api.del(ENDPOINTS.performerDeleteLike(id))
           row.liked = false
           if (row.likeCount != null) row.likeCount--
         } else {
-          await this.api.post(ENDPOINTS.performerLike() + '?id=' + id)
+          await this.api.post(ENDPOINTS.performerLike(id))
           row.liked = true
           if (row.likeCount != null) row.likeCount++
         }
