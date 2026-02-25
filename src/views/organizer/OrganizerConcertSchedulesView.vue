@@ -1,15 +1,16 @@
 <template>
   <div class="grid gap-4">
+    <!-- Header -->
     <UiCard>
       <div class="flex items-start justify-between gap-3">
         <div>
           <div class="text-sm font-semibold text-slate-900">회차 목록</div>
-          <div class="mt-1 text-sm text-slate-500">ERD 기반: play_time, booking_start, booking_end, status</div>
+          <div class="mt-1 text-sm text-slate-500">play_time · booking_start/end · status</div>
         </div>
         <UiBadge tone="soft">ORGANIZER</UiBadge>
       </div>
       <div class="mt-4 flex justify-end">
-        <UiButton class="h-11 px-5" @click="openCreateModal">회차 생성 (더미)</UiButton>
+        <UiButton class="h-11 px-5" @click="openCreateModal">+ 회차 생성</UiButton>
       </div>
     </UiCard>
 
@@ -17,26 +18,50 @@
       <div class="text-sm text-slate-500">불러오는 중…</div>
     </UiCard>
 
-    <UiTable v-else :columns="columns" :rows="items">
-      <template #cell:play_time="{ row }">
-        {{ new Date(row.play_time).toLocaleString() }}
-      </template>
-      <template #cell:status="{ row }">
-        <UiBadge :tone="row.status === 'OPEN' ? 'solid' : 'soft'" :color="row.status === 'OPEN' ? 'red' : 'slate'">
-          {{ row.status }}
-        </UiBadge>
-      </template>
-      <template #cell:performers="{ row }">
-        <UiButton
-          variant="ghost"
-          class="h-8 px-2 text-sm"
-          @click="$router.push(`/organizer/schedules/${row.id}/performers`)"
-        >
-          출연진
-        </UiButton>
-      </template>
-    </UiTable>
+    <UiCard v-else-if="!items.length">
+      <div class="text-sm text-slate-500">등록된 회차가 없습니다.</div>
+    </UiCard>
 
+    <template v-else>
+      <UiTable :columns="columns" :rows="items">
+        <template #cell:play_time="{ row }">
+          {{ new Date(row.play_time).toLocaleString() }}
+        </template>
+
+        <template #cell:status="{ row }">
+          <UiBadge
+            :tone="row.status === 'OPEN' ? 'solid' : 'soft'"
+            :color="row.status === 'OPEN' ? 'red' : 'slate'"
+          >
+            {{ row.status }}
+          </UiBadge>
+        </template>
+
+        <template #cell:occupancy="{ row }">
+          <div class="flex items-center gap-2">
+            <div class="h-1.5 w-20 overflow-hidden rounded-full bg-slate-200">
+              <div
+                class="h-full rounded-full bg-red-500"
+                :style="{ width: Math.min(row.occupancy, 100) + '%' }"
+              />
+            </div>
+            <span class="text-xs text-slate-600">{{ row.occupancy }}%</span>
+          </div>
+        </template>
+
+        <template #cell:actions="{ row }">
+          <div class="flex gap-1">
+            <UiButton
+              variant="ghost"
+              class="h-8 px-2 text-sm"
+              @click="$router.push(`/organizer/schedules/${row.id}/performers`)"
+            >출연진</UiButton>
+          </div>
+        </template>
+      </UiTable>
+    </template>
+
+    <!-- ── Create Modal ── -->
     <UiModal :open="createModalOpen" title="회차 생성" @close="closeCreateModal">
       <form id="schedule-create-form" class="grid gap-4" @submit.prevent="submitCreate">
 
@@ -124,9 +149,7 @@
       <template #footer>
         <div class="flex justify-end gap-2">
           <UiButton variant="ghost" @click="closeCreateModal">취소</UiButton>
-          <UiButton as="button" type="submit" form="schedule-create-form">
-            {{ bulkMode ? `${bulkForm.play_times.length}개 회차 생성` : '회차 생성' }}
-          </UiButton>
+          <UiButton as="button" type="submit" form="schedule-create-form" :disabled="creating">생성</UiButton>
         </div>
       </template>
     </UiModal>
@@ -142,18 +165,15 @@ import UiModal from '../../components/common/UiModal.vue'
 import { useApi } from '../../composables/useApi'
 import { ENDPOINTS } from '../../lib/api/endpoints'
 
-// ERD: concert_schedule 테이블
-// 필수: play_time, booking_start, booking_end, status (READY/OPEN/CLOSED)
-// 선택: concert_thum_img_url, concert_detail_img_url (concert_id는 자동)
 function getDefaultForm() {
   const now = new Date()
   const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000)
   const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
   return {
-    play_time: formatDateTimeLocal(nextWeek),
-    booking_start: formatDateTimeLocal(now),
-    booking_end: formatDateTimeLocal(tomorrow),
-    status: 'DRAFT'
+    play_time: fmt(nextWeek),
+    booking_start: fmt(now),
+    booking_end: fmt(tomorrow),
+    status: 'READY',
   }
 }
 
@@ -164,7 +184,7 @@ function getDefaultBulkForm() {
   }
 }
 
-function formatDateTimeLocal(date) {
+function fmt(date) {
   const d = new Date(date)
   d.setMinutes(d.getMinutes() - d.getTimezoneOffset())
   return d.toISOString().slice(0, 16)
@@ -187,13 +207,14 @@ export default {
       createModalOpen: false,
       bulkMode: false,
       form: getDefaultForm(),
+      creating: false,
       bulkForm: getDefaultBulkForm(),
       columns: [
         { key: 'play_time', label: '일시' },
         { key: 'status', label: '상태' },
-        { key: 'occupancy', label: '판매율(%)' },
+        { key: 'occupancy', label: '예매율' },
         { key: 'sold', label: 'SOLD' },
-        { key: 'hold', label: 'HOLD' },
+        { key: 'hold', label: 'HELD' },
         { key: 'total', label: '총 좌석' },
         { key: 'performers', label: '출연진' }
       ]
@@ -208,26 +229,27 @@ export default {
   methods: {
     async load() {
       const concertId = this.$route.params.concertId
-      if (concertId == null || concertId === '') {
-        this.loading = false
-        return
-      }
+      if (!concertId) { this.loading = false; return }
       this.loading = true
       try {
-        const res = await this.api.get(`${ENDPOINTS.organizerConcertSchedules(concertId)}?page=0&size=50&sort=playTime,asc`)
+        const res = await this.api.get(
+          `${ENDPOINTS.concertSchedules(concertId)}?page=0&size=50&sort=playTime,asc`
+        )
         const raw = res.content ?? res.items ?? []
         this.items = raw.map((s) => ({
           ...s,
           play_time: s.playTime ?? s.play_time,
-          occupancy: s.occupancy ?? 0,
-          sold: s.sold ?? 0,
-          hold: s.hold ?? 0,
-          total: s.total ?? 0
+          occupancy: s.occupancyRate ?? s.occupancy ?? 0,
+          sold: s.soldSeats ?? s.sold ?? 0,
+          hold: s.reservedSeats ?? s.hold ?? 0,
+          total: s.totalSeats ?? s.total ?? 0,
         }))
       } finally {
         this.loading = false
       }
     },
+
+    // ── Create ──────────────────────────────────────────────
     openCreateModal() {
       this.form = getDefaultForm()
       this.bulkForm = getDefaultBulkForm()
@@ -250,12 +272,13 @@ export default {
     },
     async submitCreate() {
       const concertId = this.$route.params.concertId
-      if (concertId == null || concertId === '') return
+      if (!concertId) return
+      this.creating = true
       try {
         if (this.bulkMode) {
           // 일괄 등록: JSON body로 전송
           await this.api.post(
-            `${ENDPOINTS.organizerCreateSchedule(concertId)}/bulk`,
+            ENDPOINTS.organizerBulkCreateSchedules(concertId),
             {
               playTimes: this.bulkForm.play_times,
               bookingStart: this.form.booking_start,
@@ -276,11 +299,14 @@ export default {
           await this.api.post(ENDPOINTS.organizerCreateSchedule(concertId), formData)
         }
         this.closeCreateModal()
-        this.load()
+        await this.load()
       } catch (err) {
-        console.error('Failed to create schedule', err)
+        // 에러는 ErrorAlertModal에서 표시됨
+      } finally {
+        this.creating = false
       }
-    }
-  }
+    },
+
+  },
 }
 </script>
