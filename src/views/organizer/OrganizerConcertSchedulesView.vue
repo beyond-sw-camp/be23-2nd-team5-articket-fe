@@ -37,17 +37,26 @@
       </template>
     </UiTable>
 
-    <UiModal :open="createModalOpen" title="회차 생성 (더미)" @close="closeCreateModal">
+    <UiModal :open="createModalOpen" title="회차 생성" @close="closeCreateModal">
       <form id="schedule-create-form" class="grid gap-4" @submit.prevent="submitCreate">
-        <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
-          <div class="text-xs font-semibold text-slate-600">ERD: concert_schedule 테이블</div>
-          <div class="mt-1 text-xs text-slate-500">
-            필수: play_time, booking_start, booking_end, status (READY/OPEN/CLOSED)<br />
-            선택: concert_thum_img_url, concert_detail_img_url (concert_id는 자동)
-          </div>
+
+        <!-- 단일/다중 토글 -->
+        <div class="flex gap-2 rounded-xl border border-slate-200 bg-slate-50 p-1">
+          <button
+            type="button"
+            :class="['flex-1 rounded-lg py-1.5 text-xs font-semibold transition', !bulkMode ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400']"
+            @click="bulkMode = false"
+          >단일 날짜</button>
+          <button
+            type="button"
+            :class="['flex-1 rounded-lg py-1.5 text-xs font-semibold transition', bulkMode ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400']"
+            @click="bulkMode = true"
+          >여러 날짜 (일괄 등록)</button>
         </div>
-        <div>
-          <label class="block text-xs font-semibold text-slate-500">공연 시작 시간 (play_time) *</label>
+
+        <!-- 단일 모드 -->
+        <div v-if="!bulkMode">
+          <label class="block text-xs font-semibold text-slate-500">공연 시작 시간 *</label>
           <input
             v-model="form.play_time"
             type="datetime-local"
@@ -55,9 +64,33 @@
             class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
           />
         </div>
+
+        <!-- 다중 날짜 모드 -->
+        <div v-else>
+          <div class="flex items-center justify-between">
+            <label class="block text-xs font-semibold text-slate-500">공연 날짜 목록 *</label>
+            <button type="button" class="text-xs text-red-500 hover:underline" @click="addPlayTime">+ 날짜 추가</button>
+          </div>
+          <div v-for="(pt, idx) in bulkForm.play_times" :key="idx" class="mt-2 flex items-center gap-2">
+            <input
+              v-model="bulkForm.play_times[idx]"
+              type="datetime-local"
+              required
+              class="flex-1 rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+            />
+            <button
+              v-if="bulkForm.play_times.length > 1"
+              type="button"
+              class="text-slate-400 hover:text-red-500"
+              @click="removePlayTime(idx)"
+            >✕</button>
+          </div>
+        </div>
+
+        <!-- 공통: 예매 기간 + 상태 -->
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block text-xs font-semibold text-slate-500">예매 오픈 시각 (booking_start) *</label>
+            <label class="block text-xs font-semibold text-slate-500">예매 오픈 시각 *</label>
             <input
               v-model="form.booking_start"
               type="datetime-local"
@@ -66,7 +99,7 @@
             />
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-500">예매 마감 시각 (booking_end) *</label>
+            <label class="block text-xs font-semibold text-slate-500">예매 마감 시각 *</label>
             <input
               v-model="form.booking_end"
               type="datetime-local"
@@ -76,42 +109,24 @@
           </div>
         </div>
         <div>
-          <label class="block text-xs font-semibold text-slate-500">상태 (status) *</label>
+          <label class="block text-xs font-semibold text-slate-500">상태 *</label>
           <select
             v-model="form.status"
             required
             class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
           >
+            <option value="DRAFT">DRAFT</option>
             <option value="READY">READY</option>
             <option value="OPEN">OPEN</option>
-            <option value="CLOSED">CLOSED</option>
           </select>
-        </div>
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-xs font-semibold text-slate-500">썸네일 이미지 URL (concert_thum_img_url)</label>
-            <input
-              v-model="form.concert_thum_img_url"
-              type="url"
-              class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
-              placeholder="https://..."
-            />
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-500">상세 이미지 URL (concert_detail_img_url)</label>
-            <input
-              v-model="form.concert_detail_img_url"
-              type="url"
-              class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
-              placeholder="https://..."
-            />
-          </div>
         </div>
       </form>
       <template #footer>
         <div class="flex justify-end gap-2">
           <UiButton variant="ghost" @click="closeCreateModal">취소</UiButton>
-          <UiButton as="button" type="submit" form="schedule-create-form">생성 (더미)</UiButton>
+          <UiButton as="button" type="submit" form="schedule-create-form">
+            {{ bulkMode ? `${bulkForm.play_times.length}개 회차 생성` : '회차 생성' }}
+          </UiButton>
         </div>
       </template>
     </UiModal>
@@ -134,14 +149,18 @@ function getDefaultForm() {
   const now = new Date()
   const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000)
   const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
-  
   return {
     play_time: formatDateTimeLocal(nextWeek),
     booking_start: formatDateTimeLocal(now),
     booking_end: formatDateTimeLocal(tomorrow),
-    status: 'READY',
-    concert_thum_img_url: '',
-    concert_detail_img_url: ''
+    status: 'DRAFT'
+  }
+}
+
+function getDefaultBulkForm() {
+  const nextWeek = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+  return {
+    play_times: [formatDateTimeLocal(nextWeek)]
   }
 }
 
@@ -166,7 +185,9 @@ export default {
       items: [],
       api: null,
       createModalOpen: false,
+      bulkMode: false,
       form: getDefaultForm(),
+      bulkForm: getDefaultBulkForm(),
       columns: [
         { key: 'play_time', label: '일시' },
         { key: 'status', label: '상태' },
@@ -209,28 +230,54 @@ export default {
     },
     openCreateModal() {
       this.form = getDefaultForm()
+      this.bulkForm = getDefaultBulkForm()
+      this.bulkMode = false
       this.createModalOpen = true
     },
     closeCreateModal() {
       this.createModalOpen = false
     },
+    addPlayTime() {
+      const last = this.bulkForm.play_times.at(-1)
+      // 마지막 날짜에서 하루 뒤를 기본값으로 추가
+      const next = last
+        ? formatDateTimeLocal(new Date(new Date(last).getTime() + 24 * 60 * 60 * 1000))
+        : formatDateTimeLocal(new Date())
+      this.bulkForm.play_times.push(next)
+    },
+    removePlayTime(idx) {
+      this.bulkForm.play_times.splice(idx, 1)
+    },
     async submitCreate() {
       const concertId = this.$route.params.concertId
       if (concertId == null || concertId === '') return
-      const schedulePayload = {
-        playTime: this.form.play_time,
-        bookingStart: this.form.booking_start,
-        bookingEnd: this.form.booking_end,
-        status: this.form.status
-      }
-      const formData = new FormData()
-      formData.append('schedule', new Blob([JSON.stringify(schedulePayload)], { type: 'application/json' }))
       try {
-        await this.api.post(ENDPOINTS.organizerCreateSchedule(concertId), formData)
+        if (this.bulkMode) {
+          // 일괄 등록: JSON body로 전송
+          await this.api.post(
+            `${ENDPOINTS.organizerCreateSchedule(concertId)}/bulk`,
+            {
+              playTimes: this.bulkForm.play_times,
+              bookingStart: this.form.booking_start,
+              bookingEnd: this.form.booking_end,
+              status: this.form.status
+            }
+          )
+        } else {
+          // 단건 등록: 기존 FormData 방식 유지
+          const schedulePayload = {
+            playTime: this.form.play_time,
+            bookingStart: this.form.booking_start,
+            bookingEnd: this.form.booking_end,
+            status: this.form.status
+          }
+          const formData = new FormData()
+          formData.append('schedule', new Blob([JSON.stringify(schedulePayload)], { type: 'application/json' }))
+          await this.api.post(ENDPOINTS.organizerCreateSchedule(concertId), formData)
+        }
         this.closeCreateModal()
         this.load()
       } catch (err) {
-        this.$emit('error', err.message)
         console.error('Failed to create schedule', err)
       }
     }
