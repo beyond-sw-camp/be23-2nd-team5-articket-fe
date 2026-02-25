@@ -86,8 +86,8 @@
                     <span v-if="sm.version"> · v{{ sm.version }}</span>
                   </div>
                 </div>
-                <UiBadge :tone="sm.status === 'PUBLISHED' ? 'solid' : 'soft'" :color="sm.status === 'PUBLISHED' ? 'red' : 'slate'">
-                  {{ sm.status || 'DRAFT' }}
+                <UiBadge :tone="sm.seatMapStatus === 'PUBLISHED' ? 'solid' : 'soft'" :color="sm.seatMapStatus === 'PUBLISHED' ? 'red' : 'slate'">
+                  {{ sm.seatMapStatus || 'DRAFT' }}
                 </UiBadge>
               </div>
             </button>
@@ -298,7 +298,7 @@ export default {
       try {
         const res = await this.api.get(ENDPOINTS.venueSeatMaps(this.form.venue_id))
         const allSeatMaps = Array.isArray(res) ? res : res?.content || res?.items || []
-        this.seatMaps = allSeatMaps.filter((sm) => sm.status === 'PUBLISHED' || !sm.status)
+        this.seatMaps = allSeatMaps.filter((sm) => sm.seatMapStatus === 'PUBLISHED')
       } catch (err) {
         console.warn('Failed to load seat maps', err)
         this.seatMaps = []
@@ -346,11 +346,18 @@ export default {
       }
       this.savingSchedule = true
       const concertId = this.createdConcert.id
+      const toIso = (val) => val ? (val.length === 16 ? val + ':00' : val) : val
       const schedulePayload = {
-        playTime: this.scheduleForm.play_time,
-        bookingStart: this.scheduleForm.booking_start,
-        bookingEnd: this.scheduleForm.booking_end,
+        playTime: toIso(this.scheduleForm.play_time),
+        bookingStart: toIso(this.scheduleForm.booking_start),
+        bookingEnd: toIso(this.scheduleForm.booking_end),
         status: this.scheduleForm.status
+      }
+      if (this.scheduleForm.concert_thum_img_url) {
+        schedulePayload.concertThumImgUrl = this.scheduleForm.concert_thum_img_url
+      }
+      if (this.scheduleForm.concert_detail_img_url) {
+        schedulePayload.concertDetailImgUrl = this.scheduleForm.concert_detail_img_url
       }
       const formData = new FormData()
       formData.append('schedule', new Blob([JSON.stringify(schedulePayload)], { type: 'application/json' }))
