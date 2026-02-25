@@ -68,7 +68,8 @@ import ForbiddenView from '../views/system/ForbiddenView.vue'
 import NotFoundView from '../views/system/NotFoundView.vue'
 import GoogleRedirect from '../views/member/oauth/GoogleRedirect.vue'
 import KakaoRedirect from '../views/member/oauth/KakaoRedirect.vue'
-import Ordering from '../views/me/Ordering.vue'
+import Order from '../views/me/Order.vue'
+import OrderComplete from '../views/me/OrderComplete.vue'
 
 const withLayout = (component, meta = {}, props = {}) => ({
   component: DefaultLayout,
@@ -107,7 +108,9 @@ const routes = [
   { path: '/orders/:orderId', ...withLayout(OrderStatusView, { requiresAuth: true, requiredRole: 'USER' }) },
   { path: '/orders/:orderId/cancel', ...withLayout(OrderCancelView, { requiresAuth: true, requiredRole: 'USER' }) },
 
-  { path: '/ordering', ...withLayout(Ordering, { requiresAuth: true, requiredRole: 'USER' }) },
+  { path: '/order', ...withLayout(Order, { requiresAuth: true, requiredRole: 'USER' }) },
+  { path: '/orderComplete', ...withLayout(OrderComplete, { requiresAuth: true, requiredRole: 'USER' }) },
+
 
   { path: '/organizer', ...withLayout(OrganizerDashboardView, { requiresAuth: true, requiredRole: 'ORGANIZER' }) },
   { path: '/organizer/concerts', ...withLayout(OrganizerConcertsView, { requiresAuth: true, requiredRole: 'ORGANIZER' }) },

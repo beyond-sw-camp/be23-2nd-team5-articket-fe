@@ -23,6 +23,11 @@ export const ENDPOINTS = {
   payment: () => `/payment`,
   order: (orderId) => `/order/${orderId}`,
   orderCancel: (orderId) => `/orders/${orderId}/cancel`,
+  concertLike: (concertId) => `/user-concerts/${concertId}/like`,
+  concertReview: (concertId) => `/user-concerts/${concertId}/review`,
+  concertUserInteraction: (concertId) => `/user-concerts/${concertId}/user-interaction`,
+  concertStats: (concertId) => `/user-concerts/${concertId}/stats`,
+  concertReviews: (concertId) => `/user-concerts/${concertId}/reviews`,
 
   // ORGANIZER
   organizerConcerts: () => `/concerts/organizer`,
