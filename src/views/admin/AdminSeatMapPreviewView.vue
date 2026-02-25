@@ -48,7 +48,6 @@
         </div>
         <UiButton class="h-11 px-4" :disabled="savingSeatMapName" @click="updateSeatMapName">이름 저장</UiButton>
       </div>
-      <p v-if="errorMessage" class="text-sm text-red-600">{{ errorMessage }}</p>
       <p v-if="successMessage" class="text-sm text-green-600">{{ successMessage }}</p>
     </div>
 
@@ -174,7 +173,6 @@
   </UiCard>
   <UiCard v-else>
     <div class="text-sm font-semibold text-slate-900">좌석맵 정보를 찾을 수 없습니다.</div>
-    <div class="mt-1 text-sm text-slate-500">{{ errorMessage || '-' }}</div>
   </UiCard>
 </template>
 
@@ -216,7 +214,6 @@ export default {
       selectedDefinitionIds: [],
       definitionGradeDrafts: {},
       bulkGrade: '',
-      errorMessage: '',
       successMessage: ''
     }
   },
@@ -266,7 +263,6 @@ export default {
         return
       }
       this.loading = true
-      this.errorMessage = ''
       this.successMessage = ''
       try {
         const detail = await this.api.get(ENDPOINTS.adminSeatMapDetail(this.seatMapId))
@@ -275,7 +271,7 @@ export default {
         await this.loadSections()
       } catch (err) {
         this.seatMap = null
-        this.errorMessage = err.message || '좌석맵 정보를 불러오지 못했습니다.'
+        // 에러는 ErrorAlertModal에서 표시됨
       } finally {
         this.loading = false
       }
@@ -318,21 +314,19 @@ export default {
     async updateSeatMapName() {
       if (!this.seatMapNameDraft?.trim()) return
       this.savingSeatMapName = true
-      this.errorMessage = ''
       this.successMessage = ''
       try {
         await this.api.patch(ENDPOINTS.adminUpdateSeatMapName(this.seatMapId), { name: this.seatMapNameDraft.trim() })
         this.successMessage = '좌석맵 이름이 수정되었습니다.'
         await this.loadAll()
       } catch (err) {
-        this.errorMessage = err.message || '좌석맵 이름 수정에 실패했습니다.'
+        // 에러는 ErrorAlertModal에서 표시됨
       } finally {
         this.savingSeatMapName = false
       }
     },
     async addSection() {
       this.addingSection = true
-      this.errorMessage = ''
       this.successMessage = ''
       try {
         await this.api.post(ENDPOINTS.adminAddSeatMapSection(this.seatMapId), {
@@ -347,7 +341,7 @@ export default {
         this.successMessage = '섹션이 추가되었습니다.'
         await this.loadSections()
       } catch (err) {
-        this.errorMessage = err.message || '섹션 추가에 실패했습니다.'
+        // 에러는 ErrorAlertModal에서 표시됨
       } finally {
         this.addingSection = false
       }
@@ -366,7 +360,6 @@ export default {
       this.editingSectionId = null
     },
     async saveSection(sectionId) {
-      this.errorMessage = ''
       this.successMessage = ''
       try {
         await this.api.put(ENDPOINTS.adminUpdateSeatSection(sectionId), {
@@ -382,12 +375,11 @@ export default {
         this.editingSectionId = null
         await this.loadSections()
       } catch (err) {
-        this.errorMessage = err.message || '섹션 수정에 실패했습니다.'
+        // 에러는 ErrorAlertModal에서 표시됨
       }
     },
     async deleteSection(sectionId) {
       this.deletingSectionId = sectionId
-      this.errorMessage = ''
       this.successMessage = ''
       try {
         await this.api.del(ENDPOINTS.adminDeleteSeatSection(sectionId))
@@ -395,7 +387,7 @@ export default {
         await this.loadSections()
         await this.loadDefinitions()
       } catch (err) {
-        this.errorMessage = err.message || '섹션 삭제에 실패했습니다.'
+        // 에러는 ErrorAlertModal에서 표시됨
       } finally {
         this.deletingSectionId = null
       }
@@ -418,14 +410,13 @@ export default {
     async updateDefinitionGrade(definitionId) {
       const grade = this.definitionGradeDrafts[definitionId]
       if (!grade) return
-      this.errorMessage = ''
       this.successMessage = ''
       try {
         await this.api.patch(ENDPOINTS.adminUpdateSeatDefinitionGrade(definitionId), { grade })
         this.successMessage = '좌석 등급이 수정되었습니다.'
         await this.loadDefinitions()
       } catch (err) {
-        this.errorMessage = err.message || '좌석 등급 수정에 실패했습니다.'
+        // 에러는 ErrorAlertModal에서 표시됨
       }
     },
     async applyBulkGrade() {
@@ -434,7 +425,6 @@ export default {
         ? this.selectedDefinitionIds
         : this.seatDefinitions.map((d) => d.id)
       if (definitionIds.length === 0) return
-      this.errorMessage = ''
       this.successMessage = ''
       try {
         await this.api.patch(
@@ -444,7 +434,7 @@ export default {
         this.successMessage = `좌석 ${definitionIds.length}건 등급이 변경되었습니다.`
         await this.loadDefinitions()
       } catch (err) {
-        this.errorMessage = err.message || '좌석 등급 일괄 수정에 실패했습니다.'
+        // 에러는 ErrorAlertModal에서 표시됨
       }
     }
   }

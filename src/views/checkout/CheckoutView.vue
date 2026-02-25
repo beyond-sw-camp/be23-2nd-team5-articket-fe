@@ -17,10 +17,6 @@
         </div>
       </div>
 
-      <div v-if="error" class="mt-3 rounded-2xl border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">
-        {{ error }}
-      </div>
-
       <div class="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <UiButton variant="ghost" class="h-12 px-5" @click="$router.push('/')">둘러보기</UiButton>
         <UiButton class="h-12 px-6" :disabled="!holdId || loading" @click="open = true">
@@ -63,7 +59,6 @@ export default {
   data() {
     return {
       loading: false,
-      error: '',
       open: false,
       api: null
     }
@@ -80,13 +75,12 @@ export default {
     async createOrderAndPay() {
       if (!this.holdId) return
       this.loading = true
-      this.error = ''
       try {
         const order = await this.api.post(ENDPOINTS.orders(), { holdId: this.holdId })
         await this.api.post(ENDPOINTS.payments(), { orderId: order.id, method: 'MOCK_CARD' })
         this.$router.push(`/orders/${order.id}`)
       } catch (e) {
-        this.error = e?.message || '결제 요청에 실패했어요.'
+        // 에러는 ErrorAlertModal에서 표시됨
       } finally {
         this.loading = false
         this.open = false

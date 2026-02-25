@@ -111,6 +111,7 @@ export default {
       holdLoading: false,
       holdError: null,
       api: null,
+      enabled: false,
       seatHoldMock: null,
       konvaStageInstance: null,
       mainLayerInstance: null,
@@ -213,6 +214,8 @@ export default {
         }
       } catch (err) {
         this.loadError = err.message || '좌석 배치도를 불러오지 못했습니다.'
+        this.seats = []
+        // 에러는 ErrorAlertModal에서 표시됨
       } finally {
         this.loading = false
       }
@@ -440,7 +443,6 @@ export default {
     async hold() {
       if (this.selected.length === 0) return
       this.holdLoading = true
-      this.holdError = null
       try {
         const scheduleId = this.$route.params.scheduleId
         const res = await this.seatHoldMock.createHold({ scheduleId, seats: [...this.selected] })
@@ -452,7 +454,7 @@ export default {
         this.selected = []
         this.$router.push(`/hold/${res.holdId}`)
       } catch (e) {
-        this.holdError = e.message
+        // 에러는 ErrorAlertModal에서 표시됨
       } finally {
         this.holdLoading = false
       }
