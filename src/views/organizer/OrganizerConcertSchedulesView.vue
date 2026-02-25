@@ -214,7 +214,7 @@ export default {
       }
       this.loading = true
       try {
-        const res = await this.api.get(`${ENDPOINTS.organizerConcertSchedules(concertId)}?page=0&size=50&sort=playTime,asc`)
+        const res = await this.api.get(`${ENDPOINTS.concertSchedules(concertId)}?page=0&size=50&sort=playTime,asc`)
         const raw = res.content ?? res.items ?? []
         this.items = raw.map((s) => ({
           ...s,

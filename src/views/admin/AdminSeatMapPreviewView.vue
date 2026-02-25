@@ -20,6 +20,18 @@
       </div>
     </div>
 
+    <!-- 저장된 배치도 썸네일 -->
+    <div v-if="seatMap.thumbnailUrl" class="mt-4 overflow-hidden rounded-xl border border-slate-200 bg-slate-950">
+      <div class="flex items-center justify-between px-4 py-2 border-b border-slate-700">
+        <span class="text-xs font-semibold text-slate-400">저장된 배치도 미리보기</span>
+        <span class="text-xs text-slate-500">레이아웃 편집 후 저장 시 자동 갱신</span>
+      </div>
+      <img :src="seatMap.thumbnailUrl" alt="배치도 미리보기" class="w-full object-contain" style="max-height: 400px;" />
+    </div>
+    <div v-else class="mt-4 flex items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50 py-8">
+      <span class="text-sm text-slate-400">저장된 배치도 이미지가 없습니다. 레이아웃 편집 후 저장해주세요.</span>
+    </div>
+
     <div class="mt-4 grid gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
       <div class="text-xs text-slate-500">
         상태: <span class="font-semibold text-slate-700">{{ seatMap.status || 'DRAFT' }}</span>
@@ -234,7 +246,8 @@ export default {
         row_count: item?.row_count ?? item?.rowCount,
         col_count: item?.col_count ?? item?.colCount,
         version: item?.version ?? null,
-        status: item?.status || 'DRAFT'
+        status: item?.status || 'DRAFT',
+        thumbnailUrl: item?.thumbnailUrl ?? item?.thumbnail_url ?? null,
       }
     },
     normalizeSection(item) {

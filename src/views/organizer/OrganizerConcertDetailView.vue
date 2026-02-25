@@ -123,7 +123,7 @@ export default {
       this.successMessage = ''
       try {
         const [detail, statsRes] = await Promise.all([
-          this.api.get(ENDPOINTS.organizerConcert(concertId)),
+          this.api.get(ENDPOINTS.concert(concertId)),
           this.api.get(ENDPOINTS.organizerConcertStats(concertId)).catch(() => null)
         ])
         this.item = detail

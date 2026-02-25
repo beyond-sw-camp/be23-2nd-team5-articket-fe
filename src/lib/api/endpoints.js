@@ -5,7 +5,7 @@ export const ENDPOINTS = {
   concertSchedules: (concertId) => `/concerts/${concertId}/schedules`,
   schedule: (scheduleId) => `/schedules/${scheduleId}`,
   seatMap: (scheduleId) => `/schedules/${scheduleId}/seat-map`,
-  seats: (scheduleId) => `/schedules/${scheduleId}/seats`,
+  seats: (scheduleId) => `/schedule/${scheduleId}/seats`,
 
   // AUTH
   signup: () => `/member/create`,
