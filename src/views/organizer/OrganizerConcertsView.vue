@@ -3,7 +3,7 @@
     <div class="flex items-end justify-between gap-3">
       <div>
         <div class="text-sm font-semibold text-slate-900">내 공연 목록</div>
-        <div class="mt-1 text-sm text-slate-500">초안/게시/종료 · 회차/주문/매출 요약(mock)</div>
+        <div class="mt-1 text-sm text-slate-500">초안/게시/종료 · 회차/주문/매출 요약</div>
       </div>
       <UiButton class="h-11 px-5" @click="$router.push('/organizer/concerts/new')">공연 생성</UiButton>
     </div>

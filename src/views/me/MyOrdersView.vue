@@ -312,8 +312,8 @@ export default {
     async load() {
       this.loading = true
       try {
-        const res = await this.api.get(ENDPOINTS.order())
-        this.items = res.items || []
+        const res = await this.api.get(`${ENDPOINTS.myOrders()}?page=0&size=20`)
+        this.items = res?.content ?? res?.items ?? []
       } finally {
         this.loading = false
       }

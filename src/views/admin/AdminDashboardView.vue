@@ -9,8 +9,8 @@
     </div>
 
     <div class="grid gap-3 sm:grid-cols-3">
-      <StatCard label="활성 공연장" value="3" hint="mock" />
-      <StatCard label="차단 목록" value="0" hint="mock" />
+      <StatCard label="활성 공연장" value="-" hint="" />
+      <StatCard label="차단 목록" value="-" hint="" />
       <StatCard label="감사 로그" value="50" hint="최근 50건" />
     </div>
 

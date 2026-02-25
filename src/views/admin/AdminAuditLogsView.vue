@@ -3,7 +3,7 @@
     <div class="flex items-end justify-between gap-3">
       <div>
         <div class="text-sm font-semibold text-slate-900">운영/감사 로그</div>
-        <div class="mt-1 text-sm text-slate-500">GET /admin/audit-logs (mock)</div>
+        <div class="mt-1 text-sm text-slate-500">GET /admin/audit-logs</div>
       </div>
       <UiBadge tone="soft">ADMIN</UiBadge>
     </div>

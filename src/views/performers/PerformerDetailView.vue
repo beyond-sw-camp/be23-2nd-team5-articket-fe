@@ -223,11 +223,11 @@ export default {
       if (id == null || id === '') return
       try {
         if (this.item.liked) {
-          await this.api.del(ENDPOINTS.performerDeleteLike() + '?id=' + id)
+          await this.api.del(ENDPOINTS.performerDeleteLike(id))
           this.item.liked = false
           this.item.likeCount--
         } else {
-          await this.api.post(ENDPOINTS.performerLike() + '?id=' + id)
+          await this.api.post(ENDPOINTS.performerLike(id))
           this.item.liked = true
           this.item.likeCount++
         }
