@@ -997,23 +997,49 @@ const loadLayout = async () => {
       seatMapVersion.value = mapRes.version
     }
 
+    // layout 전용 엔드포인트(GET)를 추가로 시도 → 섹션 위치 정보 포함 가능
+    let layoutData = null
+    try {
+      layoutData = await api.get(`/seat-maps/admin/${seatMapId}/layout`)
+      console.log('[LOAD DEBUG] layoutData:', JSON.stringify(layoutData))
+    } catch (_) { console.log('[LOAD DEBUG] /layout GET 없음, mapRes 사용') }
+
+    console.log('[LOAD DEBUG] mapRes:', JSON.stringify(mapRes))
+
+    // 위치 정보 우선순위: layoutData.sections > mapRes.sections > 섹션 자체 필드
+    const posFromLayout = {}
+    const posSource = layoutData?.sections ?? mapRes?.sections ?? []
+    if (Array.isArray(posSource)) {
+      posSource.forEach(s => {
+        const x = s.xpos ?? s.xPos ?? s.x_pos ?? s.posX ?? s.pos_x
+        const y = s.ypos ?? s.yPos ?? s.y_pos ?? s.posY ?? s.pos_y
+        if (x != null && y != null) posFromLayout[String(s.id)] = { x, y }
+      })
+    }
+    console.log('[LOAD DEBUG] posFromLayout:', JSON.stringify(posFromLayout))
+
     const sections = await api.get(`/seat-sections/admin/${seatMapId}`)
 
     // stageX/Y가 null/undefined 일 때만 캔버스 가운데로 초기 배치
     const defaultStageX = Math.round(konvaStage.width() / 2 - 200)
     const defaultStageY = Math.round(konvaStage.height() / 2 - 50)
+
+    // 백엔드 GET이 stageX/Y를 안 돌려줄 경우 → localStorage 에서 복원
+    const lsStage = (() => { try { return JSON.parse(localStorage.getItem(`seatmap_stage_${seatMapId}`)) } catch { return null } })()
+
+    // stageX/Y도 layoutData에서 우선 읽기, 없으면 localStorage, 없으면 캔버스 중앙
+    const stageSrc = layoutData ?? mapRes
     const stageObj = {
       id: uid(), type: 'stage', name: 'STAGE',
-      x: mapRes?.stageX ?? mapRes?.stage_x ?? defaultStageX,
-      y: mapRes?.stageY ?? mapRes?.stage_y ?? defaultStageY,
-      width: mapRes?.stageWidth ?? mapRes?.stage_width ?? 400,
-      height: mapRes?.stageHeight ?? mapRes?.stage_height ?? 100,
-      rotation: mapRes?.stageRotation ?? mapRes?.stage_rotation ?? 0
+      x: stageSrc?.stageX ?? stageSrc?.stage_x ?? lsStage?.x ?? defaultStageX,
+      y: stageSrc?.stageY ?? stageSrc?.stage_y ?? lsStage?.y ?? defaultStageY,
+      width: stageSrc?.stageWidth ?? stageSrc?.stage_width ?? lsStage?.width ?? 400,
+      height: stageSrc?.stageHeight ?? stageSrc?.stage_height ?? lsStage?.height ?? 100,
+      rotation: stageSrc?.stageRotation ?? stageSrc?.stage_rotation ?? lsStage?.rotation ?? 0
     }
 
     const gridObjs = await Promise.all((sections || []).map(async sec => {
       const defs = await api.get(`/seat-definitions/admin/sections/${sec.id}/definitions`)
-      // 백엔드 응답 구조 디버그 (콘솔에서 실제 필드명 확인용)
       console.log('[LOAD DEBUG] section raw:', JSON.stringify(sec))
       // 백엔드 응답 필드명 다양성 대응 (rows/totalRow, seatsPerRow/totalCol 등)
       const rows = sec.rows ?? sec.totalRow ?? sec.total_row ?? 5
@@ -1024,13 +1050,18 @@ const loadLayout = async () => {
           return d?.isVisible === false ? 'inactive' : 'empty'
         })
       )
+
+      // 위치: layoutData/mapRes 임베디드 섹션 → 섹션 자체 필드 순으로 참조
+      // 백엔드가 xpos/ypos (전체 소문자) 로 반환함 (확인됨)
+      const layoutPos = posFromLayout[String(sec.id)]
+      const x = layoutPos?.x ?? sec.xpos ?? sec.xPos ?? sec.x_pos ?? sec.posX ?? sec.pos_x ?? 0
+      const y = layoutPos?.y ?? sec.ypos ?? sec.yPos ?? sec.y_pos ?? sec.posY ?? sec.pos_y ?? 0
+
       return {
-        id: Number(sec.id),  // ← 숫자로 저장 (기존 구역 ID)
+        id: Number(sec.id),
         type: 'seatGrid',
         name: sec.name ?? `구역 ${sec.id}`,
-        // 백엔드 필드명 다양성 대응 (xPos/x_pos/posX 등)
-        x: sec.xPos ?? sec.x_pos ?? sec.posX ?? sec.pos_x ?? 0,
-        y: sec.yPos ?? sec.y_pos ?? sec.posY ?? sec.pos_y ?? 0,
+        x, y,
         rows, cols,
         grade: defs?.[0]?.gradeDefault ?? defs?.[0]?.grade ?? 'R',
         color: sec.displayColor ?? sec.display_color ?? '#ef6b6b',
@@ -1135,6 +1166,14 @@ const handleSave = async () => {
     // reload 없이 상태만 업데이트 (reload 시 xPos/yPos가 복원되지 않는 문제 방지)
     savedStatus.value = '저장됨'
     seatMapVersion.value = (seatMapVersion.value || 1) + 1
+    // 백엔드가 stageX/Y를 GET으로 반환하지 않으므로 localStorage에 보관
+    try {
+      localStorage.setItem(`seatmap_stage_${seatMapId}`, JSON.stringify({
+        x: stageObj?.x ?? 0, y: stageObj?.y ?? 0,
+        width: stageObj?.width ?? 400, height: stageObj?.height ?? 100,
+        rotation: stageObj?.rotation ?? 0
+      }))
+    } catch (_) {}
     alert('저장되었습니다.')
   } catch (e) {
     console.error(e)
@@ -1234,7 +1273,8 @@ const captureLayoutDataUrl = () => {
   mainLayer.draw()
 
   // 현재 화면을 그대로 캡처 (stage 이동 없음 → 저장 중 화면 깜빡임 방지)
-  const dataUrl = konvaStage.toDataURL({ mimeType: 'image/jpeg', quality: 0.85, pixelRatio: 1 })
+  // pixelRatio: 2 → 구역이 많아 축소 뷰일 때도 글씨/선이 선명하게 저장됨
+  const dataUrl = konvaStage.toDataURL({ mimeType: 'image/jpeg', quality: 0.9, pixelRatio: 2 })
 
   // 복원
   transformer.nodes(prevNodes)
