@@ -30,26 +30,26 @@ export const ENDPOINTS = {
   concertReviews: (concertId) => `/user-concerts/${concertId}/reviews`,
 
   // ORGANIZER
-  organizerConcerts: () => `/organizer/concerts`,
-  organizerConcertStats: (concertId) => `/organizer/concerts/${concertId}/stats`,
-  organizerScheduleStats: (scheduleId) => `/organizer/schedules/${scheduleId}/stats`,
-  organizerCreateConcert: () => `/organizer/concerts/create`,
-  organizerUpdateConcert: (concertId) => `/organizer/concerts/${concertId}`,
-  organizerConcert: (concertId) => `/organizer/concerts/${concertId}`,
-  organizerPublishConcert: (concertId) => `/organizer/concerts/${concertId}/publish`,
-  organizerCreateSchedule: (concertId) => `/organizer/concerts/${concertId}/schedules`,
-  organizerUpdateSchedule: (scheduleId) => `/organizer/concerts/schedules/${scheduleId}`,
-  organizerDeleteSchedule: (scheduleId) => `/organizer/schedules/${scheduleId}`,
-  organizerConcertSchedules: (concertId) => `/organizer/concerts/${concertId}/schedules`,
-  organizerSchedulePrices: (scheduleId) => `/organizer/schedules/${scheduleId}/prices`,
-  organizerCreatePolicy: (concertId) => `/organizer/concerts/${concertId}/policies`,
-  organizerUpdatePolicy: (policyId) => `/organizer/policies/${policyId}`,
-  organizerDeletePolicy: (policyId) => `/organizer/policies/${policyId}`,
-  organizerConcertPolicies: (concertId) => `/organizer/concerts/${concertId}/policies`,
-  organizerConcertOrders: (concertId) => `/organizer/concerts/${concertId}/orders`,
-  organizerOrder: (orderId) => `/organizer/orders/${orderId}`,
-  organizerPriceHistory: (concertId) => `/organizer/concerts/${concertId}/price-history`,
-  organizerPolicyHistory: (concertId) => `/organizer/concerts/${concertId}/policy-history`,
+  organizerConcerts: () => `/concerts/organizer`,
+  organizerConcertStats: (concertId) => `/concerts/organizer/${concertId}/stats`,
+  organizerScheduleStats: (scheduleId) => `/concerts/organizer/schedules/${scheduleId}/stats`,
+  organizerCreateConcert: () => `/concerts/organizer/create`,
+  organizerUpdateConcert: (concertId) => `/concerts/organizer/${concertId}`,
+  organizerConcert: (concertId) => `/concerts/organizer/${concertId}`,
+  organizerPublishConcert: (concertId) => `/concerts/organizer/${concertId}/publish`,
+  organizerCreateSchedule: (concertId) => `/concerts/organizer/${concertId}/schedules`,
+  organizerUpdateSchedule: (scheduleId) => `/concerts/organizer/schedules/${scheduleId}`,
+  organizerDeleteSchedule: (scheduleId) => `/concerts/organizer/schedules/${scheduleId}`,
+  organizerConcertSchedules: (concertId) => `/concerts/organizer/${concertId}/schedules`,
+  organizerSchedulePrices: (scheduleId) => `/concerts/organizer/schedules/${scheduleId}/prices`,
+  organizerCreatePolicy: (concertId) => `/concerts/organizer/${concertId}/policies`,
+  organizerUpdatePolicy: (policyId) => `/concerts/organizer/policies/${policyId}`,
+  organizerDeletePolicy: (policyId) => `/concerts/organizer/policies/${policyId}`,
+  organizerConcertPolicies: (concertId) => `/concerts/organizer/${concertId}/policies`,
+  organizerConcertOrders: (concertId) => `/concerts/organizer/${concertId}/orders`,
+  organizerOrder: (orderId) => `/concerts/organizer/orders/${orderId}`,
+  organizerPriceHistory: (concertId) => `/concerts/organizer/${concertId}/prices/history`,
+  organizerPolicyHistory: (concertId) => `/concerts/organizer/${concertId}/policies/history`,
 
   // ADMIN (venue: base /venues, admin actions under /venues/admin/...)
   adminCreateVenue: () => `/venues/admin/create`,
@@ -69,6 +69,13 @@ export const ENDPOINTS = {
     const q = p.toString()
     return `/venues/${venueId}/seat-maps${q ? `?${q}` : ''}`
   },
+  adminVenueSeatMapsList: (venueId, params = {}) => {
+    const p = new URLSearchParams()
+    if (params.page != null) p.set('page', params.page)
+    if (params.size != null) p.set('size', params.size)
+    const q = p.toString()
+    return `/venues/admin/${venueId}/seat-maps${q ? `?${q}` : ''}`
+  },
   adminCreateSeatMap: () => `/seat-maps/admin/create`,
   adminCreateSeatMapWithSections: () => `/seat-maps/admin/createWithSections`,
   adminAddSeatMapSection: (seatMapId) => `/seat-maps/admin/${seatMapId}/create`,
@@ -76,6 +83,7 @@ export const ENDPOINTS = {
   adminUpdateSeatMapName: (seatMapId) => `/seat-maps/admin/updateName/${seatMapId}`,
   adminUpdateSeatMapStatus: (seatMapId, status) => `/seat-maps/admin/updateStatus/${seatMapId}?status=${status}`,
   adminPublishSeatMap: (seatMapId) => `/seat-maps/admin/updateStatus/${seatMapId}?status=PUBLISHED`,
+  adminUpdateSeatMapLayout: (seatMapId) => `/seat-maps/admin/${seatMapId}/layout`,
   adminSeatDefinitionsBySection: (sectionId) => `/seat-definitions/admin/sections/${sectionId}/definitions`,
   adminUpdateSeatDefinitionGrade: (definitionId) => `/seat-definitions/admin/definitions/${definitionId}/grade`,
   adminBulkUpdateSeatDefinitionsGrade: (sectionId) => `/seat-definitions/admin/sections/${sectionId}/definitions/grade`,

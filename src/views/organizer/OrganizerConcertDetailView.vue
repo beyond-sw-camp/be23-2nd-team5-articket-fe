@@ -48,7 +48,6 @@
               />
             </div>
           </div>
-          <p v-if="errorMessage" class="text-sm text-red-600">{{ errorMessage }}</p>
           <p v-if="successMessage" class="text-sm text-green-600">{{ successMessage }}</p>
           <div class="flex justify-end gap-2">
             <UiButton variant="ghost" type="button" class="h-11 px-4" @click="load">취소</UiButton>
@@ -100,7 +99,6 @@ export default {
       stats: null,
       form: { title: '', status: 'DRAFT', ageLimit: null },
       saving: false,
-      errorMessage: '',
       successMessage: '',
       api: null
     }
@@ -119,7 +117,6 @@ export default {
         return
       }
       this.loading = true
-      this.errorMessage = ''
       this.successMessage = ''
       try {
         const [detail, statsRes] = await Promise.all([
@@ -135,7 +132,7 @@ export default {
         }
       } catch (err) {
         this.item = null
-        this.errorMessage = err.message || '공연 정보를 불러오지 못했습니다.'
+        // 에러는 ErrorAlertModal에서 표시됨
       } finally {
         this.loading = false
       }
@@ -143,7 +140,6 @@ export default {
     async submitUpdate() {
       const concertId = this.$route.params.concertId
       if (concertId == null || concertId === '') return
-      this.errorMessage = ''
       this.successMessage = ''
       this.saving = true
       try {
@@ -158,7 +154,7 @@ export default {
         this.successMessage = '저장되었습니다.'
         await this.load()
       } catch (err) {
-        this.errorMessage = err.message || '저장에 실패했습니다.'
+        // 에러는 ErrorAlertModal에서 표시됨
       } finally {
         this.saving = false
       }

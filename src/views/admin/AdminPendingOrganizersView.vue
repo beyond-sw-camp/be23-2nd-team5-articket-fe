@@ -68,7 +68,6 @@
       </UiCard>
     </template>
 
-    <p v-if="errorMessage" class="text-sm font-medium text-red-600">{{ errorMessage }}</p>
     <p v-if="successMessage" class="text-sm font-medium text-green-600">{{ successMessage }}</p>
   </div>
 </template>
@@ -97,7 +96,6 @@ export default {
       items: [],
       page: 0,
       totalPages: 1,
-      errorMessage: '',
       successMessage: '',
       api: null,
       columns: [
@@ -125,7 +123,6 @@ export default {
   methods: {
     async load() {
       this.loading = true
-      this.errorMessage = ''
       this.successMessage = ''
       try {
         const res = await this.api.get(ENDPOINTS.adminPendingOrganizers({ page: this.page, size: PAGE_SIZE }))
@@ -134,7 +131,7 @@ export default {
         this.totalPages = Math.max(1, res?.totalPages ?? 1)
       } catch (e) {
         this.items = []
-        this.errorMessage = e?.message ?? '목록을 불러오지 못했습니다.'
+        // 에러는 ErrorAlertModal에서 표시됨
       } finally {
         this.loading = false
       }
@@ -142,7 +139,6 @@ export default {
     async approve(row) {
       const id = row?.id
       if (id == null) return
-      this.errorMessage = ''
       this.successMessage = ''
       row._approving = true
       try {
@@ -150,7 +146,7 @@ export default {
         this.successMessage = '승인되었습니다.'
         await this.load()
       } catch (e) {
-        this.errorMessage = e?.message ?? '승인 처리에 실패했습니다.'
+        // 에러는 ErrorAlertModal에서 표시됨
       } finally {
         row._approving = false
       }
@@ -159,7 +155,6 @@ export default {
       const id = row?.id
       if (id == null) return
       if (!window.confirm(`"${row.name ?? row.email}" 주최자 신청을 거절할까요?`)) return
-      this.errorMessage = ''
       this.successMessage = ''
       row._rejecting = true
       try {
@@ -167,7 +162,7 @@ export default {
         this.successMessage = '거절되었습니다.'
         await this.load()
       } catch (e) {
-        this.errorMessage = e?.message ?? '거절 처리에 실패했습니다.'
+        // 에러는 ErrorAlertModal에서 표시됨
       } finally {
         row._rejecting = false
       }

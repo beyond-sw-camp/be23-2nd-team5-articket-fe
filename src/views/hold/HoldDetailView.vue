@@ -4,9 +4,8 @@
       <div class="text-sm text-slate-500">불러오는 중…</div>
     </UiCard>
 
-    <UiCard v-else-if="error">
-      <div class="text-sm font-semibold text-slate-900">좌석 선점 조회</div>
-      <div class="mt-2 text-sm text-red-700">{{ error }}</div>
+    <UiCard v-else-if="!item">
+      <div class="text-sm text-slate-500">선점 정보를 찾을 수 없습니다.</div>
       <div class="mt-4">
         <UiButton class="h-11 px-5" @click="$router.push('/')">홈으로</UiButton>
       </div>
@@ -70,6 +69,7 @@ import UiButton from '../../components/common/UiButton.vue'
 import UiBadge from '../../components/common/UiBadge.vue'
 import UiModal from '../../components/common/UiModal.vue'
 import { useSeatHoldMock } from '../../composables/useSeatHoldMock'
+import { showErrorAlert } from '../../composables/useErrorToast'
 
 export default {
   name: 'HoldDetailView',
@@ -84,7 +84,6 @@ export default {
     return {
       loading: false,
       item: null,
-      error: '',
       now: Date.now(),
       open: false,
       timer: null,
@@ -122,11 +121,11 @@ export default {
   methods: {
     async load() {
       this.loading = true
-      this.error = ''
       try {
         this.item = await this.seatHoldMock.getHold(this.$route.params.holdId)
       } catch (e) {
-        this.error = '선점 정보를 찾을 수 없어요. (만료되었을 수 있어요)'
+        this.item = null
+        showErrorAlert(e?.message ? new Error(e.message) : new Error('선점 정보를 찾을 수 없어요. (만료되었을 수 있어요)'))
       } finally {
         this.loading = false
       }
@@ -137,7 +136,7 @@ export default {
         this.open = false
         this.$router.push('/')
       } catch (e) {
-        this.error = e?.message || '좌석 해제에 실패했어요.'
+        showErrorAlert(e?.message ? new Error(e.message) : new Error('좌석 해제에 실패했어요.'))
       }
     }
   }
