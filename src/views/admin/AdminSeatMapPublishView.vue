@@ -17,7 +17,6 @@
       </div>
     </div>
 
-    <p v-if="errorMessage" class="mt-3 text-sm text-red-600">{{ errorMessage }}</p>
     <p v-if="successMessage" class="mt-3 text-sm text-green-600">{{ successMessage }}</p>
 
     <div class="mt-4 flex flex-wrap gap-2">
@@ -48,7 +47,6 @@ export default {
       api: null,
       loading: false,
       currentStatus: '',
-      errorMessage: '',
       successMessage: ''
     }
   },
@@ -68,20 +66,19 @@ export default {
         const detail = await this.api.get(ENDPOINTS.adminSeatMapDetail(this.seatMapId))
         this.currentStatus = detail?.status || ''
       } catch (err) {
-        this.errorMessage = err.message || '좌석맵 정보를 불러오지 못했습니다.'
+        // 에러는 ErrorAlertModal에서 표시됨
       }
     },
     async updateStatus(status) {
       if (this.seatMapId == null || this.seatMapId === '') return
       this.loading = true
-      this.errorMessage = ''
       this.successMessage = ''
       try {
         await this.api.patch(ENDPOINTS.adminUpdateSeatMapStatus(this.seatMapId, status))
         this.currentStatus = status
         this.successMessage = `상태가 ${status}(으)로 변경되었습니다.`
       } catch (err) {
-        this.errorMessage = err.message || '상태 변경에 실패했습니다.'
+        // 에러는 ErrorAlertModal에서 표시됨
       } finally {
         this.loading = false
       }

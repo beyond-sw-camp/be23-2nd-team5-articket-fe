@@ -86,10 +86,6 @@
           <p v-if="errors.phoneNumber" class="text-xs font-medium text-red-600">{{ errors.phoneNumber }}</p>
         </div>
 
-        <div v-if="error" class="rounded-2xl border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">
-          {{ error }}
-        </div>
-
         <div class="mt-1 flex items-center justify-between gap-2">
           <UiButton
             variant="ghost"
@@ -117,7 +113,6 @@
 import UiCard from '../../components/common/UiCard.vue'
 import UiButton from '../../components/common/UiButton.vue'
 import { useAuthApi } from '../../composables/useAuthApi'
-import { getMessageFromResponse } from '../../lib/api/client'
 
 export default {
   name: 'MemberSignup',
@@ -141,7 +136,6 @@ export default {
         phoneNumber: ''
       },
       loading: false,
-      error: '',
       authApi: null
     }
   },
@@ -207,7 +201,6 @@ export default {
     },
 
     async handleSignup() {
-      this.error = ''
       this.errors = { name: '', email: '', password: '', phoneNumber: '' }
 
       if (!this.validateForm()) {
@@ -229,15 +222,12 @@ export default {
           this.$router.replace('/member/complete')
           return
         } else {
-          // 서버에서 내려준 에러 메시지를 그대로 표시 (없을 때만 fallback)
           const data = this.authApi.lastErrorData?.value
-          this.error = getMessageFromResponse(data) || this.authApi.error.value || '회원가입에 실패했어요.'
-          this.applyServerDetails(data)
+          this.applyServerDetails(data?.error ?? data)
         }
       } catch (e) {
-        const data = e.responseData
-        this.error = getMessageFromResponse(data) ?? e.message ?? '회원가입에 실패했어요.'
-        this.applyServerDetails(data)
+        const data = e?.responseData ?? e?.response?.data
+        this.applyServerDetails(data?.error ?? data)
       } finally {
         this.loading = false
       }

@@ -22,10 +22,6 @@
             required minlength="6" />
         </div>
 
-        <div v-if="error" class="rounded-2xl border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">
-          {{ error }}
-        </div>
-
         <div v-if="socialSuccess"
           class="rounded-2xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-semibold text-emerald-700">
           {{ socialSuccess }}
@@ -109,8 +105,7 @@ export default {
       kakaoRedirectUrl: "http://localhost:3000/oauth/kakao/redirect",
 
       loading: false,
-      socialLoading: null, // 'kakao' | 'google' | null
-      error: '',
+      socialLoading: null,
       socialSuccess: '',
       authApi: null,
     }
@@ -126,12 +121,11 @@ export default {
       }
 
       this.loading = true
-      this.error = ''
 
       try {
-        const success = await this.authApi.login(data)
+        const result = await this.authApi.login(data)
 
-        if (success) {
+        if (result.success) {
           const redirect = this.$route.query.redirect || '/me'
           // this.$router.push(redirect)
           try {
@@ -147,11 +141,9 @@ export default {
             console.log(e)
           }
           window.location.href = redirect;
-        } else {
-          this.error = this.authApi.error.value || '로그인에 실패했어요.'
         }
       } catch (e) {
-        this.error = e.message || '로그인에 실패했어요.'
+        // 에러는 ErrorAlertModal에서 표시됨
       } finally {
         this.loading = false
       }
