@@ -77,9 +77,13 @@ export default {
   },
   methods: {
     async load() {
+      const scheduleId = this.$route.params.scheduleId
+      if (scheduleId == null || scheduleId === '') {
+        this.loading = false
+        return
+      }
       this.loading = true
       try {
-        const scheduleId = this.$route.params.scheduleId
         let schedule
         try {
           schedule = await this.api.get(ENDPOINTS.schedule(scheduleId))

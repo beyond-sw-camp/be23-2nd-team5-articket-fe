@@ -268,6 +268,7 @@ export default {
       }
     },
     async loadVenue() {
+      if (this.venueId == null || this.venueId === '') return
       try {
         this.venue = await this.api.get(ENDPOINTS.adminVenueDetail(this.venueId))
       } catch (err) {
@@ -276,6 +277,7 @@ export default {
       }
     },
     async loadSeatMaps() {
+      if (this.venueId == null || this.venueId === '') return
       try {
         // GET /venues/{venueId}/seat-maps (Pageable)
         const res = await this.api.get(ENDPOINTS.venueSeatMapsList(this.venueId, { page: 0, size: 100 }))

@@ -51,12 +51,17 @@ export default {
   },
   methods: {
     async cancel() {
+      const orderId = this.$route.params.orderId
+      if (orderId == null || orderId === '') {
+        this.error = '주문 정보를 찾을 수 없습니다.'
+        return
+      }
       this.loading = true
       this.error = ''
       try {
-        await this.api.post(ENDPOINTS.orderCancel(this.$route.params.orderId), {})
+        await this.api.post(ENDPOINTS.orderCancel(orderId), {})
         this.open = false
-        this.$router.push(`/orders/${this.$route.params.orderId}`)
+        this.$router.push(`/orders/${orderId}`)
       } catch (e) {
         this.error = e?.message || '취소에 실패했어요.'
       } finally {

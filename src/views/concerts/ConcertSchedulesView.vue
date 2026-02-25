@@ -84,9 +84,13 @@ export default {
   },
   methods: {
     async load() {
+      const concertId = this.$route.params.concertId
+      if (concertId == null || concertId === '') {
+        this.loading = false
+        return
+      }
       this.loading = true
       try {
-        const concertId = this.$route.params.concertId
         try {
           this.concert = await this.api.get(ENDPOINTS.concert(concertId))
         } catch {

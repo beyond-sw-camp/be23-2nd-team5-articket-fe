@@ -93,10 +93,15 @@ export default {
   },
   methods: {
     async load() {
+      const venueId = this.$route.params.venueId
+      if (venueId == null || venueId === '') {
+        this.loading = false
+        return
+      }
       this.loading = true
       try {
-        this.venue = await this.api.get(ENDPOINTS.venue(this.$route.params.venueId))
-        const res = await this.api.get(ENDPOINTS.venueConcerts(this.$route.params.venueId))
+        this.venue = await this.api.get(ENDPOINTS.venue(venueId))
+        const res = await this.api.get(ENDPOINTS.venueConcerts(venueId))
         this.concerts = res.items || []
       } finally {
         this.loading = false

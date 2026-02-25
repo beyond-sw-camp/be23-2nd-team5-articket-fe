@@ -110,9 +110,13 @@ export default {
   },
   methods: {
     async load() {
+      const scheduleId = this.$route.params.scheduleId
+      if (scheduleId == null || scheduleId === '') {
+        this.loading = false
+        return
+      }
       this.loading = true
       try {
-        const scheduleId = this.$route.params.scheduleId
         const res = await this.api.get(ENDPOINTS.seats(scheduleId))
         this.seats = Array.isArray(res) ? res : res?.content || res?.items || []
       } catch (err) {

@@ -243,6 +243,10 @@ export default {
       }
     },
     async loadAll() {
+      if (this.seatMapId == null || this.seatMapId === '') {
+        this.loading = false
+        return
+      }
       this.loading = true
       this.errorMessage = ''
       this.successMessage = ''
@@ -259,6 +263,7 @@ export default {
       }
     },
     async loadSections() {
+      if (this.seatMapId == null || this.seatMapId === '') return
       try {
         const res = await this.api.get(ENDPOINTS.adminSeatSectionsBySeatMap(this.seatMapId))
         const list = Array.isArray(res) ? res : res?.content || res?.items || []

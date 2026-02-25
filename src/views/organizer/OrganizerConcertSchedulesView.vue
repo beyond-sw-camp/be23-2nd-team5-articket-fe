@@ -26,6 +26,15 @@
           {{ row.status }}
         </UiBadge>
       </template>
+      <template #cell:performers="{ row }">
+        <UiButton
+          variant="ghost"
+          class="h-8 px-2 text-sm"
+          @click="$router.push(`/organizer/schedules/${row.id}/performers`)"
+        >
+          출연진
+        </UiButton>
+      </template>
     </UiTable>
 
     <UiModal :open="createModalOpen" title="회차 생성 (더미)" @close="closeCreateModal">
@@ -164,7 +173,8 @@ export default {
         { key: 'occupancy', label: '판매율(%)' },
         { key: 'sold', label: 'SOLD' },
         { key: 'hold', label: 'HOLD' },
-        { key: 'total', label: '총 좌석' }
+        { key: 'total', label: '총 좌석' },
+        { key: 'performers', label: '출연진' }
       ]
     }
   },
@@ -176,9 +186,13 @@ export default {
   },
   methods: {
     async load() {
+      const concertId = this.$route.params.concertId
+      if (concertId == null || concertId === '') {
+        this.loading = false
+        return
+      }
       this.loading = true
       try {
-        const concertId = this.$route.params.concertId
         const res = await this.api.get(`${ENDPOINTS.organizerConcertSchedules(concertId)}?page=0&size=50&sort=playTime,asc`)
         const raw = res.content ?? res.items ?? []
         this.items = raw.map((s) => ({
@@ -202,6 +216,7 @@ export default {
     },
     async submitCreate() {
       const concertId = this.$route.params.concertId
+      if (concertId == null || concertId === '') return
       const schedulePayload = {
         playTime: this.form.play_time,
         bookingStart: this.form.booking_start,

@@ -113,11 +113,15 @@ export default {
   },
   methods: {
     async load() {
+      const concertId = this.$route.params.concertId
+      if (concertId == null || concertId === '') {
+        this.loading = false
+        return
+      }
       this.loading = true
       this.errorMessage = ''
       this.successMessage = ''
       try {
-        const concertId = this.$route.params.concertId
         const [detail, statsRes] = await Promise.all([
           this.api.get(ENDPOINTS.organizerConcert(concertId)),
           this.api.get(ENDPOINTS.organizerConcertStats(concertId)).catch(() => null)
@@ -137,6 +141,8 @@ export default {
       }
     },
     async submitUpdate() {
+      const concertId = this.$route.params.concertId
+      if (concertId == null || concertId === '') return
       this.errorMessage = ''
       this.successMessage = ''
       this.saving = true
@@ -148,7 +154,7 @@ export default {
         if (this.form.ageLimit != null && this.form.ageLimit !== '') {
           payload.ageLimit = Number(this.form.ageLimit)
         }
-        await this.api.put(ENDPOINTS.organizerUpdateConcert(this.$route.params.concertId), payload)
+        await this.api.put(ENDPOINTS.organizerUpdateConcert(concertId), payload)
         this.successMessage = '저장되었습니다.'
         await this.load()
       } catch (err) {

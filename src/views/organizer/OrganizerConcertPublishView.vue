@@ -49,14 +49,19 @@ export default {
   },
   methods: {
     async publish() {
+      const concertId = this.concertId
+      if (concertId == null || concertId === '') {
+        this.errorMessage = '공연 정보를 찾을 수 없습니다.'
+        return
+      }
       this.errorMessage = ''
       this.successMessage = ''
       this.publishing = true
       try {
-        await this.api.post(ENDPOINTS.organizerPublishConcert(this.concertId))
+        await this.api.post(ENDPOINTS.organizerPublishConcert(concertId))
         this.successMessage = '공연이 게시되었습니다.'
         setTimeout(() => {
-          this.$router.push(`/organizer/concerts/${this.concertId}`)
+          this.$router.push(`/organizer/concerts/${concertId}`)
         }, 1500)
       } catch (err) {
         this.errorMessage = err.message || '게시에 실패했습니다.'

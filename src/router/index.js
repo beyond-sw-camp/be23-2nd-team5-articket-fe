@@ -13,13 +13,18 @@ import SeatMapView from '../views/schedules/SeatMapView.vue'
 import SeatsView from '../views/schedules/SeatsView.vue'
 import NearbyView from '../views/venues/NearbyView.vue'
 import VenueDetailView from '../views/venues/VenueDetailView.vue'
+import PerformersListView from '../views/performers/PerformersListView.vue'
+import PerformerDetailView from '../views/performers/PerformerDetailView.vue'
 import LoginView from '../views/member/LoginView.vue'
 import SignupView from '../views/member/SignupView.vue'
+import SignupCompleteView from '../views/member/SignupCompleteView.vue'
 
 // user
 import ProfileView from '../views/me/ProfileView.vue'
 import MyOrdersView from '../views/me/MyOrdersView.vue'
 import MyOrderDetailView from '../views/me/MyOrderDetailView.vue'
+import MyPerformerLikesView from '../views/me/MyPerformerLikesView.vue'
+import ForUView from '../views/me/ForUView.vue'
 import HoldCreateView from '../views/hold/HoldCreateView.vue'
 import HoldDetailView from '../views/hold/HoldDetailView.vue'
 import CheckoutView from '../views/checkout/CheckoutView.vue'
@@ -41,6 +46,7 @@ import OrganizerConcertOrdersView from '../views/organizer/OrganizerConcertOrder
 import OrganizerOrderDetailView from '../views/organizer/OrganizerOrderDetailView.vue'
 import OrganizerPriceHistoryView from '../views/organizer/OrganizerPriceHistoryView.vue'
 import OrganizerPolicyHistoryView from '../views/organizer/OrganizerPolicyHistoryView.vue'
+import OrganizerSchedulePerformersView from '../views/organizer/OrganizerSchedulePerformersView.vue'
 
 // admin
 import AdminDashboardView from '../views/admin/AdminDashboardView.vue'
@@ -51,6 +57,7 @@ import AdminSeatMapPreviewView from '../views/admin/AdminSeatMapPreviewView.vue'
 import AdminSeatMapPublishView from '../views/admin/AdminSeatMapPublishView.vue'
 import AdminBlocklistView from '../views/admin/AdminBlocklistView.vue'
 import AdminAuditLogsView from '../views/admin/AdminAuditLogsView.vue'
+import AdminPendingOrganizersView from '../views/admin/AdminPendingOrganizersView.vue'
 import AdminStubTableView from '../views/admin/AdminStubTableView.vue'
 
 // errors
@@ -61,10 +68,10 @@ import KakaoRedirect from '../views/member/oauth/KakaoRedirect.vue'
 import Order from '../views/me/Order.vue'
 import OrderComplete from '../views/me/OrderComplete.vue'
 
-const withLayout = (component, meta = {}) => ({
+const withLayout = (component, meta = {}, props = {}) => ({
   component: DefaultLayout,
   meta,
-  children: [{ path: '', component }],
+  children: [{ path: '', component, ...(Object.keys(props).length ? { props } : {}) }],
 })
 
 const routes = [
@@ -76,9 +83,12 @@ const routes = [
   { path: '/schedules/:scheduleId/seats', ...withLayout(SeatsView, { roleScope: 'guest' }) },
   { path: '/nearby', ...withLayout(NearbyView, { roleScope: 'guest' }) },
   { path: '/venues/:venueId', ...withLayout(VenueDetailView, { roleScope: 'guest' }) },
+  { path: '/performers', ...withLayout(PerformersListView, { roleScope: 'guest' }) },
+  { path: '/performers/:performerId', ...withLayout(PerformerDetailView, { roleScope: 'guest' }) },
 
   { path: '/member/doLogin', ...withLayout(LoginView, { roleScope: 'auth' }) },
   { path: '/member/create', ...withLayout(SignupView, { roleScope: 'auth' }) },
+  { path: '/member/complete', ...withLayout(SignupCompleteView, { roleScope: 'auth' }) },
 
   { path: '/oauth/google/redirect', ...withLayout(GoogleRedirect, { roleScope: 'auth' }) },
   { path: '/oauth/kakao/redirect', ...withLayout(KakaoRedirect, { roleScope: 'auth' }) },
@@ -86,6 +96,8 @@ const routes = [
   { path: '/me', ...withLayout(ProfileView, { requiresAuth: true, requiredRole: 'USER' }) },
   { path: '/me/orders', ...withLayout(MyOrdersView, { requiresAuth: true, requiredRole: 'USER' }) },
   { path: '/me/orders/:orderId', ...withLayout(MyOrderDetailView, { requiresAuth: true, requiredRole: 'USER' }) },
+  { path: '/me/performers/likes', ...withLayout(MyPerformerLikesView, { requiresAuth: true, requiredRole: 'USER' }) },
+  { path: '/me/foru', ...withLayout(ForUView, { requiresAuth: true }) },
   { path: '/hold', ...withLayout(HoldCreateView, { requiresAuth: true, requiredRole: 'USER' }) },
   { path: '/hold/:holdId', ...withLayout(HoldDetailView, { requiresAuth: true, requiredRole: 'USER' }) },
   { path: '/checkout', ...withLayout(CheckoutView, { requiresAuth: true, requiredRole: 'USER' }) },
@@ -110,6 +122,8 @@ const routes = [
   { path: '/organizer/orders/:orderId', ...withLayout(OrganizerOrderDetailView, { requiresAuth: true, requiredRole: 'ORGANIZER' }) },
   { path: '/organizer/concerts/:concertId/price-history', ...withLayout(OrganizerPriceHistoryView, { requiresAuth: true, requiredRole: 'ORGANIZER' }) },
   { path: '/organizer/concerts/:concertId/policy-history', ...withLayout(OrganizerPolicyHistoryView, { requiresAuth: true, requiredRole: 'ORGANIZER' }) },
+  { path: '/organizer/performers', ...withLayout(PerformersListView, { requiresAuth: true, requiredRole: 'ORGANIZER' }, { canManage: true }) },
+  { path: '/organizer/schedules/:scheduleId/performers', ...withLayout(OrganizerSchedulePerformersView, { requiresAuth: true, requiredRole: 'ORGANIZER' }) },
 
   { path: '/admin', ...withLayout(AdminDashboardView, { requiresAuth: true, requiredRole: 'ADMIN' }) },
   { path: '/admin/venues', ...withLayout(AdminVenuesView, { requiresAuth: true, requiredRole: 'ADMIN' }) },
@@ -119,6 +133,7 @@ const routes = [
   { path: '/admin/seat-maps/:seatMapId/publish', ...withLayout(AdminSeatMapPublishView, { requiresAuth: true, requiredRole: 'ADMIN' }) },
   { path: '/admin/blocklist', ...withLayout(AdminBlocklistView, { requiresAuth: true, requiredRole: 'ADMIN' }) },
   { path: '/admin/audit-logs', ...withLayout(AdminAuditLogsView, { requiresAuth: true, requiredRole: 'ADMIN' }) },
+  { path: '/admin/pending-organizers', ...withLayout(AdminPendingOrganizersView, { requiresAuth: true, requiredRole: 'ADMIN' }) },
 
   // stub table pages (ADMIN)
   { path: '/admin/users', ...withLayout(AdminStubTableView, { requiresAuth: true, requiredRole: 'ADMIN', stubKey: 'users' }) },
