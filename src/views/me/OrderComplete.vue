@@ -4,6 +4,9 @@
       <div class="check-icon">✓</div>
       <h2 class="title">예매가 정상적으로 완료되었습니다.</h2>
       <p class="subtitle">예매번호로 상세 내역을 확인하실 수 있습니다.</p>
+      <p class="subtitle-virtual" v-if="bookingInfo.paymentMethod === '무통장입금 (입금대기)'">
+        1시간 이내에 입금처리해주세요.
+      </p>
     </div>
 
     <div class="info-section">
@@ -94,6 +97,8 @@
 </template>
 
 <script>
+import { ENDPOINTS } from '../../lib/api/endpoints';
+
 export default {
   name: 'OrderComplete',
   data() {
@@ -142,7 +147,7 @@ export default {
       this.$router.push('/');
     },
     goToMyTicket() {
-      this.$router.push('/my/tickets');
+      this.$router.push('/me/orders');
     }
   }
 }
@@ -184,6 +189,12 @@ export default {
   font-size: 15px;
   color: #666;
   margin: 0;
+}
+.subtitle-virtual {
+  margin-top: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #e07000;
 }
 
 /* 테이블 영역 */
