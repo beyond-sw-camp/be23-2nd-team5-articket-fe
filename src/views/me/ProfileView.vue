@@ -4,8 +4,8 @@
       <div class="text-sm text-slate-500">불러오는 중…</div>
     </UiCard>
 
-    <UiCard v-else-if="error" class="border-red-200 bg-red-50">
-      <div class="text-sm font-semibold text-red-700">{{ error }}</div>
+    <UiCard v-else-if="!profile">
+      <div class="text-sm text-slate-500">정보를 불러오지 못했습니다.</div>
       <UiButton class="mt-3" @click="load">다시 시도</UiButton>
     </UiCard>
 
@@ -86,7 +86,6 @@ export default {
     return {
       profile: null,
       loading: false,
-      error: '',
       api: null,
       isVerified: null,
     }
@@ -123,12 +122,11 @@ export default {
     },
     async load() {
       this.loading = true
-      this.error = ''
       try {
         const data = await this.api.get(ENDPOINTS.me())
         this.profile = data?.data != null ? data.data : data
       } catch (e) {
-        this.error = e.message || '내 정보를 불러오지 못했습니다.'
+        this.profile = null
       } finally {
         this.loading = false
       }
@@ -154,7 +152,7 @@ export default {
         localStorage.setItem('isVerified', true)
         this.isVerified = true
       } catch (e) {
-        this.error = e?.message || '본인인증 확인에 실패했습니다.'
+        // 에러는 ErrorAlertModal에서 표시됨
       }
     }
   }

@@ -127,7 +127,6 @@
           </div>
         </div>
       </div>
-      <p v-if="errorMessage" class="text-sm text-red-600">{{ errorMessage }}</p>
       <p v-if="successMessage" class="text-sm text-green-600">{{ successMessage }}</p>
       <div class="flex gap-2">
         <UiButton variant="ghost" type="button" class="h-11 px-4" @click="$router.push('/admin/venues')">목록</UiButton>
@@ -175,7 +174,6 @@ export default {
       },
       venue: null,
       saving: false,
-      errorMessage: '',
       successMessage: ''
     }
   },
@@ -212,7 +210,6 @@ export default {
             longitude: v.lng ?? address.longitude ?? null
           }
         }
-        this.errorMessage = ''
         this.successMessage = ''
       }
     }
@@ -224,18 +221,16 @@ export default {
   methods: {
     async loadVenue() {
       if (this.venueId == null || this.venueId === '') return
-      this.errorMessage = ''
       this.successMessage = ''
       try {
         this.venue = await this.api.get(ENDPOINTS.adminVenueDetail(this.venueId))
       } catch (err) {
         this.venue = null
-        this.errorMessage = err.message || '공연장 정보를 불러오지 못했습니다.'
+        // 에러는 ErrorAlertModal에서 표시됨
       }
     },
     async submitUpdate() {
       if (this.venueId == null || this.venueId === '') return
-      this.errorMessage = ''
       this.successMessage = ''
       this.saving = true
       const payload = {
@@ -262,7 +257,7 @@ export default {
         await this.api.put(ENDPOINTS.adminUpdateVenue(this.venueId), payload)
         this.successMessage = '저장되었습니다.'
       } catch (err) {
-        this.errorMessage = err.message || '저장에 실패했습니다.'
+        // 에러는 ErrorAlertModal에서 표시됨
       } finally {
         this.saving = false
       }
