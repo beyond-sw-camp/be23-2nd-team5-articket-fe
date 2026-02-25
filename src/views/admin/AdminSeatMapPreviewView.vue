@@ -12,7 +12,12 @@
           <span v-if="seatMap.version !== null && seatMap.version !== undefined"> · v{{ seatMap.version }}</span>
         </div>
       </div>
-      <UiBadge tone="soft">ADMIN</UiBadge>
+      <div class="flex items-center gap-2">
+        <UiButton class="h-9 px-4" @click="$router.push(`/admin/seat-maps/${seatMap.id}/layout`)">
+          🗺️ 레이아웃 편집
+        </UiButton>
+        <UiBadge tone="soft">ADMIN</UiBadge>
+      </div>
     </div>
 
     <div class="mt-4 grid gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4">

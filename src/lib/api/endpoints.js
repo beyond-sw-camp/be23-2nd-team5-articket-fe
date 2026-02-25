@@ -69,6 +69,13 @@ export const ENDPOINTS = {
     const q = p.toString()
     return `/venues/${venueId}/seat-maps${q ? `?${q}` : ''}`
   },
+  adminVenueSeatMapsList: (venueId, params = {}) => {
+    const p = new URLSearchParams()
+    if (params.page != null) p.set('page', params.page)
+    if (params.size != null) p.set('size', params.size)
+    const q = p.toString()
+    return `/venues/admin/${venueId}/seat-maps${q ? `?${q}` : ''}`
+  },
   adminCreateSeatMap: () => `/seat-maps/admin/create`,
   adminCreateSeatMapWithSections: () => `/seat-maps/admin/createWithSections`,
   adminAddSeatMapSection: (seatMapId) => `/seat-maps/admin/${seatMapId}/create`,
@@ -76,6 +83,7 @@ export const ENDPOINTS = {
   adminUpdateSeatMapName: (seatMapId) => `/seat-maps/admin/updateName/${seatMapId}`,
   adminUpdateSeatMapStatus: (seatMapId, status) => `/seat-maps/admin/updateStatus/${seatMapId}?status=${status}`,
   adminPublishSeatMap: (seatMapId) => `/seat-maps/admin/updateStatus/${seatMapId}?status=PUBLISHED`,
+  adminUpdateSeatMapLayout: (seatMapId) => `/seat-maps/admin/${seatMapId}/layout`,
   adminSeatDefinitionsBySection: (sectionId) => `/seat-definitions/admin/sections/${sectionId}/definitions`,
   adminUpdateSeatDefinitionGrade: (definitionId) => `/seat-definitions/admin/definitions/${definitionId}/grade`,
   adminBulkUpdateSeatDefinitionsGrade: (sectionId) => `/seat-definitions/admin/sections/${sectionId}/definitions/grade`,
