@@ -361,12 +361,9 @@ export default {
     }
   },
   methods: {
-<<<<<<< Updated upstream
     onScroll() {
       this.scrolled = window.scrollY > 20
     },
-=======
->>>>>>> Stashed changes
     bumpTokenVersion() {
       this.tokenVersion++
     },

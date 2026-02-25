@@ -13,7 +13,6 @@
           취소
         </UiButton>
       </div>
-      <p v-if="errorMessage" class="mt-3 text-sm text-red-600">{{ errorMessage }}</p>
       <p v-if="successMessage" class="mt-3 text-sm text-green-600">{{ successMessage }}</p>
     </UiCard>
   </div>
@@ -23,6 +22,7 @@
 import UiCard from '../../components/common/UiCard.vue'
 import UiButton from '../../components/common/UiButton.vue'
 import { useApi } from '../../composables/useApi'
+import { showErrorAlert } from '../../composables/useErrorToast'
 import { ENDPOINTS } from '../../lib/api/endpoints'
 
 export default {
@@ -34,7 +34,6 @@ export default {
   data() {
     return {
       publishing: false,
-      errorMessage: '',
       successMessage: '',
       api: null
     }
@@ -51,10 +50,9 @@ export default {
     async publish() {
       const concertId = this.concertId
       if (concertId == null || concertId === '') {
-        this.errorMessage = '공연 정보를 찾을 수 없습니다.'
+        showErrorAlert(new Error('공연 정보를 찾을 수 없습니다.'))
         return
       }
-      this.errorMessage = ''
       this.successMessage = ''
       this.publishing = true
       try {
@@ -64,7 +62,7 @@ export default {
           this.$router.push(`/organizer/concerts/${concertId}`)
         }, 1500)
       } catch (err) {
-        this.errorMessage = err.message || '게시에 실패했습니다.'
+        // 에러는 ErrorAlertModal에서 표시됨
       } finally {
         this.publishing = false
       }

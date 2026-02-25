@@ -47,10 +47,17 @@ export function useAuthApi() {
       localStorage.setItem('refreshToken', refreshToken ?? '')
       syncFromToken()
 
-      return true
+      return { success: true }
     } catch (e) {
-      error.value = e.message || '로그인에 실패했어요.'
-      return false
+      const data = e.responseData ?? e.response?.data
+      lastErrorData.value = data
+      const msg =
+        getMessageFromResponse(data) ??
+        (data?.error && typeof data.error === 'object' ? (data.error.error_message ?? data.error.message) : null) ??
+        e.message
+      const displayMsg = (typeof msg === 'string' && msg.trim() ? msg.trim() : null) || '로그인에 실패했어요.'
+      error.value = displayMsg
+      return { success: false, message: displayMsg }
     } finally {
       loading.value = false
     }

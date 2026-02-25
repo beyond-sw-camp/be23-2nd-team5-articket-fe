@@ -9,9 +9,6 @@
 
   <UiModal :open="open" title="주문을 취소할까요?" @close="open = false">
     <div class="text-sm text-slate-600">취소 후에는 복구할 수 없어요.</div>
-    <div v-if="error" class="mt-3 rounded-2xl border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">
-      {{ error }}
-    </div>
     <template #footer>
       <div class="flex justify-end gap-2">
         <UiButton variant="ghost" class="h-11 px-4" @click="open = false">닫기</UiButton>
@@ -26,6 +23,7 @@ import UiCard from '../../components/common/UiCard.vue'
 import UiButton from '../../components/common/UiButton.vue'
 import UiModal from '../../components/common/UiModal.vue'
 import { useApi } from '../../composables/useApi'
+import { showErrorAlert } from '../../composables/useErrorToast'
 import { ENDPOINTS } from '../../lib/api/endpoints'
 
 export default {
@@ -39,7 +37,6 @@ export default {
     return {
       loading: false,
       open: true,
-      error: '',
       api: null
     }
   },
@@ -53,17 +50,16 @@ export default {
     async cancel() {
       const orderId = this.$route.params.orderId
       if (orderId == null || orderId === '') {
-        this.error = '주문 정보를 찾을 수 없습니다.'
+        showErrorAlert(new Error('주문 정보를 찾을 수 없습니다.'))
         return
       }
       this.loading = true
-      this.error = ''
       try {
         await this.api.post(ENDPOINTS.orderCancel(orderId), {})
         this.open = false
         this.$router.push(`/orders/${orderId}`)
       } catch (e) {
-        this.error = e?.message || '취소에 실패했어요.'
+        // 에러는 ErrorAlertModal에서 표시됨
       } finally {
         this.loading = false
       }

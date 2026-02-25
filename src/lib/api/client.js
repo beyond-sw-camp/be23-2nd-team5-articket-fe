@@ -1,26 +1,8 @@
 import axios from 'axios'
+import { parseErrorResponse } from './parseError'
+import { showErrorAlert } from '../../composables/useErrorToast'
 
-/**
- * 서버 에러 응답 body에서 메시지 문자열 추출 (CommonErrorDto, Spring 등 다양한 형식 지원)
- * @param {any} data - error.response.data (객체 또는 문자열)
- * @returns {string|null}
- */
-export function getMessageFromResponse(data) {
-  if (data == null) return null
-  if (typeof data === 'string' && data.trim()) return data.trim()
-  if (typeof data !== 'object') return null
-  const msg =
-    data.error_message ??
-    data.message ??
-    data.error ??
-    data.msg ??
-    data.errorMessage ??
-    data.errorDescription ??
-    data.reason ??
-    (Array.isArray(data.details) ? data.details[0]?.reason : null) ??
-    (Array.isArray(data.errors) ? (data.errors[0]?.defaultMessage ?? data.errors[0]?.message ?? (typeof data.errors[0] === 'string' ? data.errors[0] : null)) : null)
-  return msg != null && String(msg).trim() ? String(msg).trim() : null
-}
+export { parseErrorResponse, getMessageFromResponse } from './parseError'
 
 const DEFAULTS = {
   baseUrl: import.meta.env.VITE_API_BASE || 'http://localhost:8082',
@@ -55,6 +37,12 @@ export function createApiClient(opts = {}) {
     async (err) => {
       const originalRequest = err.config
       const status = err.response?.status
+
+      // 403: 권한 없음 → 홈으로 이동
+      if (status === 403) {
+        if (typeof window !== 'undefined') window.location.href = '/'
+        return Promise.reject(err)
+      }
 
       if (status !== 401 || originalRequest._retried) {
         return Promise.reject(err)
@@ -128,10 +116,14 @@ export function createApiClient(opts = {}) {
     } catch (error) {
       const status = error.response?.status
       const data = error.response?.data
-      const errMsg = getMessageFromResponse(data) ?? error.message ?? `API Error (${status ?? 'network'})`
+      const { message, code, details } = parseErrorResponse(data)
+      const errMsg = message ?? error.message ?? `API Error (${status ?? 'network'})`
       const err = new Error(errMsg)
       err.status = status
+      err.code = code
+      err.details = details
       err.responseData = data
+      if (status !== 403) showErrorAlert(err)
       throw err
     }
   }

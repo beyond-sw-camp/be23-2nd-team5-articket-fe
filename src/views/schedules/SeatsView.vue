@@ -33,7 +33,6 @@
         </div>
 
         <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <div v-if="holdError" class="text-sm font-semibold text-red-700">{{ holdError }}</div>
           <UiButton class="h-12 px-6" :disabled="holdLoading || selected.length === 0" @click="hold">
             <Timer class="h-4 w-4" />
             <span class="ml-2">좌석 선점(5분)</span>
@@ -79,7 +78,6 @@ export default {
       grade: '',
       api: null,
       holdLoading: false,
-      holdError: null,
       enabled: false,
       seatHoldMock: null,
       realtimeSeatMock: null
@@ -121,7 +119,7 @@ export default {
         this.seats = Array.isArray(res) ? res : res?.content || res?.items || []
       } catch (err) {
         this.seats = []
-        this.holdError = err.message || '좌석 목록을 불러오지 못했습니다.'
+        // 에러는 ErrorAlertModal에서 표시됨
       } finally {
         this.loading = false
       }
@@ -148,7 +146,6 @@ export default {
     async hold() {
       if (this.selected.length === 0) return
       this.holdLoading = true
-      this.holdError = null
       try {
         const scheduleId = this.$route.params.scheduleId
         const res = await this.seatHoldMock.createHold({ scheduleId, seats: this.selected })
@@ -166,7 +163,7 @@ export default {
         
         this.$router.push(`/hold/${res.holdId}`)
       } catch (e) {
-        this.holdError = e.message
+        // 에러는 ErrorAlertModal에서 표시됨
       } finally {
         this.holdLoading = false
       }
