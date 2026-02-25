@@ -4,8 +4,8 @@
 
     <div class="filter-container">
       <div class="date-filters">
-        <button 
-          v-for="filter in filters" 
+        <button
+          v-for="filter in filters"
           :key="filter"
           :class="{ active: activeFilter === filter }"
           @click="activeFilter = filter"
@@ -57,13 +57,18 @@
           </td>
           <td>{{ order.ticketCount }}매</td>
           <td>
-            <span :class="['status-badge', { 'completed': order.status === '관람완료' }]">
+            <span :class="['status-badge', { 'completed': order.status === '관람완료' || order.status === '취소완료' }]">
               {{ order.status }}
             </span>
           </td>
           <td>
-            <button v-if="order.status === '예매완료'" class="cancel-btn" @click="cancelOrder(order.bookingNumber)">
-              예매취소
+            <button
+              v-if="order.status === '예매완료' || order.status === '결제대기'"
+              class="cancel-btn"
+              :disabled="order.cancelling"
+              @click="cancelOrder(order)"
+            >
+              {{ order.cancelling ? '취소중...' : '예매취소' }}
             </button>
             <span v-else>-</span>
           </td>
@@ -73,42 +78,91 @@
   </div>
 </template>
 
-<script setup>
-import { ref } from 'vue';
+<script>
+import { useApi } from '../../composables/useApi';
+import { ENDPOINTS } from '../../lib/api/endpoints';
 
-// 기간 필터 상태 관리
-const filters = ['1주일', '1개월', '3개월', '6개월'];
-const activeFilter = ref('1개월');
+const STATUS_MAP = {
+  PAID: '예매완료',
+  PENDING: '결제대기',
+  CANCELLED: '취소완료'
+};
 
-// 백엔드 API에서 받아올 가상의 예매 내역 데이터
-const orders = ref([
-  {
-    bookingDate: '2026.02.20',
-    bookingNumber: 'T2602201234',
-    posterUrl: 'https://via.placeholder.com/70x95/eeeeee/999999?text=Poster',
-    title: '뮤지컬 〈레베카〉 10주년 기념 공연',
-    viewDate: '2026.03.15(일) 14:00',
-    location: '블루스퀘어 신한카드홀',
-    ticketCount: 2,
-    status: '예매완료'
+function formatDateTime(isoStr) {
+  if (!isoStr) return '-';
+  const dt = new Date(isoStr);
+  const y = dt.getFullYear();
+  const m = String(dt.getMonth() + 1).padStart(2, '0');
+  const d = String(dt.getDate()).padStart(2, '0');
+  const h = String(dt.getHours()).padStart(2, '0');
+  const min = String(dt.getMinutes()).padStart(2, '0');
+  return `${y}.${m}.${d} ${h}:${min}`;
+}
+
+function formatDateOnly(isoStr) {
+  if (!isoStr) return '-';
+  const dt = new Date(isoStr);
+  const y = dt.getFullYear();
+  const m = String(dt.getMonth() + 1).padStart(2, '0');
+  const d = String(dt.getDate()).padStart(2, '0');
+  return `${y}.${m}.${d}`;
+}
+
+export default {
+  name: 'MyOrdersView',
+  data() {
+    return {
+      filters: ['1주일', '1개월', '3개월', '6개월'],
+      activeFilter: '1개월',
+      orders: [],
+      loading: false,
+      api: null
+    };
   },
-  {
-    bookingDate: '2026.01.10',
-    bookingNumber: 'T2601105678',
-    posterUrl: 'https://via.placeholder.com/70x95/eeeeee/999999?text=Poster',
-    title: '대한민국 vs 브라질 친선경기',
-    viewDate: '2026.01.25(토) 20:00',
-    location: '서울월드컵경기장',
-    ticketCount: 1,
-    status: '관람완료'
-  }
-]);
+  created() {
+    this.api = useApi();
+  },
+  mounted() {
+    this.loadOrders();
+  },
+  methods: {
+    async loadOrders() {
+      this.loading = true;
+      try {
+        const result = await this.api.get(ENDPOINTS.myOrders());
 
-// 예매 취소 함수 (향후 백엔드 API 연동)
-const cancelOrder = (bookingNumber) => {
-  if (confirm('정말로 예매를 취소하시겠습니까?')) {
-    alert(`${bookingNumber} 예매가 취소 요청되었습니다.`);
-    // TODO: axios.post(`/api/v1/orders/${bookingNumber}/cancel`) 호출
+        console.log(result)
+        const list = result.content || [];
+        this.orders = list.map(order => ({
+          id: order.id,
+          bookingDate: formatDateOnly(order.scheduleDate),
+          bookingNumber: order.uuid || order.id || '-',
+          posterUrl: 'https://via.placeholder.com/70x95/eeeeee/999999?text=Poster',
+          title: order.concertName || '-',
+          viewDate: formatDateTime(order.scheduleDate),
+          location: order.venueName || '-',
+          ticketCount: order.seatDetails ? order.seatDetails.length : 0,
+          status: STATUS_MAP[order.status] || order.status,
+          cancelling: false
+        }));
+      } catch (e) {
+        this.orders = [];
+      } finally {
+        this.loading = false;
+      }
+    },
+    async cancelOrder(order) {
+      if (!confirm('정말로 예매를 취소하시겠습니까?')) return;
+      order.cancelling = true;
+      try {
+        await this.api.post(ENDPOINTS.orderCancel(order.id));
+        await this.loadOrders();
+      } catch (e) {
+        alert(e.message || '취소 처리 중 오류가 발생했습니다.');
+      } finally {
+        order.cancelling = false;
+      }
+    }
   }
 };
 </script>
@@ -236,88 +290,3 @@ const cancelOrder = (bookingNumber) => {
   color: #888;
 }
 </style>
-
-
-<!-- <template>
-  <div class="grid gap-4">
-    <div class="flex items-end justify-between gap-3">
-      <div>
-        <div class="text-sm font-semibold text-slate-900">내 주문 목록</div>
-        <div class="mt-1 text-sm text-slate-500">GET /users/me/orders</div>
-      </div>
-      <UiButton variant="ghost" class="h-11 px-4" @click="$router.push('/me')">내 정보</UiButton>
-    </div>
-
-    <UiCard v-if="loading">
-      <div class="text-sm text-slate-500">불러오는 중…</div>
-    </UiCard>
-
-    <UiTable v-else :columns="columns" :rows="items">
-      <template #cell:id="{ row }">
-        <button class="font-semibold text-slate-900 hover:underline" type="button" @click="$router.push(`/me/orders/${row.id}`)">
-          {{ row.id }}
-        </button>
-      </template>
-      <template #cell:status="{ row }">
-        <UiBadge :tone="row.status === 'SUCCESS' ? 'solid' : 'soft'" :color="row.status === 'SUCCESS' ? 'green' : 'slate'">
-          {{ row.status }}
-        </UiBadge>
-      </template>
-      <template #cell:createdAt="{ row }">
-        {{ new Date(row.createdAt).toLocaleString() }}
-      </template>
-      <template #cell:totalAmount="{ row }">
-        ₩{{ Number(row.totalAmount).toLocaleString() }}
-      </template>
-    </UiTable>
-  </div>
-</template>
-
-<script>
-import UiCard from '../../components/common/UiCard.vue'
-import UiBadge from '../../components/common/UiBadge.vue'
-import UiButton from '../../components/common/UiButton.vue'
-import UiTable from '../../components/common/UiTable.vue'
-import { useApi } from '../../composables/useApi'
-import { ENDPOINTS } from '../../lib/api/endpoints'
-
-export default {
-  name: 'MyOrdersView',
-  components: {
-    UiCard,
-    UiBadge,
-    UiButton,
-    UiTable
-  },
-  data() {
-    return {
-      loading: false,
-      items: [],
-      api: null,
-      columns: [
-        { key: 'id', label: '주문ID' },
-        { key: 'status', label: '상태' },
-        { key: 'createdAt', label: '생성일' },
-        { key: 'totalAmount', label: '금액' }
-      ],
-    }
-  },
-  created() {
-    this.api = useApi()
-  },
-  mounted() {
-    this.load()
-  },
-  methods: {
-    async load() {
-      this.loading = true
-      try {
-        const res = await this.api.get(ENDPOINTS.order())
-        this.items = res.items || []
-      } finally {
-        this.loading = false
-      }
-    }
-  }
-}
-</script> -->

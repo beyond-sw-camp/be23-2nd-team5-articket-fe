@@ -237,7 +237,6 @@ import ToastNotification from '../components/common/ToastNotification.vue'
 import { useRole } from '../composables/useRole'
 import { useMe } from '../composables/useMe'
 import { useSSE } from '../composables/useSSE'
-import PortOne from '@portone/browser-sdk/v2';
 
 export default {
   name: 'DefaultLayout',
@@ -361,12 +360,9 @@ export default {
     }
   },
   methods: {
-<<<<<<< Updated upstream
     onScroll() {
       this.scrolled = window.scrollY > 20
     },
-=======
->>>>>>> Stashed changes
     bumpTokenVersion() {
       this.tokenVersion++
     },
