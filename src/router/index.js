@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { getRole, isAuthed } from '../composables/useRole'
 
+
 // layouts
 import DefaultLayout from '../layouts/DefaultLayout.vue'
 
@@ -10,6 +11,7 @@ import ConcertDetailView from '../views/concerts/ConcertDetailView.vue'
 import ConcertSchedulesView from '../views/concerts/ConcertSchedulesView.vue'
 import ScheduleDetailView from '../views/schedules/ScheduleDetailView.vue'
 import SeatMapView from '../views/schedules/SeatMapView.vue'
+import SeatSelectionView from '../views/concerts/SeatSelectionView.vue'
 import SeatsView from '../views/schedules/SeatsView.vue'
 import NearbyView from '../views/venues/NearbyView.vue'
 import VenueDetailView from '../views/venues/VenueDetailView.vue'
@@ -55,6 +57,7 @@ import AdminVenueEditView from '../views/admin/AdminVenueEditView.vue'
 import AdminVenueSeatMapsView from '../views/admin/AdminVenueSeatMapsView.vue'
 import AdminSeatMapPreviewView from '../views/admin/AdminSeatMapPreviewView.vue'
 import AdminSeatMapPublishView from '../views/admin/AdminSeatMapPublishView.vue'
+import SeatMapLayoutEditorView from '../views/admin/SeatMapLayoutEditorView.vue'
 import AdminBlocklistView from '../views/admin/AdminBlocklistView.vue'
 import AdminAuditLogsView from '../views/admin/AdminAuditLogsView.vue'
 import AdminPendingOrganizersView from '../views/admin/AdminPendingOrganizersView.vue'
@@ -65,7 +68,8 @@ import ForbiddenView from '../views/system/ForbiddenView.vue'
 import NotFoundView from '../views/system/NotFoundView.vue'
 import GoogleRedirect from '../views/member/oauth/GoogleRedirect.vue'
 import KakaoRedirect from '../views/member/oauth/KakaoRedirect.vue'
-import Ordering from '../views/me/Ordering.vue'
+import Order from '../views/me/Order.vue'
+import OrderComplete from '../views/me/OrderComplete.vue'
 
 const withLayout = (component, meta = {}, props = {}) => ({
   component: DefaultLayout,
@@ -78,6 +82,7 @@ const routes = [
   { path: '/concerts/:concertId', ...withLayout(ConcertDetailView, { roleScope: 'guest' }) },
   { path: '/concerts/:concertId/schedules', ...withLayout(ConcertSchedulesView, { roleScope: 'guest' }) },
   { path: '/schedules/:scheduleId', ...withLayout(ScheduleDetailView, { roleScope: 'guest' }) },
+  { path: '/concerts/schedules/:scheduleId/seats', ...withLayout(SeatSelectionView, { roleScope: 'guest' }) },
   { path: '/schedules/:scheduleId/seat-map', ...withLayout(SeatMapView, { roleScope: 'guest' }) },
   { path: '/schedules/:scheduleId/seats', ...withLayout(SeatsView, { roleScope: 'guest' }) },
   { path: '/nearby', ...withLayout(NearbyView, { roleScope: 'guest' }) },
@@ -103,7 +108,9 @@ const routes = [
   { path: '/orders/:orderId', ...withLayout(OrderStatusView, { requiresAuth: true, requiredRole: 'USER' }) },
   { path: '/orders/:orderId/cancel', ...withLayout(OrderCancelView, { requiresAuth: true, requiredRole: 'USER' }) },
 
-  { path: '/ordering', ...withLayout(Ordering, { requiresAuth: true, requiredRole: 'USER' }) },
+  { path: '/order', ...withLayout(Order, { requiresAuth: true, requiredRole: 'USER' }) },
+  { path: '/orderComplete', ...withLayout(OrderComplete, { requiresAuth: true, requiredRole: 'USER' }) },
+
 
   { path: '/organizer', ...withLayout(OrganizerDashboardView, { requiresAuth: true, requiredRole: 'ORGANIZER' }) },
   { path: '/organizer/concerts', ...withLayout(OrganizerConcertsView, { requiresAuth: true, requiredRole: 'ORGANIZER' }) },
@@ -128,6 +135,7 @@ const routes = [
   { path: '/admin/venues/:venueId/seat-maps', ...withLayout(AdminVenueSeatMapsView, { requiresAuth: true, requiredRole: 'ADMIN' }) },
   { path: '/admin/seat-maps/:seatMapId', ...withLayout(AdminSeatMapPreviewView, { requiresAuth: true, requiredRole: 'ADMIN' }) },
   { path: '/admin/seat-maps/:seatMapId/publish', ...withLayout(AdminSeatMapPublishView, { requiresAuth: true, requiredRole: 'ADMIN' }) },
+  { path: '/admin/seat-maps/:seatMapId/layout', ...withLayout(SeatMapLayoutEditorView, { requiresAuth: true, requiredRole: 'ADMIN' }) },
   { path: '/admin/blocklist', ...withLayout(AdminBlocklistView, { requiresAuth: true, requiredRole: 'ADMIN' }) },
   { path: '/admin/audit-logs', ...withLayout(AdminAuditLogsView, { requiresAuth: true, requiredRole: 'ADMIN' }) },
   { path: '/admin/pending-organizers', ...withLayout(AdminPendingOrganizersView, { requiresAuth: true, requiredRole: 'ADMIN' }) },
@@ -173,4 +181,3 @@ router.beforeEach((to) => {
 })
 
 export default router
-

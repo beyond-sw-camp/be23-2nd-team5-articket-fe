@@ -23,29 +23,34 @@ export const ENDPOINTS = {
   payment: () => `/payment`,
   order: (orderId) => `/order/${orderId}`,
   orderCancel: (orderId) => `/orders/${orderId}/cancel`,
+  concertLike: (concertId) => `/user-concerts/${concertId}/like`,
+  concertReview: (concertId) => `/user-concerts/${concertId}/review`,
+  concertUserInteraction: (concertId) => `/user-concerts/${concertId}/user-interaction`,
+  concertStats: (concertId) => `/user-concerts/${concertId}/stats`,
+  concertReviews: (concertId) => `/user-concerts/${concertId}/reviews`,
 
   // ORGANIZER
-  organizerConcerts: () => `/concerts/organizer`,                                         // GET  /concerts/organizer
-  organizerConcertStats: (concertId) => `/concerts/organizer/${concertId}/stats`,         // GET  /concerts/organizer/{id}/stats
-  organizerScheduleStats: (scheduleId) => `/concerts/organizer/schedules/${scheduleId}/stats`, // GET /concerts/organizer/schedules/{id}/stats
-  organizerCreateConcert: () => `/concerts/organizer/create`,                             // POST /concerts/organizer/create
-  organizerUpdateConcert: (concertId) => `/concerts/organizer/${concertId}`,              // PUT  /concerts/organizer/{id}
-  organizerConcert: (concertId) => `/concerts/${concertId}`,                              // GET  /concerts/{id} (공통)
-  organizerPublishConcert: (concertId) => `/concerts/organizer/${concertId}/publish`,     // POST /concerts/organizer/{id}/publish
-  organizerCreateSchedule: (concertId) => `/concerts/organizer/${concertId}/schedules`,  // POST /concerts/organizer/{id}/schedules
-  organizerUpdateSchedule: (scheduleId) => `/concerts/organizer/schedules/${scheduleId}`,// PUT  /concerts/organizer/schedules/{id}
-  organizerDeleteSchedule: (scheduleId) => `/concerts/organizer/schedules/${scheduleId}`, // DELETE /concerts/organizer/schedules/{id}
-  organizerConcertSchedules: (concertId) => `/concerts/${concertId}/schedules`,           // GET  /concerts/{id}/schedules (공통)
-  organizerSchedulePrices: (scheduleId) => `/concerts/organizer/schedules/${scheduleId}/prices`, // GET /concerts/organizer/schedules/{id}/prices
+  organizerConcerts: () => `/concerts/organizer`,
+  organizerConcertStats: (concertId) => `/concerts/organizer/${concertId}/stats`,
+  organizerScheduleStats: (scheduleId) => `/concerts/organizer/schedules/${scheduleId}/stats`,
+  organizerCreateConcert: () => `/concerts/organizer/create`,
+  organizerUpdateConcert: (concertId) => `/concerts/organizer/${concertId}`,
+  organizerConcert: (concertId) => `/concerts/organizer/${concertId}`,
+  organizerPublishConcert: (concertId) => `/concerts/organizer/${concertId}/publish`,
+  organizerCreateSchedule: (concertId) => `/concerts/organizer/${concertId}/schedules`,
+  organizerUpdateSchedule: (scheduleId) => `/concerts/organizer/schedules/${scheduleId}`,
+  organizerDeleteSchedule: (scheduleId) => `/concerts/organizer/schedules/${scheduleId}`,
+  organizerConcertSchedules: (concertId) => `/concerts/organizer/${concertId}/schedules`,
+  organizerSchedulePrices: (scheduleId) => `/concerts/organizer/schedules/${scheduleId}/prices`,
   concertPolicies: (concertId) => `/concerts/${concertId}/policies`,
   organizerCreatePolicy: (concertId) => `/concerts/organizer/${concertId}/policies`,
   organizerUpdatePolicy: (policyId) => `/concerts/organizer/policies/${policyId}`,
   organizerDeletePolicy: (policyId) => `/concerts/organizer/policies/${policyId}`,
-  organizerConcertPolicies: (concertId) => `/concerts/${concertId}/policies`,
-  organizerConcertOrders: (concertId) => `/concerts/organizer/${concertId}/orders`,        // GET /concerts/organizer/{id}/orders
-  organizerOrder: (orderId) => `/concerts/organizer/orders/${orderId}`,                   // GET /concerts/organizer/orders/{id}
-  organizerPriceHistory: (concertId) => `/concerts/organizer/${concertId}/prices/history`, // GET /concerts/organizer/{id}/prices/history
-  organizerPolicyHistory: (concertId) => `/concerts/organizer/${concertId}/policies/history`, // GET /concerts/organizer/{id}/policies/history
+  organizerConcertPolicies: (concertId) => `/concerts/organizer/${concertId}/policies`,
+  organizerConcertOrders: (concertId) => `/concerts/organizer/${concertId}/orders`,
+  organizerOrder: (orderId) => `/concerts/organizer/orders/${orderId}`,
+  organizerPriceHistory: (concertId) => `/concerts/organizer/${concertId}/prices/history`,
+  organizerPolicyHistory: (concertId) => `/concerts/organizer/${concertId}/policies/history`,
 
   // ADMIN (venue: base /venues, admin actions under /venues/admin/...)
   adminCreateVenue: () => `/venues/admin/create`,
@@ -65,6 +70,13 @@ export const ENDPOINTS = {
     const q = p.toString()
     return `/venues/${venueId}/seat-maps${q ? `?${q}` : ''}`
   },
+  adminVenueSeatMapsList: (venueId, params = {}) => {
+    const p = new URLSearchParams()
+    if (params.page != null) p.set('page', params.page)
+    if (params.size != null) p.set('size', params.size)
+    const q = p.toString()
+    return `/venues/admin/${venueId}/seat-maps${q ? `?${q}` : ''}`
+  },
   adminCreateSeatMap: () => `/seat-maps/admin/create`,
   adminCreateSeatMapWithSections: () => `/seat-maps/admin/createWithSections`,
   adminAddSeatMapSection: (seatMapId) => `/seat-maps/admin/${seatMapId}/create`,
@@ -72,6 +84,7 @@ export const ENDPOINTS = {
   adminUpdateSeatMapName: (seatMapId) => `/seat-maps/admin/updateName/${seatMapId}`,
   adminUpdateSeatMapStatus: (seatMapId, status) => `/seat-maps/admin/updateStatus/${seatMapId}?status=${status}`,
   adminPublishSeatMap: (seatMapId) => `/seat-maps/admin/updateStatus/${seatMapId}?status=PUBLISHED`,
+  adminUpdateSeatMapLayout: (seatMapId) => `/seat-maps/admin/${seatMapId}/layout`,
   adminSeatDefinitionsBySection: (sectionId) => `/seat-definitions/admin/sections/${sectionId}/definitions`,
   adminUpdateSeatDefinitionGrade: (definitionId) => `/seat-definitions/admin/definitions/${definitionId}/grade`,
   adminBulkUpdateSeatDefinitionsGrade: (sectionId) => `/seat-definitions/admin/sections/${sectionId}/definitions/grade`,

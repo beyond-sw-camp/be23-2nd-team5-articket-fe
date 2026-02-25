@@ -86,8 +86,8 @@
                     <span v-if="sm.version"> · v{{ sm.version }}</span>
                   </div>
                 </div>
-                <UiBadge :tone="sm.status === 'PUBLISHED' ? 'solid' : 'soft'" :color="sm.status === 'PUBLISHED' ? 'red' : 'slate'">
-                  {{ sm.status || 'DRAFT' }}
+                <UiBadge :tone="sm.seatMapStatus === 'PUBLISHED' ? 'solid' : 'soft'" :color="sm.seatMapStatus === 'PUBLISHED' ? 'red' : 'slate'">
+                  {{ sm.seatMapStatus || 'DRAFT' }}
                 </UiBadge>
               </div>
             </button>
@@ -102,7 +102,6 @@
         <div v-if="loadingSeatMaps" class="rounded-xl border border-slate-200 bg-slate-50 p-3">
           <div class="text-xs text-slate-600">좌석맵 목록 불러오는 중...</div>
         </div>
-        <p v-if="errorMessage" class="text-sm text-red-600">{{ errorMessage }}</p>
         <p v-if="successMessage" class="text-sm text-green-600">{{ successMessage }}</p>
         <div class="flex justify-end gap-2">
           <UiButton variant="ghost" type="button" class="h-11 px-4" @click="$router.push('/organizer/concerts')">취소</UiButton>
@@ -200,6 +199,7 @@ import UiButton from '../../components/common/UiButton.vue'
 import UiBadge from '../../components/common/UiBadge.vue'
 import UiModal from '../../components/common/UiModal.vue'
 import { useApi } from '../../composables/useApi'
+import { showErrorAlert } from '../../composables/useErrorToast'
 import { ENDPOINTS } from '../../lib/api/endpoints'
 
 // ERD: concert 테이블
@@ -256,7 +256,6 @@ export default {
       api: null,
       form: getDefaultForm(),
       saving: false,
-      errorMessage: '',
       successMessage: '',
       venues: [],
       seatMaps: [],
@@ -298,7 +297,7 @@ export default {
       try {
         const res = await this.api.get(ENDPOINTS.venueSeatMaps(this.form.venue_id))
         const allSeatMaps = Array.isArray(res) ? res : res?.content || res?.items || []
-        this.seatMaps = allSeatMaps.filter((sm) => sm.status === 'PUBLISHED' || !sm.status)
+        this.seatMaps = allSeatMaps.filter((sm) => sm.seatMapStatus === 'PUBLISHED')
       } catch (err) {
         console.warn('Failed to load seat maps', err)
         this.seatMaps = []
@@ -307,7 +306,6 @@ export default {
       }
     },
     async submitCreate() {
-      this.errorMessage = ''
       this.successMessage = ''
       this.saving = true
       const payload = {
@@ -334,23 +332,30 @@ export default {
         this.scheduleForm = getDefaultScheduleForm()
         this.scheduleModalOpen = true
       } catch (err) {
-        this.errorMessage = err.message || '공연 생성에 실패했습니다.'
+        // 에러는 ErrorAlertModal에서 표시됨
       } finally {
         this.saving = false
       }
     },
     async submitSchedule() {
       if (!this.createdConcert?.id) {
-        this.errorMessage = '공연 ID를 확인할 수 없습니다. 목록에서 해당 공연을 선택한 뒤 회차를 추가하세요.'
+        showErrorAlert(new Error('공연 ID를 확인할 수 없습니다. 목록에서 해당 공연을 선택한 뒤 회차를 추가하세요.'))
         return
       }
       this.savingSchedule = true
       const concertId = this.createdConcert.id
+      const toIso = (val) => val ? (val.length === 16 ? val + ':00' : val) : val
       const schedulePayload = {
-        playTime: this.scheduleForm.play_time,
-        bookingStart: this.scheduleForm.booking_start,
-        bookingEnd: this.scheduleForm.booking_end,
+        playTime: toIso(this.scheduleForm.play_time),
+        bookingStart: toIso(this.scheduleForm.booking_start),
+        bookingEnd: toIso(this.scheduleForm.booking_end),
         status: this.scheduleForm.status
+      }
+      if (this.scheduleForm.concert_thum_img_url) {
+        schedulePayload.concertThumImgUrl = this.scheduleForm.concert_thum_img_url
+      }
+      if (this.scheduleForm.concert_detail_img_url) {
+        schedulePayload.concertDetailImgUrl = this.scheduleForm.concert_detail_img_url
       }
       const formData = new FormData()
       formData.append('schedule', new Blob([JSON.stringify(schedulePayload)], { type: 'application/json' }))
@@ -361,7 +366,7 @@ export default {
           this.$router.push(`/organizer/concerts/${concertId}/schedules`)
         }, 1500)
       } catch (err) {
-        this.errorMessage = err.message || '회차 생성에 실패했습니다.'
+        // 에러는 ErrorAlertModal에서 표시됨
       } finally {
         this.savingSchedule = false
       }

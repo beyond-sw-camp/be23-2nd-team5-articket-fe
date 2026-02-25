@@ -11,11 +11,7 @@
         </UiButton>
       </div>
 
-      <div v-if="error" class="mt-3 rounded-2xl border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">
-        {{ error }}
-      </div>
-
-      <div v-else-if="item" class="mt-4 grid gap-3 sm:grid-cols-2">
+      <div v-if="item" class="mt-4 grid gap-3 sm:grid-cols-2">
         <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm">
           <div class="text-xs font-semibold text-slate-500">주문ID</div>
           <div class="mt-1 text-sm font-semibold text-slate-900">{{ item.id }}</div>
@@ -64,6 +60,7 @@ import UiCard from '../../components/common/UiCard.vue'
 import UiButton from '../../components/common/UiButton.vue'
 import UiBadge from '../../components/common/UiBadge.vue'
 import { useApi } from '../../composables/useApi'
+import { showErrorAlert } from '../../composables/useErrorToast'
 import { ENDPOINTS } from '../../lib/api/endpoints'
 
 export default {
@@ -81,7 +78,6 @@ export default {
     return {
       loading: false,
       item: null,
-      error: '',
       timer: null,
       api: null
     }
@@ -120,15 +116,14 @@ export default {
     async load() {
       const orderId = this.$route.params.orderId
       if (orderId == null || orderId === '') {
-        this.error = '주문 정보를 찾을 수 없습니다.'
+        showErrorAlert(new Error('주문 정보를 찾을 수 없습니다.'))
         return
       }
       this.loading = true
-      this.error = ''
       try {
         this.item = await this.api.get(ENDPOINTS.order(orderId))
       } catch (e) {
-        this.error = e?.message || '주문 조회에 실패했어요.'
+        // 에러는 ErrorAlertModal에서 표시됨
       } finally {
         this.loading = false
       }

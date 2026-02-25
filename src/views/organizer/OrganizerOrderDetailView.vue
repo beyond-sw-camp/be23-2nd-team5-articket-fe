@@ -4,9 +4,9 @@
       <div class="text-sm text-slate-500">불러오는 중…</div>
     </UiCard>
 
-    <UiCard v-else-if="error">
-      <div class="text-sm font-semibold text-slate-900">주문 상세</div>
-      <div class="mt-2 text-sm text-red-700">{{ error }}</div>
+    <UiCard v-else-if="!item">
+      <div class="text-sm text-slate-500">주문 정보를 불러오지 못했습니다.</div>
+      <UiButton class="mt-3" @click="load">다시 시도</UiButton>
     </UiCard>
 
     <UiCard v-else-if="item">
@@ -59,6 +59,7 @@ import UiCard from '../../components/common/UiCard.vue'
 import UiBadge from '../../components/common/UiBadge.vue'
 import UiButton from '../../components/common/UiButton.vue'
 import { useApi } from '../../composables/useApi'
+import { showErrorAlert } from '../../composables/useErrorToast'
 import { ENDPOINTS } from '../../lib/api/endpoints'
 
 export default {
@@ -72,7 +73,6 @@ export default {
     return {
       loading: false,
       item: null,
-      error: '',
       api: null
     }
   },
@@ -86,16 +86,15 @@ export default {
     async load() {
       const orderId = this.$route.params.orderId
       if (orderId == null || orderId === '') {
-        this.error = '주문 정보를 찾을 수 없습니다.'
+        showErrorAlert(new Error('주문 정보를 찾을 수 없습니다.'))
         this.loading = false
         return
       }
       this.loading = true
-      this.error = ''
       try {
         this.item = await this.api.get(ENDPOINTS.organizerOrder(orderId))
       } catch (e) {
-        this.error = e?.message || '주문 조회에 실패했어요.'
+        this.item = null
       } finally {
         this.loading = false
       }

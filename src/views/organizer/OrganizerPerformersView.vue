@@ -58,9 +58,6 @@
     </template>
 
     <UiModal :open="createModalOpen" title="공연자 등록" @close="closeCreateModal">
-      <div v-if="createError" class="mb-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-        {{ createError }}
-      </div>
       <form id="performer-create-form" class="grid gap-4" @submit.prevent="submitCreate">
         <div>
           <label class="block text-xs font-semibold text-slate-500">이름 (name) *</label>
@@ -126,7 +123,6 @@ export default {
       loading: false,
       searchName: '',
       createModalOpen: false,
-      createError: '',
       form: { name: '', description: '', birth: '' }
     }
   },
@@ -160,7 +156,6 @@ export default {
       }
     },
     openCreateModal() {
-      this.createError = ''
       this.form = { name: '', description: '', birth: '' }
       this.createModalOpen = true
       this.$nextTick(() => {
@@ -170,10 +165,8 @@ export default {
     },
     closeCreateModal() {
       this.createModalOpen = false
-      this.createError = ''
     },
     async submitCreate() {
-      this.createError = ''
       try {
         const formData = new FormData()
         formData.append('name', this.form.name.trim())
@@ -195,7 +188,7 @@ export default {
           data?.error ||
           (data?.errors && Array.isArray(data.errors) ? data.errors.map((e) => e.defaultMessage || e.message).join(', ') : null) ||
           err.message
-        this.createError = msg || `서버 오류 (${err.status ?? '500'}). 백엔드 콘솔 로그를 확인하세요.`
+        // 에러는 ErrorAlertModal에서 표시됨
       }
     }
   }
