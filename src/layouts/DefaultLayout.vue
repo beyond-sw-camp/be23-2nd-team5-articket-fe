@@ -145,7 +145,7 @@
 
               <UiButton v-else variant="ghost" class="h-10 px-3" @click="$router.push('/me')">
                 <User class="h-4 w-4" />
-                <span class="ml-2 text-sm">내정보</span>
+                <span class="ml-2 text-sm">마이페이지</span>
               </UiButton>
 
               <UiButton v-if="isLoggedIn" variant="ghost" class="h-10 px-3" @click="handleLogout">
@@ -361,9 +361,12 @@ export default {
     }
   },
   methods: {
+<<<<<<< Updated upstream
     onScroll() {
       this.scrolled = window.scrollY > 20
     },
+=======
+>>>>>>> Stashed changes
     bumpTokenVersion() {
       this.tokenVersion++
     },
