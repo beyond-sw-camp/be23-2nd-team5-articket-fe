@@ -30,9 +30,50 @@
               <span class="ml-2 text-sm">내 주변</span>
             </UiButton>
 
-            <UiButton variant="ghost" class="h-10 px-3">
-              <Bell class="h-4 w-4" />
-            </UiButton>
+            <!-- 알림 Bell (로그인 시에만 표시) -->
+            <div v-if="isLoggedIn" class="notif-panel-root relative">
+              <UiButton variant="ghost" class="h-10 px-3" @click="toggleNotifPanel">
+                <Bell class="h-4 w-4" />
+                <span
+                  v-if="unreadCount > 0"
+                  class="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white"
+                >{{ unreadCount > 9 ? '9+' : unreadCount }}</span>
+              </UiButton>
+              <!-- 알림 드롭다운 -->
+              <div
+                v-show="notifPanelOpen"
+                class="absolute right-0 top-full z-50 mt-1 w-80 rounded-2xl border border-slate-200 bg-white shadow-xl"
+              >
+                <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+                  <span class="text-sm font-semibold text-slate-900">알림</span>
+                  <button
+                    v-if="sseState.notifications.length"
+                    type="button"
+                    class="text-xs text-slate-400 hover:text-slate-600"
+                    @click="markAllRead"
+                  >모두 읽음</button>
+                </div>
+                <div class="max-h-72 overflow-y-auto">
+                  <div v-if="!sseState.notifications.length" class="py-8 text-center text-sm text-slate-400">
+                    알림이 없습니다.
+                  </div>
+                  <ul v-else class="divide-y divide-slate-100">
+                    <li
+                      v-for="n in sseState.notifications"
+                      :key="n.id"
+                      class="flex items-start gap-3 px-4 py-3"
+                      :class="n.read ? 'opacity-60' : 'bg-slate-50'"
+                    >
+                      <span class="mt-0.5 text-base">{{ notifIcon(n.eventName) }}</span>
+                      <div class="flex-1 min-w-0">
+                        <div class="text-xs font-semibold text-slate-500">{{ notifTitle(n.eventName) }}</div>
+                        <div class="mt-0.5 text-sm text-slate-700">{{ n.message }}</div>
+                      </div>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
 
             <div class="flex items-center gap-2">
               <!-- 주최자 승인 대기 (USER + organizerStatus PENDING): 클릭 시 모달 -->
@@ -151,6 +192,9 @@
       </div>
     </div>
 
+    <!-- 실시간 알림 Toast (로그인 시에만 표시) -->
+    <ToastNotification v-if="isLoggedIn && sseState" :notifications="sseState.notifications" />
+
     <main
       class="mx-auto max-w-6xl px-4 pb-16 transition-[padding]"
       :class="showOrganizerBanner ? 'pt-52' : 'pt-40'"
@@ -189,8 +233,10 @@ import { Search, Bell, User, LogIn, MapPin, ShieldAlert } from 'lucide-vue-next'
 import UiButton from '../components/common/UiButton.vue'
 import UiBadge from '../components/common/UiBadge.vue'
 import UiModal from '../components/common/UiModal.vue'
+import ToastNotification from '../components/common/ToastNotification.vue'
 import { useRole } from '../composables/useRole'
 import { useMe } from '../composables/useMe'
+import { useSSE } from '../composables/useSSE'
 import PortOne from '@portone/browser-sdk/v2';
 
 export default {
@@ -204,7 +250,8 @@ export default {
     ShieldAlert,
     UiButton,
     UiBadge,
-    UiModal
+    UiModal,
+    ToastNotification,
   },
   data() {
     return {
@@ -226,10 +273,16 @@ export default {
       tokenVersion: 0,
       adminMenuOpen: false,
       organizerMenuOpen: false,
-      scrolled: false
+      scrolled: false,
+      notifPanelOpen: false,
+      sseState: null,
+      _sse: null,
     }
   },
   computed: {
+    unreadCount() {
+      return this.sseState?.notifications.filter((n) => !n.read).length ?? 0
+    },
     currentCat() {
       return String(this.$route.query.cat || 'all')
     },
@@ -275,15 +328,22 @@ export default {
     } catch {}
     window.addEventListener('storage', this.onStorage)
     this.bumpTokenVersion()
+    // SSE 초기화
+    this._sse = useSSE()
+    this.sseState = this._sse.state
+    if (localStorage.getItem('accessToken')) this._sse.connect()
   },
   mounted() {
     if (this.isLoggedIn && this._me?.refetch) this._me.refetch()
     window.addEventListener('scroll', this.onScroll, { passive: true })
+    window.addEventListener('click', this.onClickOutside)
     this.onScroll()
   },
   beforeUnmount() {
     window.removeEventListener('storage', this.onStorage)
     window.removeEventListener('scroll', this.onScroll)
+    window.removeEventListener('click', this.onClickOutside)
+    if (this._sse) this._sse.disconnect()
   },
   watch: {
     '$route.query.q'(v) {
@@ -296,6 +356,8 @@ export default {
     },
     isLoggedIn(v) {
       if (v && this._me?.refetch) this._me.refetch()
+      if (v) this._sse?.connect()
+      else this._sse?.disconnect()
     }
   },
   methods: {
@@ -307,6 +369,11 @@ export default {
 >>>>>>> Stashed changes
     bumpTokenVersion() {
       this.tokenVersion++
+    },
+    onClickOutside(e) {
+      if (this.notifPanelOpen && !e.target.closest('.notif-panel-root')) {
+        this.notifPanelOpen = false
+      }
     },
     onStorage(e) {
       if (e.key === 'accessToken' || e.key === 'refreshToken') {
@@ -324,10 +391,31 @@ export default {
       this.organizerBannerDismissed = true
     },
 
+    toggleNotifPanel() {
+      this.notifPanelOpen = !this.notifPanelOpen
+      if (this.notifPanelOpen) this._sse?.markAllRead()
+    },
+    markAllRead() {
+      this._sse?.markAllRead()
+    },
+    notifIcon(eventName) {
+      if (eventName === 'payment') return '💳'
+      if (eventName === 'concert') return '🎭'
+      if (eventName === 'admin')   return '🔔'
+      return '📢'
+    },
+    notifTitle(eventName) {
+      if (eventName === 'payment') return '결제 알림'
+      if (eventName === 'concert') return '공연 알림'
+      if (eventName === 'admin')   return '관리자 알림'
+      return '알림'
+    },
+
     async handleLogout() {
       localStorage.removeItem('accessToken')
       localStorage.removeItem('refreshToken')
       localStorage.removeItem('isVerified')
+      if (this._sse) this._sse.disconnect()
       if (typeof this._logoutComposable === 'function') {
         await this._logoutComposable()
       }
