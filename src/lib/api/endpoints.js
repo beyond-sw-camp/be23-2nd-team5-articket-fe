@@ -5,8 +5,15 @@ export const ENDPOINTS = {
     const p = new URLSearchParams()
     if (params.keyword != null && params.keyword !== '') p.set('keyword', params.keyword)
     if (params.title != null && params.title !== '') p.set('title', params.title)
+    if (params.category) p.set('category', params.category)
     if (params.page != null) p.set('page', String(params.page))
     if (params.size != null) p.set('size', String(params.size))
+    if (params.sort) p.set('sort', params.sort)
+    if (params.status != null && params.status !== '') p.set('status', params.status)
+    if (params.categories?.length) params.categories.forEach((c) => p.append('categories', c))
+    if (params.regions?.length) params.regions.forEach((r) => p.append('regions', r))
+    if (params.filterStartDate) p.set('filterStartDate', params.filterStartDate)
+    if (params.filterEndDate) p.set('filterEndDate', params.filterEndDate)
     const q = p.toString()
     return `/concerts${q ? `?${q}` : ''}`
   },
