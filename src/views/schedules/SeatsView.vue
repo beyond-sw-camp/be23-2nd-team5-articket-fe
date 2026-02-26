@@ -144,7 +144,7 @@ export default {
             seats: []
           }
         }
-        map[id].seats.push(seat)
+        if (seat.isVisible !== false) map[id].seats.push(seat)
       }
       return Object.values(map)
     },
