@@ -77,7 +77,7 @@
             class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
             @change="loadSeatMaps"
           >
-            <option :value="null">공연장을 선택하세요</option>
+            <option value="">공연장을 선택하세요</option>
             <option v-for="v in venues" :key="v.id" :value="v.id">{{ v.name }}</option>
           </select>
           <div v-if="loadingVenues" class="mt-1 text-xs text-slate-400">공연장 목록 불러오는 중...</div>
@@ -226,7 +226,7 @@ function getDefaultForm() {
     title: DUMMY_CONCERT.title,
     category: 'CONCERT',
     status: DUMMY_CONCERT.status,
-    venue_id: null,
+    venue_id: '',
     seat_map_id: null,
     age_limit: DUMMY_CONCERT.age_limit,
     thum_img_url: ''
@@ -321,6 +321,10 @@ export default {
       }
     },
     async submitCreate() {
+      if (!this.form.seat_map_id) {
+        showErrorAlert(new Error('좌석맵을 선택해 주세요. 공연장을 먼저 선택한 뒤 좌석맵을 선택하세요.'))
+        return
+      }
       this.successMessage = ''
       this.saving = true
       const payload = {

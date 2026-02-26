@@ -1,91 +1,173 @@
 <template>
-  <div class="grid gap-4">
-    <!-- 헤더 -->
-    <div class="flex items-center justify-between gap-3">
-      <div>
-        <div class="text-sm font-semibold text-slate-900">좌석 선택</div>
-        <div class="mt-1 text-sm text-slate-500">배치도를 클릭해 좌석을 선택하세요 · 스크롤로 확대/축소</div>
-      </div>
-      <UiButton variant="ghost" class="h-11 px-4" @click="load">새로고침</UiButton>
-    </div>
+  <div class="flex flex-col gap-3">
 
     <!-- 등급 범례 -->
-    <div v-if="gradeLabels.length > 0" class="flex flex-wrap gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+    <div v-if="gradeLabels.length > 0"
+         class="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5">
+      <span class="text-xs font-semibold text-slate-400">등급</span>
       <div v-for="g in gradeLabels" :key="g.id" class="flex items-center gap-1.5">
-        <span class="h-4 w-4 rounded" :style="{ backgroundColor: g.color }"></span>
+        <span class="h-3 w-3 rounded-full" :style="{ backgroundColor: g.color }"></span>
         <span class="text-xs text-slate-600">{{ g.label }}</span>
       </div>
-      <div class="h-4 w-px bg-slate-200 mx-1 self-center"></div>
+      <div class="h-4 w-px bg-slate-200 mx-0.5 self-center"></div>
       <div class="flex items-center gap-1.5">
-        <span class="h-4 w-4 rounded border-2 border-white" style="background:#ef4444"></span>
+        <span class="h-3 w-3 rounded-full bg-blue-500" style="box-shadow:0 0 0 2px #bfdbfe"></span>
         <span class="text-xs text-slate-600">선택됨</span>
       </div>
       <div class="flex items-center gap-1.5">
-        <span class="h-4 w-4 rounded" style="background:#f59e0b"></span>
+        <span class="h-3 w-3 rounded-full" style="background:#f59e0b"></span>
         <span class="text-xs text-slate-600">선점 중</span>
       </div>
       <div class="flex items-center gap-1.5">
-        <span class="h-4 w-4 rounded opacity-50" style="background:#64748b"></span>
+        <span class="h-3 w-3 rounded-full" style="background:#cbd5e1; opacity:.5"></span>
         <span class="text-xs text-slate-600">판매 완료</span>
       </div>
     </div>
 
-    <!-- 캔버스 -->
-    <div class="overflow-hidden rounded-xl" style="border: 1px solid #1e293b;">
-      <div v-if="loading" class="flex items-center justify-center bg-slate-950" style="height:520px">
-        <span class="text-sm text-slate-400">배치도 불러오는 중…</span>
-      </div>
-      <div v-else-if="loadError" class="flex items-center justify-center bg-slate-950" style="height:260px">
-        <span class="text-sm text-red-400">{{ loadError }}</span>
-      </div>
-      <div v-else-if="seats.length === 0" class="flex items-center justify-center bg-slate-950" style="height:260px">
-        <span class="text-sm text-slate-400">등록된 좌석이 없습니다.</span>
-      </div>
-      <div
-        v-show="!loading && !loadError && seats.length > 0"
-        ref="konvaContainer"
-        class="w-full"
-        style="height: 520px; background: #0f172a; cursor: grab;"
-      ></div>
-    </div>
+    <!-- 메인: 캔버스 + 사이드바 -->
+    <div class="flex gap-4" style="height: 680px;">
 
-    <!-- 하단 선택 요약 -->
-    <UiCard>
-      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div class="flex items-center gap-3">
-          <UiBadge tone="soft">선택: {{ selected.length }}석</UiBadge>
-          <span v-if="selectedTotalPrice > 0" class="text-sm text-slate-600">
-            합계: ₩{{ selectedTotalPrice.toLocaleString() }}
+      <!-- ── 좌석 캔버스 ── -->
+      <div class="relative flex-1 min-w-0 rounded-2xl overflow-hidden border border-slate-200"
+           style="background: #f0f4f8;">
+        <!-- 로딩 -->
+        <div v-if="loading" class="absolute inset-0 flex items-center justify-center">
+          <span class="text-sm text-slate-400">배치도 불러오는 중…</span>
+        </div>
+        <!-- 에러 -->
+        <div v-else-if="loadError" class="absolute inset-0 flex items-center justify-center">
+          <span class="text-sm text-red-400">{{ loadError }}</span>
+        </div>
+        <!-- 빈 상태 -->
+        <div v-else-if="!loading && seats.length === 0"
+             class="absolute inset-0 flex items-center justify-center">
+          <span class="text-sm text-slate-400">등록된 좌석이 없습니다.</span>
+        </div>
+
+        <!-- Konva 캔버스 -->
+        <div
+          v-show="!loading && !loadError && seats.length > 0"
+          ref="konvaContainer"
+          class="w-full h-full"
+          style="cursor: grab;"
+        ></div>
+
+        <!-- 줌 버튼 -->
+        <div class="absolute bottom-4 right-4 flex flex-col gap-1 z-10">
+          <button @click="zoomIn"
+            class="w-9 h-9 rounded-xl bg-white border border-slate-200 shadow-sm text-slate-600 text-xl font-light flex items-center justify-center hover:bg-slate-50 transition-colors">
+            +
+          </button>
+          <button @click="zoomOut"
+            class="w-9 h-9 rounded-xl bg-white border border-slate-200 shadow-sm text-slate-600 text-xl font-light flex items-center justify-center hover:bg-slate-50 transition-colors">
+            −
+          </button>
+          <button @click="fitToView"
+            class="w-9 h-9 rounded-xl bg-white border border-slate-200 shadow-sm text-slate-500 text-sm flex items-center justify-center hover:bg-slate-50 transition-colors"
+            title="전체 보기">
+            ↺
+          </button>
+        </div>
+      </div>
+
+      <!-- ── 오른쪽 선택 패널 ── -->
+      <div class="w-64 shrink-0 flex flex-col rounded-2xl border border-slate-200 bg-white overflow-hidden">
+
+        <!-- 패널 헤더 -->
+        <div class="flex items-center justify-between px-4 py-3 border-b border-slate-100">
+          <span class="text-sm font-semibold text-slate-900">
+            선택 좌석&nbsp;<span class="text-blue-600">{{ selected.length }}</span>
+          </span>
+          <button
+            v-if="selected.length > 0"
+            class="text-xs text-slate-400 hover:text-red-500 transition-colors"
+            @click="clearAll">
+            전체삭제
+          </button>
+        </div>
+
+        <!-- 선택된 좌석 목록 -->
+        <div class="flex-1 overflow-y-auto px-3 py-2 flex flex-col gap-2">
+          <div
+            v-for="seat in selectedSeats"
+            :key="seat.seatId"
+            class="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5 flex items-start justify-between gap-2">
+            <div class="min-w-0">
+              <div class="text-xs font-semibold" :style="{ color: gradeColorOf(seat.grade) }">
+                {{ seat.grade }}석
+              </div>
+              <div class="mt-0.5 text-xs text-slate-600 leading-tight">
+                {{ seat.sectionName }}<br>
+                {{ seat.rowNo }}열 {{ seat.seatNo }}번
+              </div>
+              <div class="mt-1.5 text-sm font-bold text-slate-900">
+                {{ (seat.price || 0).toLocaleString() }}원
+              </div>
+            </div>
+            <button
+              class="text-slate-300 hover:text-red-400 transition-colors mt-0.5 shrink-0"
+              @click="toggleSeat(seat)">
+              ✕
+            </button>
+          </div>
+
+          <!-- 빈 상태 -->
+          <div v-if="selected.length === 0"
+               class="flex flex-col items-center justify-center h-48 text-slate-400 text-xs text-center leading-relaxed">
+            <span class="text-2xl mb-2">🪑</span>
+            좌석을 클릭해<br>선택하세요
+          </div>
+        </div>
+
+        <!-- 선점 타이머 -->
+        <div v-if="holdCountdown"
+             class="px-4 py-2 flex items-center justify-between border-t border-orange-100 bg-orange-50">
+          <span class="text-xs text-slate-500">선점 만료까지</span>
+          <span
+            class="text-sm font-bold tabular-nums transition-colors"
+            :class="holdIsUrgent ? 'text-red-600 animate-pulse' : 'text-orange-500'">
+            {{ holdCountdown }}
           </span>
         </div>
-        <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <div v-if="holdError" class="text-sm font-semibold text-red-700">{{ holdError }}</div>
-          <UiButton
-            class="h-12 px-6"
+
+        <!-- 합계 + 버튼 영역 -->
+        <div class="border-t border-slate-100 px-4 py-4 flex flex-col gap-3">
+          <div class="flex items-center justify-between text-sm">
+            <span class="text-slate-500">합계</span>
+            <span class="font-bold text-slate-900">
+              {{ selectedTotalPrice > 0 ? selectedTotalPrice.toLocaleString() + '원' : '—' }}
+            </span>
+          </div>
+          <div v-if="holdError" class="text-xs text-red-500">{{ holdError }}</div>
+          <button
+            class="w-full h-12 rounded-xl text-sm font-semibold transition-colors"
+            :class="selected.length > 0 && !holdLoading
+              ? 'bg-blue-600 text-white hover:bg-blue-700 cursor-pointer'
+              : 'bg-slate-200 text-slate-400 cursor-not-allowed'"
             :disabled="holdLoading || selected.length === 0"
-            @click="hold"
-          >
-            좌석 선점 (5분)
-          </UiButton>
+            @click="hold">
+            {{ holdLoading ? '처리 중…' : '선택 완료' }}
+          </button>
         </div>
       </div>
-    </UiCard>
+
+    </div>
   </div>
 </template>
 
 <script>
 import Konva from 'konva'
+import { Client } from '@stomp/stompjs'
+import SockJS from 'sockjs-client'
 import { useApi } from '../../composables/useApi'
 import { ENDPOINTS } from '../../lib/api/endpoints'
-import { useSeatHoldMock } from '../../composables/useSeatHoldMock'
-import UiCard from '../../components/common/UiCard.vue'
-import UiButton from '../../components/common/UiButton.vue'
-import UiBadge from '../../components/common/UiBadge.vue'
 
-// 에디터와 동일한 좌석 크기 상수
+// 에디터와 동일한 좌석 간격 (위치 호환성 유지)
 const SEAT_W = 20, SEAT_H = 20, SEAT_GAP = 4
+const SEAT_STEP = SEAT_W + SEAT_GAP   // 24px (센터 간 거리)
+const SEAT_R   = 8                     // 원형 좌석 반지름
 
-// 에디터와 동일한 등급 색상
+// 등급 색상 (에디터와 동일)
 const GRADE_COLORS = {
   VIP: '#f5c842',
   R:   '#ef6b6b',
@@ -95,72 +177,97 @@ const GRADE_COLORS = {
   C:   '#94a3b8',
 }
 function gradeColor(grade) {
-  return GRADE_COLORS[grade] || '#ef6b6b'
+  return GRADE_COLORS[grade] || '#94a3b8'
+}
+
+// isVisible 해석 헬퍼
+// - null / false / 0 / "false" 등 모든 falsy 변형 처리
+// - 필드 자체가 없으면 기본값 true (표시)
+function resolveVisible(seat) {
+  for (const key of ['isVisible', 'is_visible', 'visible']) {
+    if (key in seat) {
+      const v = seat[key]
+      // null, false, 0, "false", "0" → 미사용 좌석
+      return v !== null && v !== false && v !== 0 && v !== 'false' && v !== '0'
+    }
+  }
+  return true
 }
 
 export default {
   name: 'SeatsView',
-  components: { UiCard, UiButton, UiBadge },
 
   data() {
     return {
-      loading: false,
-      loadError: null,
-      seats: [],          // flat List<SeatResDto> from backend
-      selected: [],       // 선택된 seatId 배열
-      holdLoading: false,
-      holdError: null,
-      api: null,
-      enabled: false,
-      seatHoldMock: null,
+      loading:      false,
+      loadError:    null,
+      seats:        [],
+      selected:     [],
+      holdLoading:  false,  // "선택 완료" 버튼 로딩
+      holdError:    null,
+      api:          null,
       konvaStageInstance: null,
-      mainLayerInstance: null,
+      mainLayerInstance:  null,
+      seatToggling:        false,  // 좌석 선점/해제 API 호출 중 (중복 클릭 방지)
+      proceedingToCheckout: false, // 결제 페이지로 이동 중이면 true (이탈 시 해제 스킵)
+      MAX_SEATS:    2,             // 1인 최대 선택 가능 좌석 수
+      holdExpiresAt:    null,      // 선점 만료 시각 (ms timestamp)
+      holdCountdown:    '',        // "04:32" 형식 카운트다운 표시
+      holdTimerInterval: null,     // setInterval ID
+      stompClient:      null,      // WebSocket STOMP 클라이언트
     }
   },
 
   computed: {
+    // 카운트다운이 1분 미만이면 긴급(빨간색)으로 표시
+    holdIsUrgent() {
+      return this.holdCountdown.startsWith('00:')
+    },
     selectedSet() {
       return new Set(this.selected)
     },
-    selectedTotalPrice() {
-      return this.selected.reduce((sum, id) => {
-        const s = this.seats.find(s => s.seatId === id)
-        return sum + (s?.price ?? 0)
-      }, 0)
+    selectedSeats() {
+      return this.selected
+        .map(id => this.seats.find(s => s.seatId === id))
+        .filter(Boolean)
     },
-    // 구역별로 좌석 그룹핑 (sectionX/Y/rotation 포함)
+    selectedTotalPrice() {
+      return this.selectedSeats.reduce((sum, s) => sum + (s?.price ?? 0), 0)
+    },
+    // 구역별 그룹 (sectionX/Y/rotation 포함)
     sections() {
       const map = {}
       for (const seat of this.seats) {
         const id = seat.sectionId
         if (!map[id]) {
           map[id] = {
-            sectionId: id,
-            name: seat.sectionName,
-            color: seat.sectionColor,
-            x: seat.sectionX ?? 0,
-            y: seat.sectionY ?? 0,
-            rotation: seat.sectionRotation ?? 0,
-            seats: []
+            sectionId:    id,
+            name:         seat.sectionName,
+            color:        seat.sectionColor,
+            x:            seat.sectionX,
+            y:            seat.sectionY,
+            rotation:     seat.sectionRotation,
+            rowLabelType: seat.rowLabelType ?? 'left',
+            seats:        []
           }
         }
         map[id].seats.push(seat)
       }
       return Object.values(map)
     },
-    // 첫 번째 좌석에서 스테이지 정보 추출 (모든 좌석에 동일하게 포함됨)
+    // 첫 번째 좌석에서 스테이지 정보 추출
     stageInfo() {
       const s = this.seats[0]
       if (!s || s.stageWidth == null) return null
       return {
-        x: s.stageX ?? 0,
-        y: s.stageY ?? 0,
-        width: s.stageWidth,
-        height: s.stageHeight ?? 100,
-        rotation: s.stageRotation ?? 0,
+        x:        s.stageX,
+        y:        s.stageY,
+        width:    s.stageWidth,
+        height:   s.stageHeight,
+        rotation: s.stageRotation,
       }
     },
-    // 범례용 등급 목록 (좌석에 실제 존재하는 등급만)
+    // 범례용 등급 목록
     gradeLabels() {
       const seen = new Set()
       const result = []
@@ -168,7 +275,7 @@ export default {
         if (seat.grade && !seen.has(seat.grade)) {
           seen.add(seat.grade)
           result.push({
-            id: seat.grade,
+            id:    seat.grade,
             label: seat.grade === 'VIP' ? 'VIP' : seat.grade + '석',
             color: gradeColor(seat.grade)
           })
@@ -180,14 +287,30 @@ export default {
 
   created() {
     this.api = useApi()
-    this.seatHoldMock = useSeatHoldMock()
   },
 
   mounted() {
     this.load()
+    this.cleanupOldHolds()
+    this.connectWebSocket()
+    window.addEventListener('beforeunload', this.handleBeforeUnload)
   },
 
   beforeUnmount() {
+    window.removeEventListener('beforeunload', this.handleBeforeUnload)
+    this.clearHoldTimer()
+    // WebSocket 연결 해제
+    if (this.stompClient) {
+      this.stompClient.deactivate()
+      this.stompClient = null
+    }
+    // 결제 페이지 이동이 아닌 이탈(뒤로 가기, 다른 메뉴)이면 선점된 모든 좌석 해제
+    if (!this.proceedingToCheckout && this.selected.length > 0) {
+      const toRelease = [...this.selected]
+      Promise.all(toRelease.map(seatId =>
+        this.api.del(ENDPOINTS.seatHold(seatId)).catch(() => {})
+      ))
+    }
     if (this.konvaStageInstance) {
       this.konvaStageInstance.destroy()
       this.konvaStageInstance = null
@@ -195,27 +318,44 @@ export default {
   },
 
   methods: {
+    gradeColorOf(grade) {
+      return gradeColor(grade)
+    },
+
     async load() {
       const scheduleId = this.$route.params.scheduleId
       if (!scheduleId) return
-      this.loading = true
+      this.loading   = true
       this.loadError = null
-      this.seats = []
-      this.selected = []
+      this.seats     = []
+      this.selected  = []
       if (this.konvaStageInstance) {
         this.konvaStageInstance.destroy()
         this.konvaStageInstance = null
       }
       try {
         const res = await this.api.get(ENDPOINTS.seats(scheduleId))
-        this.seats = Array.isArray(res) ? res : res?.content ?? res?.items ?? []
+        const raw = Array.isArray(res) ? res : res?.content ?? res?.items ?? []
+        // 백엔드 필드명 다양성 대응
+        this.seats = raw.map(s => ({
+          ...s,
+          isVisible:       resolveVisible(s),
+          sectionX:        s.sectionX        ?? s.sectionXpos      ?? s.section_x       ?? 0,
+          sectionY:        s.sectionY        ?? s.sectionYpos      ?? s.section_y       ?? 0,
+          sectionRotation: s.sectionRotation ?? s.section_rotation ?? 0,
+          rowLabelType:    s.rowLabelType    ?? s.row_label_type   ?? s.sectionRowLabelType ?? 'left',
+          stageX:          s.stageX          ?? s.stage_x          ?? s.stagex          ?? 0,
+          stageY:          s.stageY          ?? s.stage_y          ?? s.stagey          ?? 0,
+          stageWidth:      s.stageWidth      ?? s.stage_width      ?? s.stagewidth      ?? null,
+          stageHeight:     s.stageHeight     ?? s.stage_height     ?? s.stageheight     ?? 100,
+          stageRotation:   s.stageRotation   ?? s.stage_rotation   ?? 0,
+        })).filter(s => s.isVisible !== false)
         if (this.seats.length > 0) {
           this.$nextTick(() => this.initKonva())
         }
       } catch (err) {
         this.loadError = err.message || '좌석 배치도를 불러오지 못했습니다.'
         this.seats = []
-        // 에러는 ErrorAlertModal에서 표시됨
       } finally {
         this.loading = false
       }
@@ -224,39 +364,36 @@ export default {
     initKonva() {
       const container = this.$refs.konvaContainer
       if (!container) return
-      if (this.konvaStageInstance) {
-        this.konvaStageInstance.destroy()
-      }
+      if (this.konvaStageInstance) this.konvaStageInstance.destroy()
 
-      const konvaStage = new Konva.Stage({
+      const stage = new Konva.Stage({
         container,
-        width: container.offsetWidth,
-        height: container.offsetHeight,
+        width:     container.offsetWidth,
+        height:    container.offsetHeight,
         draggable: true,
       })
-      this.konvaStageInstance = konvaStage
+      this.konvaStageInstance = stage
 
-      const mainLayer = new Konva.Layer()
-      konvaStage.add(mainLayer)
-      this.mainLayerInstance = mainLayer
+      const layer = new Konva.Layer()
+      stage.add(layer)
+      this.mainLayerInstance = layer
 
-      // 드래그 중 커서 변경
-      konvaStage.on('dragstart', () => { container.style.cursor = 'grabbing' })
-      konvaStage.on('dragend',   () => { container.style.cursor = 'grab' })
+      stage.on('dragstart', () => { container.style.cursor = 'grabbing' })
+      stage.on('dragend',   () => { container.style.cursor = 'grab' })
 
-      // 마우스 휠 줌 (에디터와 동일한 로직)
-      konvaStage.on('wheel', (e) => {
+      // 마우스 휠 줌
+      stage.on('wheel', (e) => {
         e.evt.preventDefault()
-        const oldScale = konvaStage.scaleX()
-        const pointer = konvaStage.getPointerPosition()
+        const oldScale = stage.scaleX()
+        const pointer  = stage.getPointerPosition()
         const mousePointTo = {
-          x: (pointer.x - konvaStage.x()) / oldScale,
-          y: (pointer.y - konvaStage.y()) / oldScale,
+          x: (pointer.x - stage.x()) / oldScale,
+          y: (pointer.y - stage.y()) / oldScale,
         }
-        const factor = e.evt.deltaY < 0 ? 1.1 : 1 / 1.1
-        const newScale = Math.min(Math.max(oldScale * factor, 0.2), 5)
-        konvaStage.scale({ x: newScale, y: newScale })
-        konvaStage.position({
+        const factor   = e.evt.deltaY < 0 ? 1.12 : 1 / 1.12
+        const newScale = Math.min(Math.max(oldScale * factor, 0.15), 8)
+        stage.scale({ x: newScale, y: newScale })
+        stage.position({
           x: pointer.x - mousePointTo.x * newScale,
           y: pointer.y - mousePointTo.y * newScale,
         })
@@ -266,35 +403,39 @@ export default {
       this.fitToView()
     },
 
-    // 좌석의 상태/선택 여부에 따라 채우기 색 반환
-    seatFillColor(seat) {
-      if (this.selectedSet.has(seat.seatId)) return '#ef4444'
+    // 좌석 색상 결정
+    seatFill(seat) {
+      if (this.selectedSet.has(seat.seatId)) return '#3b82f6'
       switch (seat.status) {
         case 'AVAILABLE': return seat.sectionColor || gradeColor(seat.grade)
         case 'HOLD':      return '#f59e0b'
-        case 'SOLD':      return '#64748b'
-        default:          return '#334155'
+        case 'SOLD':      return '#cbd5e1'
+        default:          return '#e2e8f0'
       }
     },
-
+    // 전체 렌더링 (좌석 + 스테이지)
     renderAll() {
       const layer = this.mainLayerInstance
       if (!layer) return
       layer.destroyChildren()
 
-      // ── 무대 (STAGE) ──
+      // ── 스테이지(무대) ──
       const si = this.stageInfo
       if (si) {
-        const stageGrp = new Konva.Group({ x: si.x, y: si.y, rotation: si.rotation })
-        stageGrp.add(new Konva.Rect({
+        const grp = new Konva.Group({ x: si.x, y: si.y, rotation: si.rotation ?? 0 })
+        grp.add(new Konva.Rect({
           width: si.width, height: si.height,
-          fill: '#1e293b', stroke: '#3b82f6', strokeWidth: 2, cornerRadius: 4
+          fill: '#e2e8f0', stroke: '#94a3b8', strokeWidth: 1.5, cornerRadius: 10,
         }))
-        stageGrp.add(new Konva.Text({
-          text: 'STAGE', fontSize: 20, fontStyle: 'bold', fill: '#60a5fa',
-          width: si.width, height: si.height, align: 'center', verticalAlign: 'middle'
+        grp.add(new Konva.Text({
+          text: 'STAGE',
+          fontSize: Math.max(14, Math.min(20, si.height * 0.4)),
+          fontStyle: 'bold', fill: '#64748b',
+          width: si.width, height: si.height,
+          align: 'center', verticalAlign: 'middle',
+          listening: false,
         }))
-        layer.add(stageGrp)
+        layer.add(grp)
       }
 
       // ── 구역별 좌석 그리드 ──
@@ -303,80 +444,80 @@ export default {
 
         const maxRow = Math.max(...section.seats.map(s => s.rowNo))
         const maxCol = Math.max(...section.seats.map(s => s.seatNo))
-        const gridW = maxCol * (SEAT_W + SEAT_GAP) - SEAT_GAP
+        const gridW  = maxCol * SEAT_STEP - SEAT_GAP
 
         const grp = new Konva.Group({
-          x: section.x,
-          y: section.y,
-          rotation: section.rotation,
+          x: section.x ?? 0,
+          y: section.y ?? 0,
+          rotation: section.rotation ?? 0,
         })
 
-        // 구역 이름 레이블 (에디터와 동일한 위치)
+        // 구역 이름 레이블
         grp.add(new Konva.Text({
-          text: section.name,
-          fontSize: 12, fill: '#cbd5e1',
-          x: 0, y: -20,
-          width: gridW, align: 'center'
+          text:       section.name,
+          fontSize:   13, fontStyle: 'bold', fill: '#475569',
+          x: 0, y: -24,
+          width: gridW, align: 'center',
+          listening:  false,
         }))
 
-        // 행 번호 레이블
-        for (let r = 1; r <= maxRow; r++) {
-          grp.add(new Konva.Text({
-            text: String(r),
-            fontSize: 9, fill: '#94a3b8',
-            x: -18, y: (r - 1) * (SEAT_H + SEAT_GAP) + SEAT_H / 2 - 5,
-            width: 14, align: 'right',
-            listening: false,
-          }))
+        // 행 번호 레이블 (관리자가 설정한 rowLabelType 반영: left / right / none / '')
+        const labelType = section.rowLabelType
+        if (labelType && labelType !== 'none') {
+          const isRight = labelType === 'right'
+          for (let r = 1; r <= maxRow; r++) {
+            grp.add(new Konva.Text({
+              text:      String(r),
+              fontSize:  9, fill: '#94a3b8',
+              x:         isRight ? gridW + 5 : -20,
+              y:         (r - 1) * SEAT_STEP + SEAT_W / 2 - 4.5,
+              width:     16,
+              align:     isRight ? 'left' : 'right',
+              listening: false,
+            }))
+          }
         }
 
-        // 좌석 렌더링
+        // 좌석 렌더링 (원형)
         for (const seat of section.seats) {
-          const x = (seat.seatNo - 1) * (SEAT_W + SEAT_GAP)
-          const y = (seat.rowNo - 1) * (SEAT_H + SEAT_GAP)
-          const fill = this.seatFillColor(seat)
-          const isSelected = this.selectedSet.has(seat.seatId)
+          const cx        = (seat.seatNo - 1) * SEAT_STEP + SEAT_W / 2
+          const cy        = (seat.rowNo  - 1) * SEAT_STEP + SEAT_H / 2
+          const fill      = this.seatFill(seat)
+          const isSelected  = this.selectedSet.has(seat.seatId)
           const isAvailable = seat.status === 'AVAILABLE'
+          const isSold      = seat.status === 'SOLD'
 
-          const rect = new Konva.Rect({
-            x, y,
-            width: SEAT_W, height: SEAT_H,
+          const circle = new Konva.Circle({
+            x: cx, y: cy,
+            radius:      SEAT_R,
             fill,
-            stroke: isSelected ? '#fff' : 'transparent',
-            strokeWidth: 1.5,
-            opacity: seat.status === 'SOLD' ? 0.4 : 1,
-            cornerRadius: 2,
-          })
-
-          // 좌석 번호 텍스트
-          const seatNumText = new Konva.Text({
-            text: String(seat.seatNo),
-            fontSize: 7, fill: 'rgba(255,255,255,0.85)',
-            x, y: y + SEAT_H / 2 - 3.5,
-            width: SEAT_W, align: 'center',
-            listening: false,
+            stroke:      isSelected ? '#1d4ed8' : 'transparent',
+            strokeWidth: 2.5,
+            opacity:     isSold ? 0.3 : 1,
           })
 
           if (isAvailable) {
-            rect.on('mouseenter', () => {
-              rect.opacity(0.7)
-              layer.draw()
+            circle.on('mouseenter', () => {
+              circle.radius(SEAT_R + 1.5)
+              circle.opacity(0.85)
+              layer.batchDraw()
               document.body.style.cursor = 'pointer'
             })
-            rect.on('mouseleave', () => {
-              rect.opacity(1)
-              layer.draw()
+            circle.on('mouseleave', () => {
+              circle.radius(SEAT_R)
+              circle.opacity(1)
+              layer.batchDraw()
               document.body.style.cursor = 'default'
             })
-            rect.on('click tap', (e) => {
+            circle.on('click tap', (e) => {
+              if (this.seatToggling) return  // API 호출 중 중복 클릭 방지
               e.cancelBubble = true
               this.konvaStageInstance?.stopDrag()
               this.toggleSeat(seat)
             })
           }
 
-          grp.add(rect)
-          grp.add(seatNumText)
+          grp.add(circle)
         }
 
         layer.add(grp)
@@ -385,7 +526,7 @@ export default {
       layer.draw()
     },
 
-    // 모든 콘텐츠가 보이도록 뷰 자동 맞춤
+    // 전체가 보이도록 자동 맞춤 (캔버스 정중앙에 배치)
     fitToView() {
       const stage = this.konvaStageInstance
       if (!stage || this.sections.length === 0) return
@@ -396,12 +537,12 @@ export default {
         if (section.seats.length === 0) continue
         const maxRow = Math.max(...section.seats.map(s => s.rowNo))
         const maxCol = Math.max(...section.seats.map(s => s.seatNo))
-        const w = maxCol * (SEAT_W + SEAT_GAP)
-        const h = maxRow * (SEAT_H + SEAT_GAP)
-        minX = Math.min(minX, section.x - 25)
-        minY = Math.min(minY, section.y - 25)
-        maxX = Math.max(maxX, section.x + w + 10)
-        maxY = Math.max(maxY, section.y + h + 10)
+        const w = maxCol * SEAT_STEP
+        const h = maxRow * SEAT_STEP
+        minX = Math.min(minX, (section.x ?? 0) - 25)
+        minY = Math.min(minY, (section.y ?? 0) - 30)
+        maxX = Math.max(maxX, (section.x ?? 0) + w + 10)
+        maxY = Math.max(maxY, (section.y ?? 0) + h + 10)
       }
 
       const si = this.stageInfo
@@ -414,51 +555,239 @@ export default {
 
       if (!isFinite(minX)) return
 
-      const PAD = 40
+      const PAD      = 40
       const contentW = Math.max(maxX - minX, 100)
       const contentH = Math.max(maxY - minY, 100)
+
+      // 캔버스 크기에 맞춰 스케일 계산 (최대 2배 제한 – 너무 확대되지 않게)
       const scale = Math.min(
         (stage.width()  - PAD * 2) / contentW,
         (stage.height() - PAD * 2) / contentH,
-        2  // 최대 200% 줌
+        2
       )
+
+      // 콘텐츠 전체를 캔버스 정중앙에 배치
+      const scaledW = contentW * scale
+      const scaledH = contentH * scale
       stage.scale({ x: scale, y: scale })
       stage.position({
-        x: -minX * scale + PAD,
-        y: -minY * scale + PAD,
+        x: (stage.width()  - scaledW) / 2 - minX * scale,
+        y: (stage.height() - scaledH) / 2 - minY * scale,
       })
     },
 
-    toggleSeat(seat) {
-      if (seat.status !== 'AVAILABLE') return
-      const idx = this.selected.indexOf(seat.seatId)
-      if (idx >= 0) {
-        this.selected.splice(idx, 1)
-      } else {
-        this.selected.push(seat.seatId)
+    zoomIn() {
+      const stage = this.konvaStageInstance
+      if (!stage) return
+      const oldScale = stage.scaleX()
+      const newScale = Math.min(oldScale * 1.25, 8)
+      const cx = stage.width()  / 2
+      const cy = stage.height() / 2
+      stage.scale({ x: newScale, y: newScale })
+      stage.position({
+        x: cx - (cx - stage.x()) * (newScale / oldScale),
+        y: cy - (cy - stage.y()) * (newScale / oldScale),
+      })
+      this.mainLayerInstance?.batchDraw()
+    },
+
+    zoomOut() {
+      const stage = this.konvaStageInstance
+      if (!stage) return
+      const oldScale = stage.scaleX()
+      const newScale = Math.max(oldScale / 1.25, 0.15)
+      const cx = stage.width()  / 2
+      const cy = stage.height() / 2
+      stage.scale({ x: newScale, y: newScale })
+      stage.position({
+        x: cx - (cx - stage.x()) * (newScale / oldScale),
+        y: cy - (cy - stage.y()) * (newScale / oldScale),
+      })
+      this.mainLayerInstance?.batchDraw()
+    },
+
+    // 좌석 클릭: 선점 API 즉시 호출 (선택 추가 → POST, 선택 해제 → DELETE)
+    async toggleSeat(seat) {
+      if (seat.status !== 'AVAILABLE' && !this.selectedSet.has(seat.seatId)) return
+      this.seatToggling = true
+      this.holdError    = null
+      try {
+        const idx = this.selected.indexOf(seat.seatId)
+        if (idx >= 0) {
+          // ── 선점 해제 ──
+          await this.api.del(ENDPOINTS.seatHold(seat.seatId))
+          this.selected.splice(idx, 1)
+          if (this.selected.length === 0) {
+            this.clearHoldTimer()
+          }
+        } else {
+          // ── 선점 추가 ──
+          if (this.selected.length >= this.MAX_SEATS) {
+            this.holdError = `좌석은 최대 ${this.MAX_SEATS}개까지 선택할 수 있습니다.`
+            return
+          }
+          await this.api.post(ENDPOINTS.seatHold(seat.seatId))
+          this.selected.push(seat.seatId)
+          // 첫 선점 시 5분 타이머 시작
+          if (!this.holdExpiresAt) {
+            this.holdExpiresAt = Date.now() + 5 * 60 * 1000
+            this.startHoldTimer()
+          }
+        }
+      } catch (e) {
+        this.holdError = e?.message || '좌석 선점에 실패했습니다.'
+      } finally {
+        this.seatToggling = false
+        this.renderAll()
       }
+    },
+
+    clearAll() {
+      this.selected = []
+      this.clearHoldTimer()
       this.renderAll()
     },
 
-    async hold() {
+    // "선택 완료": 이미 선점 완료된 상태 → localStorage 저장 후 결제 페이지 이동
+    hold() {
       if (this.selected.length === 0) return
       this.holdLoading = true
-      try {
-        const scheduleId = this.$route.params.scheduleId
-        const res = await this.seatHoldMock.createHold({ scheduleId, seats: [...this.selected] })
-        // 선점된 좌석 상태 로컬 업데이트
-        for (const seatId of this.selected) {
-          const seat = this.seats.find(s => s.seatId === seatId)
-          if (seat) seat.status = 'HOLD'
-        }
-        this.selected = []
-        this.$router.push(`/hold/${res.holdId}`)
-      } catch (e) {
-        // 에러는 ErrorAlertModal에서 표시됨
-      } finally {
-        this.holdLoading = false
+      const scheduleId = this.$route.params.scheduleId
+      const holdId = this.selected.map(String).join(',')
+      const holdInfo = {
+        holdId,
+        scheduleId,
+        seats: [...this.selected],
+        expiresAt: this.holdExpiresAt ? new Date(this.holdExpiresAt).toISOString() : null,
+        createdAt: new Date().toISOString(),
       }
-    }
+      const stored = JSON.parse(localStorage.getItem('seatHolds') || '[]')
+      stored.push(holdInfo)
+      localStorage.setItem('seatHolds', JSON.stringify(stored))
+      this.proceedingToCheckout = true  // beforeUnmount에서 해제 스킵
+      this.holdLoading = false
+      this.$router.push({ path: '/checkout', query: { holdId } })
+    },
+
+    // ── 선점 타이머 ──
+    startHoldTimer() {
+      this.clearHoldTimer()
+      const tick = () => {
+        const remaining = this.holdExpiresAt - Date.now()
+        if (remaining <= 0) {
+          this.holdCountdown = '00:00'
+          this.onHoldExpired()
+          return
+        }
+        const m = Math.floor(remaining / 60000)
+        const s = Math.floor((remaining % 60000) / 1000)
+        this.holdCountdown = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+      }
+      tick()
+      this.holdTimerInterval = setInterval(tick, 1000)
+    },
+
+    clearHoldTimer() {
+      if (this.holdTimerInterval) {
+        clearInterval(this.holdTimerInterval)
+        this.holdTimerInterval = null
+      }
+      this.holdExpiresAt = null
+      this.holdCountdown = ''
+    },
+
+    // 타이머 만료: 모든 선점 자동 해제
+    async onHoldExpired() {
+      this.clearHoldTimer()
+      const toRelease = [...this.selected]
+      this.selected = []
+      this.renderAll()
+      await Promise.all(toRelease.map(seatId =>
+        this.api.del(ENDPOINTS.seatHold(seatId)).catch(() => {})
+      ))
+      this.holdError = '선점 시간(5분)이 만료되었습니다. 다시 선택해 주세요.'
+    },
+
+    // 이전 세션 선점 정리 (뒤로 가기 후 재진입 시)
+    async cleanupOldHolds() {
+      const scheduleId = this.$route.params.scheduleId
+      if (!scheduleId) return
+      const stored = JSON.parse(localStorage.getItem('seatHolds') || '[]')
+      const old = stored.filter(h => String(h.scheduleId) === String(scheduleId))
+      for (const hold of old) {
+        const seatIds = hold.seats || []
+        await Promise.all(seatIds.map(seatId =>
+          this.api.del(ENDPOINTS.seatHold(seatId)).catch(() => {})
+        ))
+      }
+      // 해제된 hold를 localStorage에서 제거
+      const remaining = stored.filter(h => String(h.scheduleId) !== String(scheduleId))
+      localStorage.setItem('seatHolds', JSON.stringify(remaining))
+    },
+
+    // ── WebSocket (STOMP) 연결 ──
+    connectWebSocket() {
+      const baseUrl = import.meta.env.VITE_API_BASE || 'http://localhost:8082'
+      const client = new Client({
+        webSocketFactory: () => new SockJS(`${baseUrl}/ws-seatHold`),
+        reconnectDelay: 5000,
+        onConnect: () => {
+          client.subscribe('/topic/seat', (message) => {
+            this.onSeatStatusMessage(message)
+          })
+        },
+        onStompError: (frame) => {
+          console.warn('[STOMP] 오류:', frame)
+        },
+      })
+      client.activate()
+      this.stompClient = client
+    },
+
+    // 다른 사용자의 선점/해제 실시간 반영
+    onSeatStatusMessage(message) {
+      try {
+        const data = JSON.parse(message.body)
+        const seatId = Number(data.seatId)
+        const status = data.status
+        const seat = this.seats.find(s => s.seatId === seatId)
+        if (!seat) return
+
+        if (status === 'HOLD') {
+          // 내가 선점 중인 좌석이면 색상 변경 불필요 (blue 유지)
+          if (!this.selectedSet.has(seatId)) {
+            seat.status = 'HOLD'
+            this.renderAll()
+          }
+        } else if (status === 'RELEASE') {
+          // 내가 선점 중인 좌석이면 무시 (내가 직접 selected에서 제거할 것)
+          if (!this.selectedSet.has(seatId)) {
+            seat.status = 'AVAILABLE'
+            this.renderAll()
+          }
+        } else if (status === 'BOOKED') {
+          seat.status = 'SOLD'
+          // 내가 선점 중이던 좌석이 다른 경로로 예매 완료된 경우 강제 해제
+          const idx = this.selected.indexOf(seatId)
+          if (idx >= 0) {
+            this.selected.splice(idx, 1)
+            if (this.selected.length === 0) this.clearHoldTimer()
+          }
+          this.renderAll()
+        }
+      } catch (e) {
+        console.warn('[WS] 좌석 상태 메시지 파싱 실패:', e)
+      }
+    },
+
+    // 탭 닫기 / 새로고침 시 localStorage 정리 (Redis TTL로 백엔드는 자동 만료)
+    handleBeforeUnload() {
+      const scheduleId = this.$route.params.scheduleId
+      if (!scheduleId) return
+      const stored = JSON.parse(localStorage.getItem('seatHolds') || '[]')
+      const filtered = stored.filter(h => String(h.scheduleId) !== String(scheduleId))
+      localStorage.setItem('seatHolds', JSON.stringify(filtered))
+    },
   }
 }
 </script>

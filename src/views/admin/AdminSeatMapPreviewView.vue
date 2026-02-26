@@ -24,9 +24,55 @@
     <div v-if="seatMap.thumbnailUrl" class="mt-4 overflow-hidden rounded-xl border border-slate-200 bg-slate-950">
       <div class="flex items-center justify-between px-4 py-2 border-b border-slate-700">
         <span class="text-xs font-semibold text-slate-400">저장된 배치도 미리보기</span>
-        <span class="text-xs text-slate-500">레이아웃 편집 후 저장 시 자동 갱신</span>
+        <div class="flex items-center gap-1">
+          <button
+            type="button"
+            title="줌인"
+            class="px-2 py-0.5 rounded text-sm font-bold text-slate-300 hover:bg-slate-700 transition-colors"
+            @click="imgScale = Math.min(imgScale * 1.25, 5)"
+          >+</button>
+          <span class="min-w-10 text-center text-xs text-slate-400">{{ Math.round(imgScale * 100) }}%</span>
+          <button
+            type="button"
+            title="줌아웃"
+            class="px-2 py-0.5 rounded text-sm font-bold text-slate-300 hover:bg-slate-700 transition-colors"
+            @click="imgScale = Math.max(imgScale / 1.25, 0.1)"
+          >−</button>
+          <button
+            type="button"
+            title="초기화"
+            class="ml-1 px-2 py-0.5 rounded text-xs text-slate-400 hover:bg-slate-700 transition-colors"
+            @click="resetImgView"
+          >↺</button>
+          <span class="ml-2 text-xs text-slate-500">레이아웃 편집 후 저장 시 자동 갱신</span>
+        </div>
       </div>
-      <img :src="seatMap.thumbnailUrl" alt="배치도 미리보기" class="w-full object-contain" style="max-height: 400px;" />
+      <div
+        :style="{ height: '600px', position: 'relative', overflow: 'hidden', cursor: imgDragging ? 'grabbing' : 'grab' }"
+        @wheel.prevent="onImgWheel"
+        @mousedown.prevent="onImgMouseDown"
+        @mousemove="onImgMouseMove"
+        @mouseup="onImgMouseUp"
+        @mouseleave="onImgMouseUp"
+      >
+        <img
+          :src="seatMap.thumbnailUrl"
+          alt="배치도 미리보기"
+          draggable="false"
+          :style="{
+            position: 'absolute',
+            top: '0',
+            left: '0',
+            width: '100%',
+            height: '100%',
+            objectFit: 'contain',
+            transformOrigin: '0 0',
+            transform: `translate(${imgOffsetX}px, ${imgOffsetY}px) scale(${imgScale})`,
+            userSelect: 'none',
+            pointerEvents: 'none'
+          }"
+        />
+      </div>
     </div>
     <div v-else class="mt-4 flex items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50 py-8">
       <span class="text-sm text-slate-400">저장된 배치도 이미지가 없습니다. 레이아웃 편집 후 저장해주세요.</span>
@@ -214,7 +260,13 @@ export default {
       selectedDefinitionIds: [],
       definitionGradeDrafts: {},
       bulkGrade: '',
-      successMessage: ''
+      successMessage: '',
+      imgScale: 1,
+      imgOffsetX: 0,
+      imgOffsetY: 0,
+      imgDragging: false,
+      imgDragStart: { x: 0, y: 0 },
+      imgDragStartOffset: { x: 0, y: 0 }
     }
   },
   computed: {
@@ -418,6 +470,35 @@ export default {
       } catch (err) {
         // 에러는 ErrorAlertModal에서 표시됨
       }
+    },
+    onImgWheel(e) {
+      const delta = e.deltaY < 0 ? 1.25 : 1 / 1.25
+      const rect = e.currentTarget.getBoundingClientRect()
+      const mx = e.clientX - rect.left
+      const my = e.clientY - rect.top
+      const newScale = Math.min(Math.max(this.imgScale * delta, 0.1), 5)
+      const actualDelta = newScale / this.imgScale
+      this.imgOffsetX = mx - (mx - this.imgOffsetX) * actualDelta
+      this.imgOffsetY = my - (my - this.imgOffsetY) * actualDelta
+      this.imgScale = newScale
+    },
+    onImgMouseDown(e) {
+      this.imgDragging = true
+      this.imgDragStart = { x: e.clientX, y: e.clientY }
+      this.imgDragStartOffset = { x: this.imgOffsetX, y: this.imgOffsetY }
+    },
+    onImgMouseMove(e) {
+      if (!this.imgDragging) return
+      this.imgOffsetX = this.imgDragStartOffset.x + (e.clientX - this.imgDragStart.x)
+      this.imgOffsetY = this.imgDragStartOffset.y + (e.clientY - this.imgDragStart.y)
+    },
+    onImgMouseUp() {
+      this.imgDragging = false
+    },
+    resetImgView() {
+      this.imgScale = 1
+      this.imgOffsetX = 0
+      this.imgOffsetY = 0
     },
     async applyBulkGrade() {
       if (!this.selectedSectionId || !this.bulkGrade) return
