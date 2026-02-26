@@ -236,7 +236,6 @@ import ToastNotification from '../components/common/ToastNotification.vue'
 import { useRole } from '../composables/useRole'
 import { useMe } from '../composables/useMe'
 import { useSSE } from '../composables/useSSE'
-import PortOne from '@portone/browser-sdk/v2';
 
 export default {
   name: 'DefaultLayout',
