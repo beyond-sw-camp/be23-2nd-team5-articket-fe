@@ -161,50 +161,7 @@ export default {
       return this.sortedItems.length
     },
     sortedItems() {
-      let list = [...this.items]
-
-      if (this.filters.genres?.length) {
-        list = list.filter((c) => this.filters.genres.includes(c.category))
-      }
-      if (this.filters.salesStatus) {
-        list = list.filter((c) => c.status === this.filters.salesStatus)
-      }
-      if (this.filters.selectedDateStart) {
-        const selStart = new Date(this.filters.selectedDateStart)
-        selStart.setHours(0, 0, 0, 0)
-        const selEnd = this.filters.selectedDateEnd
-          ? new Date(this.filters.selectedDateEnd)
-          : new Date(selStart.getTime())
-        selEnd.setHours(23, 59, 59, 999)
-        const selStartTs = selStart.getTime()
-        const selEndTs = selEnd.getTime()
-        list = list.filter((c) => {
-          const cStart = c.scheduleStartDate ? new Date(c.scheduleStartDate).setHours(0, 0, 0, 0) : 0
-          const cEnd = c.scheduleEndDate ? new Date(c.scheduleEndDate).setHours(23, 59, 59, 999) : Infinity
-          return selStartTs <= cEnd && selEndTs >= cStart
-        })
-      }
-      if (this.filters.regions?.length && this.filters.regions.length > 0) {
-        list = list.filter((c) => {
-          const venueName = (c.venueName || '').toLowerCase()
-          return this.filters.regions.some((r) => venueName.includes(r.toLowerCase()))
-        })
-      }
-
-      if (this.sortBy === 'imminent') {
-        list = list.sort((a, b) => {
-          const da = a.scheduleStartDate ? new Date(a.scheduleStartDate).getTime() : 0
-          const db = b.scheduleStartDate ? new Date(b.scheduleStartDate).getTime() : 0
-          return da - db
-        })
-      } else if (this.sortBy === 'latest') {
-        list = list.sort((a, b) => {
-          const da = a.scheduleStartDate ? new Date(a.scheduleStartDate).getTime() : 0
-          const db = b.scheduleStartDate ? new Date(b.scheduleStartDate).getTime() : 0
-          return db - da
-        })
-      }
-      return list
+      return [...this.items]
     }
   },
   watch: {
@@ -244,19 +201,28 @@ export default {
       return 'bg-amber-100 text-amber-700'
     },
     onFilterApply() {
-      // 필터 적용 시 클라이언트 사이드 필터링만 수행 (sortedItems computed가 처리)
+      this.load()
     },
     async load() {
       if (!this.genreKey) return
       this.loading = true
       try {
-        const params = new URLSearchParams()
-        params.set('page', '0')
-        params.set('size', '50')
-        params.set('category', this.genreKey)
-        if (this.sortBy === 'imminent') params.set('sort', 'scheduleStartDate,asc')
-        if (this.sortBy === 'latest') params.set('sort', 'scheduleStartDate,desc')
-        const res = await this.api.get(`${ENDPOINTS.concerts()}?${params.toString()}`)
+        const params = {
+          category: this.genreKey,
+          page: 0,
+          size: 50,
+        }
+        if (this.sortBy === 'imminent') params.sort = 'scheduleStartDate,asc'
+        if (this.sortBy === 'latest') params.sort = 'scheduleStartDate,desc'
+        if (this.filters.salesStatus) params.status = this.filters.salesStatus
+        if (this.filters.regions?.length) params.regions = this.filters.regions
+        if (this.filters.selectedDateStart) {
+          params.filterStartDate = new Date(this.filters.selectedDateStart).toISOString().slice(0, 10)
+        }
+        if (this.filters.selectedDateEnd) {
+          params.filterEndDate = new Date(this.filters.selectedDateEnd).toISOString().slice(0, 10)
+        }
+        const res = await this.api.get(ENDPOINTS.searchConcerts(params))
         const list = res.content ?? res.items ?? []
         this.items = list.map((c) => ({
           id: c.id,

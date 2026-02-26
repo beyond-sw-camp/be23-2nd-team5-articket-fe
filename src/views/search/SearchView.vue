@@ -124,7 +124,7 @@
         <template v-else>
           <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <button
-              v-for="c in displayedFilteredConcerts"
+              v-for="c in displayedConcerts"
               :key="c.id"
               type="button"
               class="group flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-slate-50 text-left transition hover:border-slate-300 hover:shadow-md"
@@ -205,42 +205,8 @@ export default {
     expandVenues() {
       return this.tab === 'venues'
     },
-    filteredConcerts() {
-      let list = [...this.concerts]
-      if (this.filters.genres?.length) {
-        list = list.filter((c) => this.filters.genres.includes(c.category))
-      }
-      if (this.filters.salesStatus) {
-        list = list.filter((c) => (c.status ?? 'PUBLISHED') === this.filters.salesStatus)
-      }
-      if (this.filters.selectedDateStart) {
-        const selStart = new Date(this.filters.selectedDateStart)
-        selStart.setHours(0, 0, 0, 0)
-        const selEnd = this.filters.selectedDateEnd
-          ? new Date(this.filters.selectedDateEnd)
-          : new Date(selStart.getTime())
-        selEnd.setHours(23, 59, 59, 999)
-        const selStartTs = selStart.getTime()
-        const selEndTs = selEnd.getTime()
-        list = list.filter((c) => {
-          const cStart = c.scheduleStartDate ? new Date(c.scheduleStartDate).setHours(0, 0, 0, 0) : 0
-          const cEnd = c.scheduleEndDate ? new Date(c.scheduleEndDate).setHours(23, 59, 59, 999) : Infinity
-          return selStartTs <= cEnd && selEndTs >= cStart
-        })
-      }
-      if (this.filters.regions?.length) {
-        list = list.filter((c) => {
-          const venueName = (c.venueName || '').toLowerCase()
-          return this.filters.regions.some((r) => venueName.includes(r.toLowerCase()))
-        })
-      }
-      return list
-    },
-    filteredConcertsCount() {
-      return this.filteredConcerts.length
-    },
-    displayedFilteredConcerts() {
-      return this.filteredConcerts.slice(0, this.concertsDisplayLimit)
+    displayedConcerts() {
+      return this.concerts.slice(0, this.concertsDisplayLimit)
     },
     concertsHasMore() {
       return this.concertPage < this.concertsTotalPages - 1
@@ -314,11 +280,25 @@ export default {
       this.venuesLoading = false
       this.$nextTick(() => this.setupConcertsObserver())
     },
+    buildConcertParams(q, page) {
+      const params = { keyword: q, size: CONCERT_PAGE_SIZE, page }
+      if (this.filters.genres?.length) params.categories = this.filters.genres
+      if (this.filters.salesStatus) params.status = this.filters.salesStatus
+      if (this.filters.regions?.length) params.regions = this.filters.regions
+      if (this.filters.selectedDateStart) {
+        const d = new Date(this.filters.selectedDateStart)
+        params.filterStartDate = d.toISOString().slice(0, 10)
+      }
+      if (this.filters.selectedDateEnd) {
+        const d = new Date(this.filters.selectedDateEnd)
+        params.filterEndDate = d.toISOString().slice(0, 10)
+      }
+      return params
+    },
     async loadConcerts(q, page = 0, append = false) {
       try {
-        const res = await this.api.get(
-          ENDPOINTS.searchConcerts({ keyword: q, size: CONCERT_PAGE_SIZE, page })
-        )
+        const apiParams = this.buildConcertParams(q, page)
+        const res = await this.api.get(ENDPOINTS.searchConcerts(apiParams))
         const list = res.content ?? res.items ?? []
         const mapped = list.map((c) => ({
           id: c.id,
@@ -356,10 +336,10 @@ export default {
       if (!el?.isIntersecting) return
       const q = this.q?.trim()
       if (!q || this.concertsLoading || this.concertsLoadingMore) return
-      if (this.concertsDisplayLimit < this.filteredConcerts.length) {
+      if (this.concertsDisplayLimit < this.concerts.length) {
         this.concertsDisplayLimit = Math.min(
           this.concertsDisplayLimit + CONCERT_PAGE_SIZE,
-          this.filteredConcerts.length
+          this.concerts.length
         )
         return
       }
@@ -368,7 +348,7 @@ export default {
       this.loadConcerts(q, this.concertPage + 1, true).then(() => {
         this.concertsDisplayLimit = Math.min(
           this.concertsDisplayLimit + CONCERT_PAGE_SIZE,
-          this.filteredConcerts.length
+          this.concerts.length
         )
       }).finally(() => {
         this.concertsLoadingMore = false
@@ -433,7 +413,15 @@ export default {
       })
     },
     onFilterApply() {
-      // 클라이언트 사이드 필터링 (filteredConcerts computed가 처리)
+      const q = this.q?.trim()
+      if (!q) return
+      this.concertPage = 0
+      this.concertsDisplayLimit = CONCERT_PAGE_SIZE
+      this.concertsLoading = true
+      this.loadConcerts(q, 0, false).finally(() => {
+        this.concertsLoading = false
+        this.$nextTick(() => this.setupConcertsObserver())
+      })
     },
     goToTab(tab) {
       this.$router.replace({
