@@ -301,8 +301,6 @@ const grades = [
   { id: 'C',   label: 'C석', color: '#94a3b8' },
 ]
 
-const colorPalette = ['#ef6b6b', '#f5c842', '#4ec5ef', '#52d98a', '#b06ef5', '#94a3b8']
-
 // ── COMPUTED ──────────────────────────────────────────────────────────
 const selectedObj = computed(() => objects.value.find(o => o.id === selectedId.value))
 
@@ -1002,6 +1000,8 @@ const loadLayout = async () => {
     // stageX/Y가 null/undefined 일 때만 캔버스 가운데로 초기 배치
     const defaultStageX = Math.round(konvaStage.width() / 2 - 200)
     const defaultStageY = Math.round(konvaStage.height() / 2 - 50)
+
+    // SeatMapCreateResDto에 stageX/Y가 포함되어 mapRes에서 바로 읽음
     const stageObj = {
       id: uid(), type: 'stage', name: 'STAGE',
       x: mapRes?.stageX ?? mapRes?.stage_x ?? defaultStageX,
@@ -1013,8 +1013,6 @@ const loadLayout = async () => {
 
     const gridObjs = await Promise.all((sections || []).map(async sec => {
       const defs = await api.get(`/seat-definitions/admin/sections/${sec.id}/definitions`)
-      // 백엔드 응답 구조 디버그 (콘솔에서 실제 필드명 확인용)
-      console.log('[LOAD DEBUG] section raw:', JSON.stringify(sec))
       // 백엔드 응답 필드명 다양성 대응 (rows/totalRow, seatsPerRow/totalCol 등)
       const rows = sec.rows ?? sec.totalRow ?? sec.total_row ?? 5
       const cols = sec.seatsPerRow ?? sec.seats_per_row ?? sec.totalCol ?? sec.total_col ?? 10
@@ -1024,19 +1022,22 @@ const loadLayout = async () => {
           return d?.isVisible === false ? 'inactive' : 'empty'
         })
       )
+
+      // 위치: 백엔드가 xpos/ypos (전체 소문자) 로 반환함 (확인됨)
+      const x = sec.xpos ?? sec.xPos ?? sec.x_pos ?? sec.posX ?? sec.pos_x ?? 0
+      const y = sec.ypos ?? sec.yPos ?? sec.y_pos ?? sec.posY ?? sec.pos_y ?? 0
+
       return {
-        id: Number(sec.id),  // ← 숫자로 저장 (기존 구역 ID)
+        id: String(sec.id),
         type: 'seatGrid',
         name: sec.name ?? `구역 ${sec.id}`,
-        // 백엔드 필드명 다양성 대응 (xPos/x_pos/posX 등)
-        x: sec.xPos ?? sec.x_pos ?? sec.posX ?? sec.pos_x ?? 0,
-        y: sec.yPos ?? sec.y_pos ?? sec.posY ?? sec.pos_y ?? 0,
+        x, y,
         rows, cols,
         grade: defs?.[0]?.gradeDefault ?? defs?.[0]?.grade ?? 'R',
         color: sec.displayColor ?? sec.display_color ?? '#ef6b6b',
         rotation: sec.rotation ?? 0,
         shape: sec.shape ?? 'RECTANGLE',
-        rowLabelType: 'left',
+        rowLabelType: sec.rowLabelType ?? sec.row_label_type ?? 'left',
         states,
         seatDefs: (defs || []).map(d => ({
           id: d.id,
@@ -1079,24 +1080,23 @@ const handleSave = async () => {
       stageRotation: stageObj?.rotation || 0,
       thumbnailUrl: thumbnailDataUrl || undefined,
       sections: grids.map(g => {
-        // id가 숫자면 기존 구역 (DB에 있음), 아니면 새 구역 (임시 ID)
-        const isExistingSection = typeof g.id === 'number' && !isNaN(g.id)
-        console.log('[VUE DEBUG] grid id:', g.id, 'isExisting:', isExistingSection, 'name:', g.name, 'seats count:', g.seatDefs?.length)
+        // uid()는 'obj_'로 시작하는 문자열, 로드된 기존 구역은 숫자 문자열('5' 등)
+        const parsedId = parseInt(g.id)
+        const isExistingSection = !isNaN(parsedId) && String(parsedId) === g.id
 
         const seatPayload = (g.seatDefs || []).map(d => {
           const r = d.rowNo - 1, c = d.seatNo - 1
           const state = g.states?.[r]?.[c]
           return { id: d.id, rowNo: d.rowNo, seatNo: d.seatNo, grade: d.grade, isVisible: state !== 'inactive' }
         })
-        console.log('[VUE DEBUG] seat payload:', seatPayload.slice(0, 3))
-
         const section = {
-          id: isExistingSection ? g.id : null,  // ← 기존: 숫자 ID, 새로운: null
+          id: isExistingSection ? parsedId : null,  // ← 기존: 숫자 ID, 새로운: null
           name: g.name,
           xPos: g.x, yPos: g.y, rotation: g.rotation,
           shape: g.shape,
           totalRow: g.rows, seatsPerRow: g.cols,
-          initialGrade: g.grade, displayColor: g.color
+          initialGrade: g.grade, displayColor: g.color,
+          rowLabelType: g.rowLabelType ?? 'left',
         }
 
         // 새 구역인 경우: 전체 좌석(rows×cols)을 순회하여 rules 생성
@@ -1117,7 +1117,6 @@ const handleSave = async () => {
           }
           section.rules = allRules
         } else if (isExistingSection) {
-          console.log('[VUE DEBUG] Existing section, updating seats')
           // 기존 구역인 경우: seats 배열로 개별 좌석 업데이트
           section.seats = seatPayload.map(seat => ({
             id: seat.id,
@@ -1130,7 +1129,6 @@ const handleSave = async () => {
       })
     }
 
-    console.log('[VUE DEBUG] Full payload:', JSON.stringify(payload, null, 2))
     await api.patch(`/seat-maps/admin/${seatMapId}/layout`, payload)
     // reload 없이 상태만 업데이트 (reload 시 xPos/yPos가 복원되지 않는 문제 방지)
     savedStatus.value = '저장됨'
@@ -1234,7 +1232,8 @@ const captureLayoutDataUrl = () => {
   mainLayer.draw()
 
   // 현재 화면을 그대로 캡처 (stage 이동 없음 → 저장 중 화면 깜빡임 방지)
-  const dataUrl = konvaStage.toDataURL({ mimeType: 'image/jpeg', quality: 0.85, pixelRatio: 1 })
+  // pixelRatio: 2 → 구역이 많아 축소 뷰일 때도 글씨/선이 선명하게 저장됨
+  const dataUrl = konvaStage.toDataURL({ mimeType: 'image/jpeg', quality: 0.9, pixelRatio: 2 })
 
   // 복원
   transformer.nodes(prevNodes)

@@ -122,7 +122,7 @@ export default {
       loading: false,
       item: null,
       stats: null,
-      form: { title: '', category: 'CONCERT', status: 'DRAFT', ageLimit: null, thumImgUrl: '' },
+      form: { title: '', category: 'CONCERT', status: 'DRAFT', ageLimit: null, thumImgUrl: '', seatMapId: null },
       saving: false,
       successMessage: '',
       api: null
@@ -155,6 +155,7 @@ export default {
           category: detail.category ?? 'CONCERT',
           status: detail.status ?? 'DRAFT',
           ageLimit: detail.ageLimit ?? detail.age_limit ?? null,
+          seatMapId: detail.seatMapId ?? detail.seat_map_id ?? null,
           thumImgUrl: detail.thumImgUrl ?? detail.thum_img_url ?? ''
         }
       } catch (err) {
@@ -172,8 +173,9 @@ export default {
       try {
         const payload = {
           title: this.form.title,
+          status: this.form.status,
+          seatMapId: this.form.seatMapId,
           category: this.form.category ?? 'CONCERT',
-          status: this.form.status
         }
         if (this.form.ageLimit != null && this.form.ageLimit !== '') {
           payload.ageLimit = Number(this.form.ageLimit)
