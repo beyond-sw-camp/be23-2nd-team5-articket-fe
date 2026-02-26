@@ -119,6 +119,17 @@
           </div>
         </div>
 
+        <!-- 선점 타이머 -->
+        <div v-if="holdCountdown"
+             class="px-4 py-2 flex items-center justify-between border-t border-orange-100 bg-orange-50">
+          <span class="text-xs text-slate-500">선점 만료까지</span>
+          <span
+            class="text-sm font-bold tabular-nums transition-colors"
+            :class="holdIsUrgent ? 'text-red-600 animate-pulse' : 'text-orange-500'">
+            {{ holdCountdown }}
+          </span>
+        </div>
+
         <!-- 합계 + 버튼 영역 -->
         <div class="border-t border-slate-100 px-4 py-4 flex flex-col gap-3">
           <div class="flex items-center justify-between text-sm">
@@ -146,9 +157,10 @@
 
 <script>
 import Konva from 'konva'
+import { Client } from '@stomp/stompjs'
+import SockJS from 'sockjs-client'
 import { useApi } from '../../composables/useApi'
 import { ENDPOINTS } from '../../lib/api/endpoints'
-import { useSeatHoldMock } from '../../composables/useSeatHoldMock'
 
 // 에디터와 동일한 좌석 간격 (위치 호환성 유지)
 const SEAT_W = 20, SEAT_H = 20, SEAT_GAP = 4
@@ -187,23 +199,30 @@ export default {
 
   data() {
     return {
-      loading:     false,
-      loadError:   null,
-      seats:       [],
-      selected:    [],
-      holdLoading: false,
-      holdError:   null,
-      api:         null,
-      seatHoldMock: null,
+      loading:      false,
+      loadError:    null,
+      seats:        [],
+      selected:     [],
+      holdLoading:  false,  // "선택 완료" 버튼 로딩
+      holdError:    null,
+      api:          null,
       konvaStageInstance: null,
       mainLayerInstance:  null,
-      currentHoldId:       null,   // 현재 선점된 holdId (있으면 이탈 시 해제)
+      seatToggling:        false,  // 좌석 선점/해제 API 호출 중 (중복 클릭 방지)
       proceedingToCheckout: false, // 결제 페이지로 이동 중이면 true (이탈 시 해제 스킵)
-      MAX_SEATS: 2,                // 1인 최대 선택 가능 좌석 수
+      MAX_SEATS:    2,             // 1인 최대 선택 가능 좌석 수
+      holdExpiresAt:    null,      // 선점 만료 시각 (ms timestamp)
+      holdCountdown:    '',        // "04:32" 형식 카운트다운 표시
+      holdTimerInterval: null,     // setInterval ID
+      stompClient:      null,      // WebSocket STOMP 클라이언트
     }
   },
 
   computed: {
+    // 카운트다운이 1분 미만이면 긴급(빨간색)으로 표시
+    holdIsUrgent() {
+      return this.holdCountdown.startsWith('00:')
+    },
     selectedSet() {
       return new Set(this.selected)
     },
@@ -267,21 +286,30 @@ export default {
   },
 
   created() {
-    this.api         = useApi()
-    this.seatHoldMock = useSeatHoldMock()
+    this.api = useApi()
   },
 
   mounted() {
     this.load()
     this.cleanupOldHolds()
+    this.connectWebSocket()
     window.addEventListener('beforeunload', this.handleBeforeUnload)
   },
 
   beforeUnmount() {
     window.removeEventListener('beforeunload', this.handleBeforeUnload)
-    // 결제 페이지로 이동이 아닌 이탈(뒤로 가기, 다른 메뉴 등)이면 선점 해제
-    if (this.currentHoldId && !this.proceedingToCheckout) {
-      this.seatHoldMock.releaseHold(this.currentHoldId).catch(() => {})
+    this.clearHoldTimer()
+    // WebSocket 연결 해제
+    if (this.stompClient) {
+      this.stompClient.deactivate()
+      this.stompClient = null
+    }
+    // 결제 페이지 이동이 아닌 이탈(뒤로 가기, 다른 메뉴)이면 선점된 모든 좌석 해제
+    if (!this.proceedingToCheckout && this.selected.length > 0) {
+      const toRelease = [...this.selected]
+      Promise.all(toRelease.map(seatId =>
+        this.api.del(ENDPOINTS.seatHold(seatId)).catch(() => {})
+      ))
     }
     if (this.konvaStageInstance) {
       this.konvaStageInstance.destroy()
@@ -482,6 +510,7 @@ export default {
               document.body.style.cursor = 'default'
             })
             circle.on('click tap', (e) => {
+              if (this.seatToggling) return  // API 호출 중 중복 클릭 방지
               e.cancelBubble = true
               this.konvaStageInstance?.stopDrag()
               this.toggleSeat(seat)
@@ -577,68 +606,186 @@ export default {
       this.mainLayerInstance?.batchDraw()
     },
 
-    toggleSeat(seat) {
-      if (seat.status !== 'AVAILABLE') return
-      const idx = this.selected.indexOf(seat.seatId)
-      if (idx >= 0) {
-        this.selected.splice(idx, 1)
-        this.holdError = null
-      } else {
-        if (this.selected.length >= this.MAX_SEATS) {
-          this.holdError = `좌석은 최대 ${this.MAX_SEATS}개까지 선택할 수 있습니다.`
-          return
+    // 좌석 클릭: 선점 API 즉시 호출 (선택 추가 → POST, 선택 해제 → DELETE)
+    async toggleSeat(seat) {
+      if (seat.status !== 'AVAILABLE' && !this.selectedSet.has(seat.seatId)) return
+      this.seatToggling = true
+      this.holdError    = null
+      try {
+        const idx = this.selected.indexOf(seat.seatId)
+        if (idx >= 0) {
+          // ── 선점 해제 ──
+          await this.api.del(ENDPOINTS.seatHold(seat.seatId))
+          this.selected.splice(idx, 1)
+          if (this.selected.length === 0) {
+            this.clearHoldTimer()
+          }
+        } else {
+          // ── 선점 추가 ──
+          if (this.selected.length >= this.MAX_SEATS) {
+            this.holdError = `좌석은 최대 ${this.MAX_SEATS}개까지 선택할 수 있습니다.`
+            return
+          }
+          await this.api.post(ENDPOINTS.seatHold(seat.seatId))
+          this.selected.push(seat.seatId)
+          // 첫 선점 시 5분 타이머 시작
+          if (!this.holdExpiresAt) {
+            this.holdExpiresAt = Date.now() + 5 * 60 * 1000
+            this.startHoldTimer()
+          }
         }
-        this.selected.push(seat.seatId)
-        this.holdError = null
+      } catch (e) {
+        this.holdError = e?.message || '좌석 선점에 실패했습니다.'
+      } finally {
+        this.seatToggling = false
+        this.renderAll()
       }
-      this.renderAll()
     },
 
     clearAll() {
       this.selected = []
+      this.clearHoldTimer()
       this.renderAll()
     },
 
-    async hold() {
+    // "선택 완료": 이미 선점 완료된 상태 → localStorage 저장 후 결제 페이지 이동
+    hold() {
       if (this.selected.length === 0) return
       this.holdLoading = true
-      this.holdError   = null
-      try {
-        const scheduleId = this.$route.params.scheduleId
-        const res = await this.seatHoldMock.createHold({
-          scheduleId,
-          seats: [...this.selected],
-        })
-        this.currentHoldId       = res.holdId
-        this.proceedingToCheckout = true  // 결제 페이지 이동 → beforeUnmount에서 해제 안 함
-        this.$router.push({ path: '/checkout', query: { holdId: res.holdId } })
-      } catch (e) {
-        this.holdError = e?.message || '선점에 실패했습니다.'
-      } finally {
-        this.holdLoading = false
+      const scheduleId = this.$route.params.scheduleId
+      const holdId = this.selected.map(String).join(',')
+      const holdInfo = {
+        holdId,
+        scheduleId,
+        seats: [...this.selected],
+        expiresAt: this.holdExpiresAt ? new Date(this.holdExpiresAt).toISOString() : null,
+        createdAt: new Date().toISOString(),
       }
+      const stored = JSON.parse(localStorage.getItem('seatHolds') || '[]')
+      stored.push(holdInfo)
+      localStorage.setItem('seatHolds', JSON.stringify(stored))
+      this.proceedingToCheckout = true  // beforeUnmount에서 해제 스킵
+      this.holdLoading = false
+      this.$router.push({ path: '/checkout', query: { holdId } })
     },
 
-    // 이 scheduleId에 남아있는 이전 선점을 해제 (뒤로 가기 후 재진입 시 처리)
+    // ── 선점 타이머 ──
+    startHoldTimer() {
+      this.clearHoldTimer()
+      const tick = () => {
+        const remaining = this.holdExpiresAt - Date.now()
+        if (remaining <= 0) {
+          this.holdCountdown = '00:00'
+          this.onHoldExpired()
+          return
+        }
+        const m = Math.floor(remaining / 60000)
+        const s = Math.floor((remaining % 60000) / 1000)
+        this.holdCountdown = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+      }
+      tick()
+      this.holdTimerInterval = setInterval(tick, 1000)
+    },
+
+    clearHoldTimer() {
+      if (this.holdTimerInterval) {
+        clearInterval(this.holdTimerInterval)
+        this.holdTimerInterval = null
+      }
+      this.holdExpiresAt = null
+      this.holdCountdown = ''
+    },
+
+    // 타이머 만료: 모든 선점 자동 해제
+    async onHoldExpired() {
+      this.clearHoldTimer()
+      const toRelease = [...this.selected]
+      this.selected = []
+      this.renderAll()
+      await Promise.all(toRelease.map(seatId =>
+        this.api.del(ENDPOINTS.seatHold(seatId)).catch(() => {})
+      ))
+      this.holdError = '선점 시간(5분)이 만료되었습니다. 다시 선택해 주세요.'
+    },
+
+    // 이전 세션 선점 정리 (뒤로 가기 후 재진입 시)
     async cleanupOldHolds() {
       const scheduleId = this.$route.params.scheduleId
       if (!scheduleId) return
       const stored = JSON.parse(localStorage.getItem('seatHolds') || '[]')
       const old = stored.filter(h => String(h.scheduleId) === String(scheduleId))
       for (const hold of old) {
-        try {
-          await this.seatHoldMock.releaseHold(hold.holdId)
-        } catch (_) {
-          // 이미 만료된 선점은 무시
+        const seatIds = hold.seats || []
+        await Promise.all(seatIds.map(seatId =>
+          this.api.del(ENDPOINTS.seatHold(seatId)).catch(() => {})
+        ))
+      }
+      // 해제된 hold를 localStorage에서 제거
+      const remaining = stored.filter(h => String(h.scheduleId) !== String(scheduleId))
+      localStorage.setItem('seatHolds', JSON.stringify(remaining))
+    },
+
+    // ── WebSocket (STOMP) 연결 ──
+    connectWebSocket() {
+      const baseUrl = import.meta.env.VITE_API_BASE || 'http://localhost:8082'
+      const client = new Client({
+        webSocketFactory: () => new SockJS(`${baseUrl}/ws-seatHold`),
+        reconnectDelay: 5000,
+        onConnect: () => {
+          client.subscribe('/topic/seat', (message) => {
+            this.onSeatStatusMessage(message)
+          })
+        },
+        onStompError: (frame) => {
+          console.warn('[STOMP] 오류:', frame)
+        },
+      })
+      client.activate()
+      this.stompClient = client
+    },
+
+    // 다른 사용자의 선점/해제 실시간 반영
+    onSeatStatusMessage(message) {
+      try {
+        const data = JSON.parse(message.body)
+        const seatId = Number(data.seatId)
+        const status = data.status
+        const seat = this.seats.find(s => s.seatId === seatId)
+        if (!seat) return
+
+        if (status === 'HOLD') {
+          // 내가 선점 중인 좌석이면 색상 변경 불필요 (blue 유지)
+          if (!this.selectedSet.has(seatId)) {
+            seat.status = 'HOLD'
+            this.renderAll()
+          }
+        } else if (status === 'RELEASE') {
+          // 내가 선점 중인 좌석이면 무시 (내가 직접 selected에서 제거할 것)
+          if (!this.selectedSet.has(seatId)) {
+            seat.status = 'AVAILABLE'
+            this.renderAll()
+          }
+        } else if (status === 'BOOKED') {
+          seat.status = 'SOLD'
+          // 내가 선점 중이던 좌석이 다른 경로로 예매 완료된 경우 강제 해제
+          const idx = this.selected.indexOf(seatId)
+          if (idx >= 0) {
+            this.selected.splice(idx, 1)
+            if (this.selected.length === 0) this.clearHoldTimer()
+          }
+          this.renderAll()
         }
+      } catch (e) {
+        console.warn('[WS] 좌석 상태 메시지 파싱 실패:', e)
       }
     },
 
-    // 브라우저 탭 닫기 / 새로고침 시 localStorage 정리 (Redis는 TTL로 자동 만료)
+    // 탭 닫기 / 새로고침 시 localStorage 정리 (Redis TTL로 백엔드는 자동 만료)
     handleBeforeUnload() {
-      if (!this.currentHoldId) return
+      const scheduleId = this.$route.params.scheduleId
+      if (!scheduleId) return
       const stored = JSON.parse(localStorage.getItem('seatHolds') || '[]')
-      const filtered = stored.filter(h => h.holdId !== this.currentHoldId)
+      const filtered = stored.filter(h => String(h.scheduleId) !== String(scheduleId))
       localStorage.setItem('seatHolds', JSON.stringify(filtered))
     },
   }
