@@ -43,12 +43,12 @@
           @click="$router.push(`/concerts/${c.id}`)"
         >
           <div class="overflow-hidden rounded-2xl">
-            <img class="h-40 w-full object-cover" :src="c.posterUrl" :alt="c.title" />
+            <img class="h-40 w-full object-cover" :src="c.thumImgUrl || c.thum_img_url || c.posterUrl || 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?auto=format&fit=crop&w=800&q=60'" :alt="c.title" />
           </div>
           <div class="p-4">
             <div class="flex items-start justify-between gap-2">
               <div class="text-sm font-semibold text-slate-900">{{ c.title }}</div>
-              <UiBadge tone="outline">{{ c.category }}</UiBadge>
+              <UiBadge tone="outline">{{ categoryLabel(c.category) }}</UiBadge>
             </div>
             <div class="mt-1 text-sm text-slate-500">{{ c.shortDesc }}</div>
           </div>
@@ -66,6 +66,7 @@ import UiBadge from '../../components/common/UiBadge.vue'
 import EmptyState from '../../components/common/EmptyState.vue'
 import { useApi } from '../../composables/useApi'
 import { ENDPOINTS } from '../../lib/api/endpoints'
+import { getCategoryLabel } from '../../lib/constants/concertCategory'
 
 export default {
   name: 'VenueDetailView',
@@ -92,6 +93,9 @@ export default {
     this.load()
   },
   methods: {
+    categoryLabel(cat) {
+      return getCategoryLabel(cat)
+    },
     async load() {
       const venueId = this.$route.params.venueId
       if (venueId == null || venueId === '') {
