@@ -62,14 +62,20 @@
             </span>
           </td>
           <td>
-            <button
-              v-if="order.status === '예매완료' || order.status === '결제대기'"
-              class="cancel-btn"
-              :disabled="order.cancelling"
-              @click="cancelOrder(order)"
-            >
-              {{ order.cancelling ? '취소중...' : '예매취소' }}
-            </button>
+            <div v-if="order.seatDetails.length > 0" class="seat-cancel-list">
+              <div v-for="seat in order.seatDetails" :key="seat.id" class="seat-cancel-item">
+                <span class="seat-label">{{ seat.seatNo || seat.name || seat.id }}</span>
+                <button
+                  v-if="seat.status !== 'REFUNDED' && seat.status !== 'CANCELED' && seat.status !== 'AVAILABLE'"
+                  class="cancel-btn"
+                  :disabled="seat.cancelling"
+                  @click="cancelSeat(order, seat)"
+                >
+                  {{ seat.cancelling ? '취소중...' : '취소' }}
+                </button>
+                <span v-else class="seat-refunded">환불완료</span>
+              </div>
+            </div>
             <span v-else>-</span>
           </td>
         </tr>
@@ -85,7 +91,8 @@ import { ENDPOINTS } from '../../lib/api/endpoints';
 const STATUS_MAP = {
   PAID: '예매완료',
   PENDING: '결제대기',
-  CANCELLED: '취소완료'
+  CANCELLED: '취소완료',
+  CANCELED: '취소완료'
 };
 
 function formatDateTime(isoStr) {
@@ -135,13 +142,13 @@ export default {
         this.orders = list.map(order => ({
           paymentId: order.paymentId,
           bookingDate: formatDateOnly(order.scheduleDate),
-          bookingNumber: order.uuid || order.id || '-',
+          bookingNumber: order.paymentId ? 'T' + order.paymentId.slice(-8) : '-',
           posterUrl: order.concertUrl,
           title: order.concertName || '-',
           viewDate: formatDateTime(order.scheduleDate),
           location: order.venueName || '-',
           ticketCount: order.seatDetails ? order.seatDetails.length : 0,
-          seatDetails: order.seatDetails || [],
+          seatDetails: (order.seatDetails || []).map(seat => ({ ...seat, cancelling: false })),
           amount: order.totalAmount || order.amount || 0,
           status: STATUS_MAP[order.status] || order.status,
           cancelling: false
@@ -153,22 +160,21 @@ export default {
         this.loading = false;
       }
     },
-    async cancelOrder(order) {
-      if (!confirm('정말로 예매를 취소하시겠습니까?')) return;
-      order.cancelling = true;
+    async cancelSeat(order, seat) {
+      if (!confirm('이 좌석을 취소하시겠습니까?')) return;
+      seat.cancelling = true;
       try {
-        console.log(order);
         await this.api.post(ENDPOINTS.orderCancel(), {
           paymentId: order.paymentId,
-          amount: order.amount,
-          seatList: order.seatDetails.map(seat => seat.id),
+          amount: seat.price || Math.round(order.amount / order.seatDetails.length),
+          seatList: [seat.id],
           reason: '단순변심'
         });
         await this.loadOrders();
       } catch (e) {
         alert(e.message || '취소 처리 중 오류가 발생했습니다.');
       } finally {
-        order.cancelling = false;
+        seat.cancelling = false;
       }
     }
   }
@@ -296,6 +302,26 @@ export default {
 .empty-message {
   padding: 50px;
   color: #888;
+}
+.seat-cancel-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.seat-cancel-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.seat-label {
+  font-size: 12px;
+  color: #555;
+  min-width: 40px;
+}
+.seat-refunded {
+  font-size: 12px;
+  color: #aaa;
 }
 </style>
 

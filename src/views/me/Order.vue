@@ -247,7 +247,7 @@ export default {
   },
   async mounted() {
     try {
-      const result = await this.api.get(ENDPOINTS.order(2));
+      const result = await this.api.get(ENDPOINTS.order(3));
       // const result = await axios.get("http://localhost:8082/order/1");
       this.order = result;
     } catch (error) {
@@ -305,7 +305,7 @@ export default {
           }
           const verificationResult = await this.api.post(ENDPOINTS.payment(), {
             // const verificationResult = await axios.post("http://localhost:8082/payment", {
-            orderId: 2,
+            orderId: 3,
             paymentId: response.paymentId,
           });
           console.log('결제 검증 완료', verificationResult);
