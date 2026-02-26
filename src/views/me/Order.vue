@@ -240,6 +240,9 @@ export default {
   computed: {
     allAgreed() {
       return Object.values(this.agreements).every(v => v)
+    },
+    orderId() {
+      return String(this.$route.query.orderId || '')
     }
   },
   created() {
@@ -247,7 +250,7 @@ export default {
   },
   async mounted() {
     try {
-      const result = await this.api.get(ENDPOINTS.order(3));
+      const result = await this.api.get(ENDPOINTS.order(this.orderId));
       // const result = await axios.get("http://localhost:8082/order/1");
       this.order = result;
     } catch (error) {
@@ -305,7 +308,7 @@ export default {
           }
           const verificationResult = await this.api.post(ENDPOINTS.payment(), {
             // const verificationResult = await axios.post("http://localhost:8082/payment", {
-            orderId: 3,
+            orderId: this.orderId,
             paymentId: response.paymentId,
           });
           console.log('결제 검증 완료', verificationResult);
