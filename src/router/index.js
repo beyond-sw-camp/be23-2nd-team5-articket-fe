@@ -24,6 +24,7 @@ import SignupCompleteView from '../views/member/SignupCompleteView.vue'
 
 // user
 import ProfileView from '../views/me/ProfileView.vue'
+import IdentityVerificationView from '../views/me/IdentityVerificationView.vue'
 import MyOrdersView from '../views/me/MyOrdersView.vue'
 import MyOrderDetailView from '../views/me/MyOrderDetailView.vue'
 import MyPerformerLikesView from '../views/me/MyPerformerLikesView.vue'
@@ -106,6 +107,7 @@ const routes = [
       childRoute('oauth/kakao/redirect', KakaoRedirect, { roleScope: 'auth' }),
 
       childRoute('me', ProfileView, { requiresAuth: true, requiredRole: 'USER' }),
+      childRoute('me/verify-identity', IdentityVerificationView, { requiresAuth: true, requiredRole: 'USER' }),
       childRoute('me/orders', MyOrdersView, { requiresAuth: true, requiredRole: 'USER' }),
       childRoute('me/orders/:orderId', MyOrderDetailView, { requiresAuth: true, requiredRole: 'USER' }),
       childRoute('me/performers/likes', MyPerformerLikesView, { requiresAuth: true, requiredRole: 'USER' }),
