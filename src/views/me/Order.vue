@@ -247,7 +247,7 @@ export default {
   },
   async mounted() {
     try {
-      const result = await this.api.get(ENDPOINTS.order(5));
+      const result = await this.api.get(ENDPOINTS.order(2));
       // const result = await axios.get("http://localhost:8082/order/1");
       this.order = result;
     } catch (error) {
@@ -295,18 +295,17 @@ export default {
             orderName: this.order.scheduleDate + "\n"
               + this.order.concertName + "\n"
               + seatDefNames,
-            totalAmount: 10000,
+            totalAmount: parseInt(this.order.amount) + 2000 * this.order.seatDetails.length,
             // totalAmount: Number(this.order.amount) + 2000 * this.order.seatDetails.length,
             currency: "CURRENCY_KRW",
             payMethod: "CARD",
           });
-
           if (response.code !== undefined) {
             return alert(response.message);
           }
           const verificationResult = await this.api.post(ENDPOINTS.payment(), {
             // const verificationResult = await axios.post("http://localhost:8082/payment", {
-            orderId: 5,
+            orderId: 2,
             paymentId: response.paymentId,
           });
           console.log('결제 검증 완료', verificationResult);

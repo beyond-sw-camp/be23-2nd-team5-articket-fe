@@ -130,22 +130,24 @@ export default {
       this.loading = true;
       try {
         const result = await this.api.get(ENDPOINTS.myOrders());
-
         console.log(result)
         const list = result.content || [];
         this.orders = list.map(order => ({
-          id: order.id,
+          paymentId: order.paymentId,
           bookingDate: formatDateOnly(order.scheduleDate),
           bookingNumber: order.uuid || order.id || '-',
-          posterUrl: 'https://via.placeholder.com/70x95/eeeeee/999999?text=Poster',
+          posterUrl: order.concertUrl,
           title: order.concertName || '-',
           viewDate: formatDateTime(order.scheduleDate),
           location: order.venueName || '-',
           ticketCount: order.seatDetails ? order.seatDetails.length : 0,
+          seatDetails: order.seatDetails || [],
+          amount: order.totalAmount || order.amount || 0,
           status: STATUS_MAP[order.status] || order.status,
           cancelling: false
         }));
       } catch (e) {
+        console.log(e)
         this.orders = [];
       } finally {
         this.loading = false;
@@ -155,7 +157,13 @@ export default {
       if (!confirm('정말로 예매를 취소하시겠습니까?')) return;
       order.cancelling = true;
       try {
-        await this.api.post(ENDPOINTS.orderCancel(order.id));
+        console.log(order);
+        await this.api.post(ENDPOINTS.orderCancel(), {
+          paymentId: order.paymentId,
+          amount: order.amount,
+          seatList: order.seatDetails.map(seat => seat.id),
+          reason: '단순변심'
+        });
         await this.loadOrders();
       } catch (e) {
         alert(e.message || '취소 처리 중 오류가 발생했습니다.');
