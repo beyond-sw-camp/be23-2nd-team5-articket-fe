@@ -4,8 +4,8 @@
 
     <div class="filter-container">
       <div class="date-filters">
-        <button 
-          v-for="filter in filters" 
+        <button
+          v-for="filter in filters"
           :key="filter"
           :class="{ active: activeFilter === filter }"
           @click="activeFilter = filter"
@@ -57,14 +57,25 @@
           </td>
           <td>{{ order.ticketCount }}매</td>
           <td>
-            <span :class="['status-badge', { 'completed': order.status === '관람완료' }]">
+            <span :class="['status-badge', { 'completed': order.status === '관람완료' || order.status === '취소완료' }]">
               {{ order.status }}
             </span>
           </td>
           <td>
-            <button v-if="order.status === '예매완료'" class="cancel-btn" @click="cancelOrder(order.bookingNumber)">
-              예매취소
-            </button>
+            <div v-if="order.seatDetails.length > 0" class="seat-cancel-list">
+              <div v-for="seat in order.seatDetails" :key="seat.id" class="seat-cancel-item">
+                <span class="seat-label">{{ seat.seatNo || seat.name || seat.id }}</span>
+                <button
+                  v-if="seat.status !== 'REFUNDED' && seat.status !== 'CANCELED' && seat.status !== 'AVAILABLE'"
+                  class="cancel-btn"
+                  :disabled="seat.cancelling"
+                  @click="cancelSeat(order, seat)"
+                >
+                  {{ seat.cancelling ? '취소중...' : '취소' }}
+                </button>
+                <span v-else class="seat-refunded">환불완료</span>
+              </div>
+            </div>
             <span v-else>-</span>
           </td>
         </tr>
@@ -73,42 +84,99 @@
   </div>
 </template>
 
-<script setup>
-import { ref } from 'vue';
+<script>
+import { useApi } from '../../composables/useApi';
+import { ENDPOINTS } from '../../lib/api/endpoints';
 
-// 기간 필터 상태 관리
-const filters = ['1주일', '1개월', '3개월', '6개월'];
-const activeFilter = ref('1개월');
+const STATUS_MAP = {
+  PAID: '예매완료',
+  PENDING: '결제대기',
+  CANCELLED: '취소완료',
+  CANCELED: '취소완료'
+};
 
-// 백엔드 API에서 받아올 가상의 예매 내역 데이터
-const orders = ref([
-  {
-    bookingDate: '2026.02.20',
-    bookingNumber: 'T2602201234',
-    posterUrl: 'https://via.placeholder.com/70x95/eeeeee/999999?text=Poster',
-    title: '뮤지컬 〈레베카〉 10주년 기념 공연',
-    viewDate: '2026.03.15(일) 14:00',
-    location: '블루스퀘어 신한카드홀',
-    ticketCount: 2,
-    status: '예매완료'
+function formatDateTime(isoStr) {
+  if (!isoStr) return '-';
+  const dt = new Date(isoStr);
+  const y = dt.getFullYear();
+  const m = String(dt.getMonth() + 1).padStart(2, '0');
+  const d = String(dt.getDate()).padStart(2, '0');
+  const h = String(dt.getHours()).padStart(2, '0');
+  const min = String(dt.getMinutes()).padStart(2, '0');
+  return `${y}.${m}.${d} ${h}:${min}`;
+}
+
+function formatDateOnly(isoStr) {
+  if (!isoStr) return '-';
+  const dt = new Date(isoStr);
+  const y = dt.getFullYear();
+  const m = String(dt.getMonth() + 1).padStart(2, '0');
+  const d = String(dt.getDate()).padStart(2, '0');
+  return `${y}.${m}.${d}`;
+}
+
+export default {
+  name: 'MyOrdersView',
+  data() {
+    return {
+      filters: ['1주일', '1개월', '3개월', '6개월'],
+      activeFilter: '1개월',
+      orders: [],
+      loading: false,
+      api: null
+    };
   },
-  {
-    bookingDate: '2026.01.10',
-    bookingNumber: 'T2601105678',
-    posterUrl: 'https://via.placeholder.com/70x95/eeeeee/999999?text=Poster',
-    title: '대한민국 vs 브라질 친선경기',
-    viewDate: '2026.01.25(토) 20:00',
-    location: '서울월드컵경기장',
-    ticketCount: 1,
-    status: '관람완료'
-  }
-]);
-
-// 예매 취소 함수 (향후 백엔드 API 연동)
-const cancelOrder = (bookingNumber) => {
-  if (confirm('정말로 예매를 취소하시겠습니까?')) {
-    alert(`${bookingNumber} 예매가 취소 요청되었습니다.`);
-    // TODO: axios.post(`/api/v1/orders/${bookingNumber}/cancel`) 호출
+  created() {
+    this.api = useApi();
+  },
+  mounted() {
+    this.loadOrders();
+  },
+  methods: {
+    async loadOrders() {
+      this.loading = true;
+      try {
+        const result = await this.api.get(ENDPOINTS.myOrders());
+        console.log(result)
+        const list = result.content || [];
+        this.orders = list.map(order => ({
+          paymentId: order.paymentId,
+          bookingDate: formatDateOnly(order.scheduleDate),
+          bookingNumber: order.paymentId ? 'T' + order.paymentId.slice(-8) : '-',
+          posterUrl: order.concertUrl,
+          title: order.concertName || '-',
+          viewDate: formatDateTime(order.scheduleDate),
+          location: order.venueName || '-',
+          ticketCount: order.seatDetails ? order.seatDetails.length : 0,
+          seatDetails: (order.seatDetails || []).map(seat => ({ ...seat, cancelling: false })),
+          amount: order.totalAmount || order.amount || 0,
+          status: STATUS_MAP[order.status] || order.status,
+          cancelling: false
+        }));
+      } catch (e) {
+        console.log(e)
+        this.orders = [];
+      } finally {
+        this.loading = false;
+      }
+    },
+    async cancelSeat(order, seat) {
+      if (!confirm('이 좌석을 취소하시겠습니까?')) return;
+      seat.cancelling = true;
+      try {
+        await this.api.post(ENDPOINTS.orderCancel(), {
+          paymentId: order.paymentId,
+          amount: seat.price || Math.round(order.amount / order.seatDetails.length),
+          seatList: [seat.id],
+          reason: '단순변심'
+        });
+        await this.loadOrders();
+      } catch (e) {
+        alert(e.message || '취소 처리 중 오류가 발생했습니다.');
+      } finally {
+        seat.cancelling = false;
+      }
+    }
   }
 };
 </script>
@@ -235,6 +303,26 @@ const cancelOrder = (bookingNumber) => {
   padding: 50px;
   color: #888;
 }
+.seat-cancel-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.seat-cancel-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.seat-label {
+  font-size: 12px;
+  color: #555;
+  min-width: 40px;
+}
+.seat-refunded {
+  font-size: 12px;
+  color: #aaa;
+}
 </style>
 
 
@@ -312,8 +400,8 @@ export default {
     async load() {
       this.loading = true
       try {
-        const res = await this.api.get(`${ENDPOINTS.myOrders()}?page=0&size=20`)
-        this.items = res?.content ?? res?.items ?? []
+        const res = await this.api.get(ENDPOINTS.order())
+        this.items = res.items || []
       } finally {
         this.loading = false
       }
