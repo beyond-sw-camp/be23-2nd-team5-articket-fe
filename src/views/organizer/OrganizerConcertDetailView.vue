@@ -27,6 +27,24 @@
               class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
             />
           </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-500">썸네일 이미지 URL</label>
+            <input
+              v-model="form.thumImgUrl"
+              type="url"
+              class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+              placeholder="https://..."
+            />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-500">카테고리</label>
+            <select
+              v-model="form.category"
+              class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+            >
+              <option v-for="opt in categoryOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+            </select>
+          </div>
           <div class="grid grid-cols-2 gap-3">
             <div>
               <label class="block text-xs font-semibold text-slate-500">상태</label>
@@ -86,6 +104,7 @@ import UiCard from '../../components/common/UiCard.vue'
 import UiButton from '../../components/common/UiButton.vue'
 import { useApi } from '../../composables/useApi'
 import { ENDPOINTS } from '../../lib/api/endpoints'
+import { CONCERT_CATEGORY_OPTIONS } from '../../lib/constants/concertCategory'
 
 export default {
   name: 'OrganizerConcertDetailView',
@@ -93,12 +112,17 @@ export default {
     UiCard,
     UiButton
   },
+  computed: {
+    categoryOptions() {
+      return CONCERT_CATEGORY_OPTIONS
+    }
+  },
   data() {
     return {
       loading: false,
       item: null,
       stats: null,
-      form: { title: '', status: 'DRAFT', ageLimit: null },
+      form: { title: '', category: 'CONCERT', status: 'DRAFT', ageLimit: null, thumImgUrl: '' },
       saving: false,
       successMessage: '',
       api: null
@@ -128,8 +152,10 @@ export default {
         this.stats = statsRes
         this.form = {
           title: detail.title ?? '',
+          category: detail.category ?? 'CONCERT',
           status: detail.status ?? 'DRAFT',
-          ageLimit: detail.ageLimit ?? detail.age_limit ?? null
+          ageLimit: detail.ageLimit ?? detail.age_limit ?? null,
+          thumImgUrl: detail.thumImgUrl ?? detail.thum_img_url ?? ''
         }
       } catch (err) {
         this.item = null
@@ -146,10 +172,14 @@ export default {
       try {
         const payload = {
           title: this.form.title,
+          category: this.form.category ?? 'CONCERT',
           status: this.form.status
         }
         if (this.form.ageLimit != null && this.form.ageLimit !== '') {
           payload.ageLimit = Number(this.form.ageLimit)
+        }
+        if (this.form.thumImgUrl) {
+          payload.thumImgUrl = this.form.thumImgUrl
         }
         await this.api.put(ENDPOINTS.organizerUpdateConcert(concertId), payload)
         this.successMessage = '저장되었습니다.'

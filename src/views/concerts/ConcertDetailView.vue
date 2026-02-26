@@ -18,7 +18,7 @@
                 <div class="text-xl font-semibold text-slate-900">{{ item.title }}</div>
                 <div class="mt-1 text-sm text-slate-500">{{ item.shortDesc }}</div>
               </div>
-              <UiBadge tone="soft">{{ item.category }}</UiBadge>
+              <UiBadge tone="soft">{{ categoryLabel(item.category) }}</UiBadge>
             </div>
 
             <!-- Info grid -->
@@ -186,6 +186,7 @@ import UiButton from '../../components/common/UiButton.vue'
 import { useApi } from '../../composables/useApi'
 import { isAuthed } from '../../composables/useRole'
 import { ENDPOINTS } from '../../lib/api/endpoints'
+import { getCategoryLabel } from '../../lib/constants/concertCategory'
 
 export default {
   name: 'ConcertDetailView',
@@ -221,6 +222,9 @@ export default {
     this.load()
   },
   methods: {
+    categoryLabel(cat) {
+      return getCategoryLabel(cat)
+    },
     async load() {
       const concertId = this.$route.params.concertId
       if (!concertId) { this.item = null; return }
@@ -234,7 +238,7 @@ export default {
           category: concert.category ?? '콘서트',
           rating: concert.rating ?? '0',
           priceRange: concert.priceRange ?? '',
-          posterUrl: concert.posterUrl ?? concert.thumbnailUrl ?? concert.imageUrl ?? 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?auto=format&fit=crop&w=800&q=60',
+          posterUrl: concert.thumImgUrl ?? concert.thum_img_url ?? concert.posterUrl ?? concert.thumbnailUrl ?? concert.imageUrl ?? 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?auto=format&fit=crop&w=800&q=60',
           tags: concert.tags ?? [],
           venue: concert.venue ?? { id: null, name: '공연장', address: '' },
         }
