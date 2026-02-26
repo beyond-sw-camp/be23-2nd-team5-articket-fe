@@ -1,6 +1,15 @@
 export const ENDPOINTS = {
   // GUEST
   concerts: () => `/concerts`,
+  searchConcerts: (params = {}) => {
+    const p = new URLSearchParams()
+    if (params.keyword != null && params.keyword !== '') p.set('keyword', params.keyword)
+    if (params.title != null && params.title !== '') p.set('title', params.title)
+    if (params.page != null) p.set('page', String(params.page))
+    if (params.size != null) p.set('size', String(params.size))
+    const q = p.toString()
+    return `/concerts${q ? `?${q}` : ''}`
+  },
   concert: (concertId) => `/concerts/${concertId}`,
   concertSchedules: (concertId) => `/concerts/${concertId}/schedules`,
   schedule: (scheduleId) => `/schedule/${scheduleId}`,
@@ -120,6 +129,15 @@ export const ENDPOINTS = {
   venue: (venueId) => `/venues/${venueId}`,
   venueConcerts: (venueId) => `/venues/${venueId}/concerts`,
   venues: () => `/venues`,
+  searchVenues: (params = {}) => {
+    const p = new URLSearchParams()
+    if (params.keyword != null && params.keyword !== '') p.set('keyword', params.keyword)
+    if (params.name != null && params.name !== '') p.set('name', params.name)
+    if (params.page != null) p.set('page', String(params.page))
+    if (params.size != null) p.set('size', String(params.size))
+    const q = p.toString()
+    return `/venues${q ? `?${q}` : ''}`
+  },
   venueSeatMaps: (venueId, params) => ENDPOINTS.venueSeatMapsList(venueId, params || {}),
 
   // PERFORMERS (COMMON / MEMBER / ORGANIZER)

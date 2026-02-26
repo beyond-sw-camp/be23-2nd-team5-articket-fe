@@ -18,6 +18,7 @@ import NearbyView from '../views/venues/NearbyView.vue'
 import VenueDetailView from '../views/venues/VenueDetailView.vue'
 import PerformersListView from '../views/performers/PerformersListView.vue'
 import PerformerDetailView from '../views/performers/PerformerDetailView.vue'
+import SearchView from '../views/search/SearchView.vue'
 import LoginView from '../views/member/LoginView.vue'
 import SignupView from '../views/member/SignupView.vue'
 import SignupCompleteView from '../views/member/SignupCompleteView.vue'
@@ -94,6 +95,7 @@ const routes = [
       childRoute('concerts/schedules/:scheduleId/seats', SeatSelectionView, { roleScope: 'guest' }),
       childRoute('schedules/:scheduleId/seat-map', SeatMapView, { roleScope: 'guest' }),
       childRoute('schedules/:scheduleId/seats', SeatsView, { roleScope: 'guest' }),
+      childRoute('search', SearchView, { roleScope: 'guest' }),
       childRoute('nearby', NearbyView, { roleScope: 'guest' }),
       childRoute('venues/:venueId', VenueDetailView, { roleScope: 'guest' }),
       childRoute('performers', PerformersListView, { roleScope: 'guest' }),

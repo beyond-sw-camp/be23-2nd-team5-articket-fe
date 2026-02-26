@@ -1,4 +1,16 @@
 <template>
+  <div class="flex flex-col gap-6 lg:flex-row lg:items-start">
+    <!-- 좌측 필터 패널 -->
+    <ConcertFilterPanel
+      v-model="filters"
+      :total-count="filteredCount"
+      :hide-genre="true"
+      class="order-2 lg:order-1"
+      @apply="onFilterApply"
+    />
+
+    <!-- 우측 컨텐츠 -->
+    <div class="min-w-0 flex-1 order-1 lg:order-2">
   <div class="grid gap-6">
     <!-- 장르 타이틀 -->
     <h1 class="text-2xl font-bold text-slate-900 lg:text-3xl">{{ genreLabel }}</h1>
@@ -101,10 +113,13 @@
       </div>
     </div>
   </div>
+    </div>
+  </div>
 </template>
 
 <script>
 import { LayoutGrid, List } from 'lucide-vue-next'
+import ConcertFilterPanel from '../../components/concert/ConcertFilterPanel.vue'
 import EmptyState from '../../components/common/EmptyState.vue'
 import { useApi } from '../../composables/useApi'
 import { ENDPOINTS } from '../../lib/api/endpoints'
@@ -121,6 +136,7 @@ export default {
   components: {
     LayoutGrid,
     List,
+    ConcertFilterPanel,
     EmptyState
   },
   data() {
@@ -130,6 +146,7 @@ export default {
       viewMode: 'grid',
       sortBy: 'popular',
       sortOptions: SORT_OPTIONS,
+      filters: {},
       api: null
     }
   },
@@ -140,17 +157,48 @@ export default {
     genreLabel() {
       return CONCERT_CATEGORY_LABELS[this.genreKey] ?? this.genreKey ?? '공연'
     },
+    filteredCount() {
+      return this.sortedItems.length
+    },
     sortedItems() {
-      const list = [...this.items]
+      let list = [...this.items]
+
+      if (this.filters.genres?.length) {
+        list = list.filter((c) => this.filters.genres.includes(c.category))
+      }
+      if (this.filters.salesStatus) {
+        list = list.filter((c) => c.status === this.filters.salesStatus)
+      }
+      if (this.filters.selectedDateStart) {
+        const selStart = new Date(this.filters.selectedDateStart)
+        selStart.setHours(0, 0, 0, 0)
+        const selEnd = this.filters.selectedDateEnd
+          ? new Date(this.filters.selectedDateEnd)
+          : new Date(selStart.getTime())
+        selEnd.setHours(23, 59, 59, 999)
+        const selStartTs = selStart.getTime()
+        const selEndTs = selEnd.getTime()
+        list = list.filter((c) => {
+          const cStart = c.scheduleStartDate ? new Date(c.scheduleStartDate).setHours(0, 0, 0, 0) : 0
+          const cEnd = c.scheduleEndDate ? new Date(c.scheduleEndDate).setHours(23, 59, 59, 999) : Infinity
+          return selStartTs <= cEnd && selEndTs >= cStart
+        })
+      }
+      if (this.filters.regions?.length && this.filters.regions.length > 0) {
+        list = list.filter((c) => {
+          const venueName = (c.venueName || '').toLowerCase()
+          return this.filters.regions.some((r) => venueName.includes(r.toLowerCase()))
+        })
+      }
+
       if (this.sortBy === 'imminent') {
-        return list.sort((a, b) => {
+        list = list.sort((a, b) => {
           const da = a.scheduleStartDate ? new Date(a.scheduleStartDate).getTime() : 0
           const db = b.scheduleStartDate ? new Date(b.scheduleStartDate).getTime() : 0
           return da - db
         })
-      }
-      if (this.sortBy === 'latest') {
-        return list.sort((a, b) => {
+      } else if (this.sortBy === 'latest') {
+        list = list.sort((a, b) => {
           const da = a.scheduleStartDate ? new Date(a.scheduleStartDate).getTime() : 0
           const db = b.scheduleStartDate ? new Date(b.scheduleStartDate).getTime() : 0
           return db - da
@@ -194,6 +242,9 @@ export default {
       if (status === 'PUBLISHED') return 'bg-green-100 text-green-700'
       if (status === 'ENDED') return 'bg-slate-100 text-slate-600'
       return 'bg-amber-100 text-amber-700'
+    },
+    onFilterApply() {
+      // 필터 적용 시 클라이언트 사이드 필터링만 수행 (sortedItems computed가 처리)
     },
     async load() {
       if (!this.genreKey) return
