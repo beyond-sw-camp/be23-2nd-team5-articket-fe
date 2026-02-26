@@ -380,7 +380,12 @@ export default {
       }
     },
     submitSearch() {
-      this.$router.push({ path: '/', query: { ...this.$route.query, q: this.q || undefined } })
+      const q = this.q?.trim()
+      if (q) {
+        this.$router.push({ path: '/search', query: { q } })
+      } else {
+        this.$router.push({ path: '/' })
+      }
     },
     dismissOrganizerBanner() {
       try {
