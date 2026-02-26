@@ -628,9 +628,8 @@ export default {
           }
           await this.api.post(ENDPOINTS.seatHold(seat.seatId))
           this.selected.push(seat.seatId)
-          // 첫 선점 시 5분 타이머 시작
+          // 첫 선점 시 5분 타이머 시작 (holdExpiresAt은 startHoldTimer 내부에서 설정)
           if (!this.holdExpiresAt) {
-            this.holdExpiresAt = Date.now() + 5 * 60 * 1000
             this.startHoldTimer()
           }
         }
@@ -672,6 +671,9 @@ export default {
     // ── 선점 타이머 ──
     startHoldTimer() {
       this.clearHoldTimer()
+      // clearHoldTimer가 holdExpiresAt을 null로 초기화하므로
+      // 반드시 clearHoldTimer 이후에 설정해야 함
+      this.holdExpiresAt = Date.now() + 5 * 60 * 1000
       const tick = () => {
         const remaining = this.holdExpiresAt - Date.now()
         if (remaining <= 0) {
