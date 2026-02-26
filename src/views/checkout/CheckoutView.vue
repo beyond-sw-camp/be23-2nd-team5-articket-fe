@@ -76,9 +76,14 @@ export default {
       if (!this.holdId) return
       this.loading = true
       try {
-        const order = await this.api.post(ENDPOINTS.orders(), { holdId: this.holdId })
-        await this.api.post(ENDPOINTS.payments(), { orderId: order.id, method: 'MOCK_CARD' })
-        this.$router.push(`/orders/${order.id}`)
+        // 배열로 변환
+        const holdIdArray = this.holdId.split(',').map(Number); // [17, 36]
+        // const result = await this.api.post(ENDPOINTS.orderCreate(), { holdId: holdIdArray });
+        // console.log(result);
+        const orderId = await this.api.post(ENDPOINTS.orderCreate(), { seats: holdIdArray });
+        // const order = await this.api.post(ENDPOINTS.orderCreate(), { holdId: this.holdId })
+        // await this.api.post(ENDPOINTS.payments(), { orderId: order.id, method: 'MOCK_CARD' })
+        this.$router.push(`/order?orderId=${orderId}`)
       } catch (e) {
         // 에러는 ErrorAlertModal에서 표시됨
       } finally {

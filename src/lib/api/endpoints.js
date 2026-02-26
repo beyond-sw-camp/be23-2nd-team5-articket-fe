@@ -38,6 +38,7 @@ export const ENDPOINTS = {
   myOrders: () => `/users/me/orders`,
   myOrder: (orderId) => `/users/me/orders/${orderId}`,
   seatHold: (seatId) => `/seat-holds/${seatId}`,
+  orderCreate: () => `/order/create`,
   orders: () => `/orders`,
   payment: () => `/payment`,
   order: (orderId) => `/order/${orderId}`,
