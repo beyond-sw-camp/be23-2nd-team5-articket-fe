@@ -180,7 +180,7 @@ function getDefaultForm() {
 function getDefaultBulkForm() {
   const nextWeek = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
   return {
-    play_times: [formatDateTimeLocal(nextWeek)]
+    play_times: [fmt(nextWeek)]
   }
 }
 
@@ -261,8 +261,8 @@ export default {
       const last = this.bulkForm.play_times.at(-1)
       // 마지막 날짜에서 하루 뒤를 기본값으로 추가
       const next = last
-        ? formatDateTimeLocal(new Date(new Date(last).getTime() + 24 * 60 * 60 * 1000))
-        : formatDateTimeLocal(new Date())
+        ? fmt(new Date(new Date(last).getTime() + 24 * 60 * 60 * 1000))
+        : fmt(new Date())
       this.bulkForm.play_times.push(next)
     },
     removePlayTime(idx) {
