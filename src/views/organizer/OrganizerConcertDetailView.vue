@@ -98,7 +98,7 @@ export default {
       loading: false,
       item: null,
       stats: null,
-      form: { title: '', status: 'DRAFT', ageLimit: null },
+      form: { title: '', status: 'DRAFT', ageLimit: null, seatMapId: null },
       saving: false,
       successMessage: '',
       api: null
@@ -129,7 +129,8 @@ export default {
         this.form = {
           title: detail.title ?? '',
           status: detail.status ?? 'DRAFT',
-          ageLimit: detail.ageLimit ?? detail.age_limit ?? null
+          ageLimit: detail.ageLimit ?? detail.age_limit ?? null,
+          seatMapId: detail.seatMapId ?? detail.seat_map_id ?? null
         }
       } catch (err) {
         this.item = null
@@ -146,7 +147,8 @@ export default {
       try {
         const payload = {
           title: this.form.title,
-          status: this.form.status
+          status: this.form.status,
+          seatMapId: this.form.seatMapId
         }
         if (this.form.ageLimit != null && this.form.ageLimit !== '') {
           payload.ageLimit = Number(this.form.ageLimit)
