@@ -3,15 +3,18 @@ export const ENDPOINTS = {
   concerts: () => `/concerts`,
   concert: (concertId) => `/concerts/${concertId}`,
   concertSchedules: (concertId) => `/concerts/${concertId}/schedules`,
-  schedule: (scheduleId) => `/schedules/${scheduleId}`,
-  seatMap: (scheduleId) => `/schedules/${scheduleId}/seat-map`,
-  seats: (scheduleId) => `/schedules/${scheduleId}/seats`,
+  schedule: (scheduleId) => `/schedule/${scheduleId}`,
+  seatMap: (scheduleId) => `/schedule/${scheduleId}/seat-map`,
+  seats: (scheduleId) => `/schedule/${scheduleId}/seats`,
 
   // AUTH
   signup: () => `/member/create`,
   login: () => `/member/doLogin`,
+  googleLogin: () => `/member/google/doLogin`,
+  kakaoLogin: () => `/member/kakao/doLogin`,
   refreshAt: () => `/member/refresh-at`,
   inicis: () => `/member/inicis`,
+  memberIsVerified: () => `/member/isVerified`,
 
   // USER
   me: () => `/users/me`,
@@ -29,23 +32,19 @@ export const ENDPOINTS = {
   concertStats: (concertId) => `/user-concerts/${concertId}/stats`,
   concertReviews: (concertId) => `/user-concerts/${concertId}/reviews`,
 
-  // ORGANIZER
+  // ORGANIZER (백엔드 ConcertController 기준)
   organizerConcerts: () => `/concerts/organizer`,
   organizerConcertStats: (concertId) => `/concerts/organizer/${concertId}/stats`,
-  organizerScheduleStats: (scheduleId) => `/concerts/organizer/schedules/${scheduleId}/stats`,
   organizerCreateConcert: () => `/concerts/organizer/create`,
   organizerUpdateConcert: (concertId) => `/concerts/organizer/${concertId}`,
-  organizerConcert: (concertId) => `/concerts/organizer/${concertId}`,
   organizerPublishConcert: (concertId) => `/concerts/organizer/${concertId}/publish`,
   organizerCreateSchedule: (concertId) => `/concerts/organizer/${concertId}/schedules`,
+  organizerBulkCreateSchedules: (concertId) => `/concerts/organizer/${concertId}/schedules/bulk`,
   organizerUpdateSchedule: (scheduleId) => `/concerts/organizer/schedules/${scheduleId}`,
-  organizerDeleteSchedule: (scheduleId) => `/concerts/organizer/schedules/${scheduleId}`,
-  organizerConcertSchedules: (concertId) => `/concerts/organizer/${concertId}/schedules`,
-  organizerSchedulePrices: (scheduleId) => `/concerts/organizer/schedules/${scheduleId}/prices`,
+  concertPolicies: (concertId) => `/concerts/${concertId}/policies`,
   organizerCreatePolicy: (concertId) => `/concerts/organizer/${concertId}/policies`,
   organizerUpdatePolicy: (policyId) => `/concerts/organizer/policies/${policyId}`,
   organizerDeletePolicy: (policyId) => `/concerts/organizer/policies/${policyId}`,
-  organizerConcertPolicies: (concertId) => `/concerts/organizer/${concertId}/policies`,
   organizerConcertOrders: (concertId) => `/concerts/organizer/${concertId}/orders`,
   organizerOrder: (orderId) => `/concerts/organizer/orders/${orderId}`,
   organizerPriceHistory: (concertId) => `/concerts/organizer/${concertId}/prices/history`,
@@ -102,6 +101,18 @@ export const ENDPOINTS = {
   },
   adminApproveOrganizer: (id) => `/admin/organizer-requests/${id}/approve`,
   adminRejectOrganizer: (id) => `/admin/organizer-requests/${id}/reject`,
+  adminUsers: (params = {}) => {
+    const p = new URLSearchParams()
+    if (params.page != null) p.set('page', params.page)
+    if (params.size != null) p.set('size', params.size)
+    const q = p.toString()
+    return `/admin/users${q ? `?${q}` : ''}`
+  },
+  adminMemberDetail: (memberId) => `/member/${memberId}`,
+
+  // SSE
+  sseConnect: () => `/sse/connect`,
+  sseDisconnect: () => `/sse/disconnect`,
 
   // GEO / VENUES
   venueNearby: ({ latitude, longitude, radiusKm, page, size }) =>
@@ -123,8 +134,8 @@ export const ENDPOINTS = {
   performerDetail: (performerId) => `/performers/${performerId}`,
   performerConcerts: (performerId) => `/performers/${performerId}/concerts`,
   performerSchedules: (performerId) => `/performers/${performerId}/schedules`,
-  performerLike: () => `/performers/like`,
-  performerDeleteLike: () => `/performers/deleteLike`,
+  performerLike: (performerId) => `/performers/like${performerId != null ? `?id=${performerId}` : ''}`,
+  performerDeleteLike: (performerId) => `/performers/deleteLike${performerId != null ? `?id=${performerId}` : ''}`,
   performerLikeList: () => `/performers/likeList`,
   performerCreate: () => `/performers/create`,
 

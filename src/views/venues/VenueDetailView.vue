@@ -32,7 +32,7 @@
         <UiBadge tone="soft">GET /venues/{{ $route.params.venueId }}/concerts</UiBadge>
       </div>
 
-      <EmptyState v-if="concerts.length === 0" title="등록된 공연이 없어요" description="mock 데이터에서 추가할 수 있어요." />
+      <EmptyState v-if="concerts.length === 0" title="등록된 공연이 없어요" description="등록된 공연이 없습니다." />
 
       <div v-else class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <UiCard
