@@ -199,7 +199,6 @@
       class="mx-auto max-w-6xl px-4 pb-16 transition-[padding]"
       :class="showOrganizerBanner ? 'pt-52' : 'pt-40'"
     >
-      <slot />
       <RouterView />
     </main>
 
@@ -260,14 +259,15 @@ export default {
       organizerBannerDismissed: false,
       showOrganizerPendingModal: false,
       categories: [
-        { key: 'all', label: '전체', to: { path: '/', query: {} } },
-        { key: 'musical', label: '뮤지컬', to: { path: '/', query: { cat: 'musical' } } },
-        { key: 'concert', label: '콘서트', to: { path: '/', query: { cat: 'concert' } } },
-        { key: 'play', label: '연극', to: { path: '/', query: { cat: 'play' } } },
-        { key: 'classic', label: '클래식', to: { path: '/', query: { cat: 'classic' } } },
-
-        { key: 'sports', label: '스포츠', to: { path: '/', query: { cat: 'sports' } } },
-        { key: 'leisure', label: '레저', to: { path: '/', query: { cat: 'leisure' } } }
+        { key: 'all', label: '전체', to: '/' },
+        { key: 'MUSICAL', label: '뮤지컬', to: '/genre/MUSICAL' },
+        { key: 'CONCERT', label: '콘서트', to: '/genre/CONCERT' },
+        { key: 'THEATRE', label: '연극', to: '/genre/THEATRE' },
+        { key: 'CLASSIC', label: '클래식/오페라', to: '/genre/CLASSIC' },
+        { key: 'SPORTS', label: '스포츠', to: '/genre/SPORTS' },
+        { key: 'EXHIBITION', label: '전시/행사', to: '/genre/EXHIBITION' },
+        { key: 'FAMILY', label: '가족/아동', to: '/genre/FAMILY' },
+        { key: 'OTHER', label: '기타', to: '/genre/OTHER' }
       ],
 
       tokenVersion: 0,
@@ -284,7 +284,9 @@ export default {
       return this.sseState?.notifications.filter((n) => !n.read).length ?? 0
     },
     currentCat() {
-      return String(this.$route.query.cat || 'all')
+      if (this.$route.path === '/') return 'all'
+      const m = this.$route.path.match(/^\/genre\/(\w+)$/)
+      return m ? m[1] : 'all'
     },
     accessToken() {
       this.tokenVersion
