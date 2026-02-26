@@ -336,6 +336,15 @@ export default {
       try {
         const res = await this.api.get(ENDPOINTS.seats(scheduleId))
         const raw = Array.isArray(res) ? res : res?.content ?? res?.items ?? []
+        // 백엔드 응답 확인용 (isVisible 필드 존재 여부 체크)
+        if (raw.length > 0) {
+          console.log('[SeatsView] 첫 번째 좌석 데이터:', raw[0])
+          console.log('[SeatsView] isVisible 관련 필드:', {
+            isVisible: raw[0].isVisible,
+            is_visible: raw[0].is_visible,
+            visible: raw[0].visible,
+          })
+        }
         // 백엔드 필드명 다양성 대응
         this.seats = raw.map(s => ({
           ...s,
