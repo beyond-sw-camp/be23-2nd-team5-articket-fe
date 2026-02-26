@@ -84,27 +84,7 @@ export default {
       }
       this.loading = true
       try {
-        let schedule
-        try {
-          schedule = await this.api.get(ENDPOINTS.schedule(scheduleId))
-        } catch (err) {
-          // API 실패 시 localStorage에서 더미 데이터 로드
-          console.warn('API call failed, using dummy data', err)
-          const stored = JSON.parse(localStorage.getItem('createdSchedules') || '[]')
-          schedule = stored.find((s) => s.id === scheduleId)
-          
-          if (schedule) {
-            schedule = {
-              ...schedule,
-              summary: {
-                minPrice: 50000,
-                maxPrice: 150000
-              }
-            }
-          }
-        }
-        
-        this.item = schedule
+        this.item = await this.api.get(ENDPOINTS.schedule(scheduleId))
       } finally {
         this.loading = false
       }

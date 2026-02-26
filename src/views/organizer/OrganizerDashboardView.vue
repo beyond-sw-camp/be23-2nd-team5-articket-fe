@@ -3,13 +3,13 @@
     <div class="flex items-end justify-between gap-3">
       <div>
         <div class="text-sm font-semibold text-slate-900">ORGANIZER 대시보드</div>
-        <div class="mt-1 text-sm text-slate-500">내 공연/판매율/오픈·마감 알림/총 판매 요약 (mock)</div>
+        <div class="mt-1 text-sm text-slate-500">내 공연/판매율/오픈·마감 알림/총 판매 요약</div>
       </div>
       <UiBadge tone="soft">ORGANIZER</UiBadge>
     </div>
 
     <div class="grid gap-3 sm:grid-cols-3">
-      <StatCard label="총 판매 금액" :value="`₩ ${totalRevenue.toLocaleString()}`" hint="내 공연 기준(mock)" />
+      <StatCard label="총 판매 금액" :value="`₩ ${totalRevenue.toLocaleString()}`" hint="내 공연 기준" />
       <StatCard label="오늘 오픈" :value="String(todayOpen)" hint="OPEN schedules" />
       <StatCard label="오늘 마감" :value="String(todayClose)" hint="CLOSED schedules" />
     </div>
@@ -31,7 +31,7 @@
       <div class="flex items-center justify-between gap-3">
         <div>
           <div class="text-sm font-semibold text-slate-900">상위 공연 판매 현황</div>
-          <div class="mt-1 text-sm text-slate-500">매출 기준 Top 3 (mock)</div>
+          <div class="mt-1 text-sm text-slate-500">매출 기준 Top 3</div>
         </div>
         <UiBadge tone="soft">판매 요약</UiBadge>
       </div>

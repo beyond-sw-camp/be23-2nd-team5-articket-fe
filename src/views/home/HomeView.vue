@@ -1,15 +1,15 @@
 <template>
-  <div class="relative min-h-screen text-slate-900">
-    <div class="grid gap-8 pt-2">
+  <div class="relative min-h-screen w-full min-w-0 text-slate-900">
+    <div class="grid w-full min-w-0 gap-8 pt-2">
       <!-- 히어로 + 아티스트 스팟라이트 (lg에서 높이 330px로 동일) -->
-      <div class="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:grid-rows-[330px] lg:gap-8 lg:items-stretch">
+      <div class="grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-3 lg:grid-rows-[330px] lg:gap-8 lg:items-stretch">
         <!-- 좌측: 히어로 배너 (모바일 가로형 / lg에서 330px) -->
         <div
-          class="group relative aspect-[2/1] min-h-[200px] w-full overflow-hidden rounded-[40px] shadow-2xl transition-all duration-700 hover:shadow-[#E53935]/10 lg:col-span-2 lg:row-span-1 lg:aspect-auto lg:h-full lg:min-h-0"
+          class="group relative aspect-[2/1] min-h-[200px] min-w-0 w-full overflow-hidden rounded-[40px] shadow-2xl transition-all duration-700 hover:shadow-[#E53935]/10 lg:col-span-2 lg:row-span-1 lg:aspect-auto lg:h-full lg:min-h-0"
           @click="$router.push('/concerts')"
         >
           <img
-            class="h-full w-full object-cover transition-transform duration-[2000ms] group-hover:scale-110"
+            class="h-full w-full max-w-full object-cover transition-transform duration-[2000ms] group-hover:scale-110"
             src="https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?q=80&w=1200&h=600&auto=format&fit=crop"
             alt="hero"
           />
@@ -49,7 +49,7 @@
         </div>
 
         <!-- 우측: Artist Spotlight (고정 높이, 이미지 유무와 무관 동일 크기 / lg에서 히어로와 동일 높이) -->
-        <div class="relative flex w-full max-w-[280px] flex-col self-start rounded-2xl border border-slate-200 p-4 shadow-lg transition-all duration-500 hover:shadow-xl lg:h-[330px] lg:max-w-none lg:self-stretch lg:p-5">
+        <div class="relative flex w-full max-w-[280px] min-w-0 flex-col self-start rounded-2xl border border-slate-200 p-4 shadow-lg transition-all duration-500 hover:shadow-xl sm:mx-auto sm:max-w-[280px] lg:mx-0 lg:h-[330px] lg:max-w-none lg:self-stretch lg:p-5">
           <div class="flex gap-1.5 justify-end">
             <span
               v-for="(_, i) in performers.slice(0, 5)"
@@ -132,9 +132,9 @@
       </div>
 
       <!-- For U / Next-Gen Discovery (레퍼런스 스타일 유지 + 기존 UI) -->
-      <section class="overflow-hidden rounded-[48px] border border-slate-100 p-8 shadow-[0_40px_100px_rgba(0,0,0,0.02)] lg:p-16">
-        <div class="relative z-10 flex flex-col gap-10 lg:flex-row lg:items-center lg:gap-16">
-          <div class="lg:max-w-md space-y-6">
+      <section class="min-w-0 rounded-[48px] border border-slate-100 p-8 shadow-[0_40px_100px_rgba(0,0,0,0.02)] lg:p-16">
+        <div class="relative z-10 flex min-w-0 flex-col gap-10 lg:flex-row lg:items-center lg:gap-16">
+          <div class="min-w-0 flex-shrink-0 space-y-6 lg:max-w-md">
             <div class="inline-flex items-center gap-2 rounded-full border border-slate-100 px-4 py-2">
               <Sparkles class="h-4 w-4 text-[#E53935]" />
               <span class="text-[10px] font-black uppercase tracking-widest text-slate-900">For U</span>
@@ -159,7 +159,7 @@
               </span>
             </button>
           </div>
-          <div class="grid flex-1 grid-cols-1 gap-6 sm:grid-cols-2">
+          <div class="grid min-w-0 flex-1 grid-cols-1 gap-6 sm:grid-cols-2">
             <div
               class="group/card cursor-pointer rounded-[32px] border border-slate-100 p-8 shadow-sm transition-all duration-500 hover:shadow-2xl active:scale-95"
               @click="$router.push('/performers')"
@@ -184,71 +184,119 @@
         </div>
       </section>
 
-      <!-- 실시간 랭킹 (레퍼런스 카드 호버 + 기존 데이터) -->
-      <section class="space-y-6 pt-4">
-        <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-6">
-          <div class="flex items-center gap-3">
-            <h3 class="text-2xl font-black uppercase tracking-tighter text-slate-900 lg:text-3xl">실시간 랭킹</h3>
-            <span class="rounded-full bg-slate-900 px-3 py-1 text-[10px] font-black text-white">LIVE</span>
-          </div>
+      <!-- 장르별 랭킹 -->
+      <section class="min-w-0 space-y-4 pt-4">
+        <div class="text-center">
+          <h3 class="text-xl font-bold text-slate-800 lg:text-2xl">장르별 랭킹</h3>
+        </div>
+
+        <div class="flex min-w-0 flex-wrap justify-center gap-2">
           <button
-            class="inline-flex items-center gap-2 text-xs font-black text-slate-400 transition-colors hover:text-slate-900"
             type="button"
-            @click="load()"
+            :class="[!rankingCat ? 'bg-slate-800 text-white' : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50']"
+            class="rounded-full px-4 py-2 text-sm font-medium transition"
+            @click="setRankingCat('')"
           >
-            더보기 <ChevronRight class="h-3 w-3" />
+            전체
+          </button>
+          <button
+            v-for="opt in categoryOptions"
+            :key="opt.value"
+            type="button"
+            :class="[rankingCat === opt.value ? 'bg-slate-800 text-white' : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50']"
+            class="rounded-full px-4 py-2 text-sm font-medium transition"
+            @click="setRankingCat(opt.value)"
+          >
+            {{ opt.label }}
           </button>
         </div>
 
-        <div v-if="loading" class="rounded-2xl border border-slate-200 p-8 text-center text-sm text-slate-500 shadow-sm">
-          불러오는 중…
-        </div>
-        <div v-else-if="items.length === 0" class="rounded-2xl border border-slate-200 p-12 shadow-sm">
-          <EmptyState title="검색 결과가 없어요" description="다른 키워드나 카테고리로 다시 시도해보세요." />
-        </div>
-        <div v-else class="grid grid-cols-2 gap-6 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-          <div
-            v-for="(c, idx) in items"
-            :key="c.id"
-            class="group relative cursor-pointer"
-            @click="$router.push(`/concerts/${c.id}`)"
-          >
-            <div class="relative aspect-[3/4.5] overflow-hidden rounded-3xl shadow-lg transition-all duration-500 group-hover:-translate-y-2 group-hover:shadow-2xl">
-              <img
-                :src="c.posterUrl"
-                :alt="c.title"
-                class="h-full w-full object-cover grayscale-[15%] transition-all duration-700 group-hover:grayscale-0 group-hover:scale-105"
-              />
-              <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60 transition-opacity duration-500 group-hover:opacity-100" />
-              <div class="absolute left-4 top-4 flex h-10 w-10 items-center justify-center rounded-2xl border border-white/30 text-xl font-black italic text-slate-900 backdrop-blur-sm">
-                {{ idx + 1 }}
-              </div>
-              <div class="absolute right-3 top-3">
-                <UiBadge v-bind="badgeTone(c.statusBadge)">{{ c.statusBadge }}</UiBadge>
-              </div>
-              <div class="absolute bottom-0 left-0 w-full translate-y-full p-4 transition-transform duration-500 group-hover:translate-y-0">
-                <button
-                  class="w-full rounded-xl bg-[#E53935] py-3 text-xs font-black text-white shadow-xl transition active:scale-95"
-                  type="button"
-                  @click.stop="$router.push(`/concerts/${c.id}`)"
-                >
-                  예매하기
-                </button>
-              </div>
+        <div class="relative min-h-[280px] min-w-0">
+          <Transition name="ranking-fade" mode="out-in">
+            <div
+              v-if="loading && items.length === 0"
+              key="loading"
+              class="rounded-xl border border-slate-200 p-8 text-center text-sm text-slate-500"
+            >
+              불러오는 중…
             </div>
-            <div class="mt-4 space-y-1 text-center">
-              <h4 class="line-clamp-1 text-base font-black leading-tight tracking-tight text-slate-900 transition-colors group-hover:text-[#E53935]">
-                {{ c.title }}
-              </h4>
-              <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">{{ c.category }}</p>
-              <div class="mt-1 flex items-center justify-center gap-2 text-xs font-semibold text-slate-500">
-                <Ticket class="h-3.5 w-3.5" />
-                {{ c.priceRange }}
-                <span class="text-slate-400">·</span>
-                ⭐ {{ c.rating }}
+            <div
+              v-else-if="!rankingLoading && items.length === 0"
+              key="empty"
+              class="rounded-xl border border-slate-200 p-12"
+            >
+              <EmptyState title="검색 결과가 없어요" description="다른 장르를 선택해보세요." />
+            </div>
+            <div
+              v-else
+              key="carousel"
+              class="relative"
+            >
+          <button
+            type="button"
+            class="absolute left-0 top-1/2 z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-slate-200 bg-white shadow transition hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-30"
+            :disabled="!canScrollLeft"
+            aria-label="이전"
+            @click="scrollRanking('left')"
+          >
+            <ChevronLeft class="h-4 w-4 text-slate-700" />
+          </button>
+          <button
+            type="button"
+            class="absolute right-0 top-1/2 z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-slate-200 bg-white shadow transition hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-30"
+            :disabled="!canScrollRight"
+            aria-label="다음"
+            @click="scrollRanking('right')"
+          >
+            <ChevronRight class="h-4 w-4 text-slate-700" />
+          </button>
+          <Transition name="ranking-fade" mode="out-in">
+            <div
+              :key="rankingCat"
+              ref="rankingScrollRef"
+              class="ranking-scroll flex min-w-0 gap-4 overflow-x-auto scroll-smooth px-10 py-2"
+              style="scrollbar-width: none; -ms-overflow-style: none;"
+              @scroll="updateRankingScrollState"
+            >
+            <div
+              v-for="(c, idx) in items"
+              :key="c.id"
+              class="ranking-card group flex w-[200px] flex-shrink-0 cursor-pointer flex-col rounded-lg border border-slate-200 bg-white shadow-sm transition hover:shadow-md"
+              @click="$router.push(`/concerts/${c.id}`)"
+            >
+              <div class="relative aspect-[3/4] overflow-hidden rounded-t-lg bg-slate-100">
+                <img
+                  :src="c.posterUrl"
+                  :alt="c.title"
+                  class="h-full w-full object-cover"
+                />
+                <div class="absolute bottom-2 left-2 text-2xl font-bold leading-none text-white drop-shadow-md">
+                  {{ idx + 1 }}
+                </div>
+              </div>
+              <div class="flex flex-col gap-1 p-3 text-left">
+                <h4 class="line-clamp-2 text-sm font-semibold text-slate-900">
+                  {{ c.title }}
+                </h4>
+                <p class="text-xs text-slate-600">{{ c.venueName || '-' }}</p>
+                <p class="text-xs text-slate-500">{{ c.scheduleCount != null ? c.scheduleCount + '회차' : '-' }}</p>
+                <p class="text-xs text-slate-500">
+                  {{ formatDateRange(c.scheduleStartDate, c.scheduleEndDate) }}
+                </p>
               </div>
             </div>
           </div>
+          </Transition>
+          <Transition name="overlay-fade">
+            <div
+              v-if="rankingLoading"
+              class="absolute inset-0 z-20 flex items-center justify-center rounded-xl bg-white/80"
+            >
+              <span class="text-sm text-slate-500">불러오는 중…</span>
+            </div>
+          </Transition>
+            </div>
+          </Transition>
         </div>
       </section>
     </div>
@@ -257,7 +305,7 @@
 
 <script>
 import {
-  Ticket,
+  ChevronLeft,
   ChevronRight,
   Star,
   Heart,
@@ -267,10 +315,10 @@ import {
   Sparkles,
   Zap
 } from 'lucide-vue-next'
-import UiBadge from '../../components/common/UiBadge.vue'
 import EmptyState from '../../components/common/EmptyState.vue'
 import { useApi } from '../../composables/useApi'
 import { ENDPOINTS } from '../../lib/api/endpoints'
+import { CONCERT_CATEGORY_OPTIONS } from '../../lib/constants/concertCategory'
 
 const GRADIENTS = [
   'linear-gradient(135deg, #f43f5e, #ec4899)',
@@ -286,7 +334,7 @@ const SLIDE_INTERVAL_MS = 4000
 export default {
   name: 'HomeView',
   components: {
-    Ticket,
+    ChevronLeft,
     ChevronRight,
     Star,
     Heart,
@@ -295,38 +343,41 @@ export default {
     Info,
     Sparkles,
     Zap,
-    UiBadge,
     EmptyState
   },
   data() {
     return {
       loading: false,
+      rankingLoading: false,
       items: [],
+      rankingCat: '',
+      categoryOptions: CONCERT_CATEGORY_OPTIONS,
       performers: [],
       performersLoading: false,
       currentPerformerIdx: 0,
       slideInterval: null,
-      api: null
+      api: null,
+      rankingScrollLeft: 0,
+      rankingScrollWidth: 0,
+      rankingClientWidth: 0
     }
   },
   computed: {
-    cat() {
-      return String(this.$route.query.cat || '')
-    },
-    q() {
-      return String(this.$route.query.q || '')
-    },
     currentPerformer() {
       if (!this.performers.length) return null
       return this.performers[this.currentPerformerIdx % this.performers.length] ?? null
+    },
+    canScrollLeft() {
+      return this.rankingScrollLeft > 2
+    },
+    canScrollRight() {
+      const maxScroll = this.rankingScrollWidth - this.rankingClientWidth
+      return maxScroll > 2 && this.rankingScrollLeft < maxScroll - 2
     }
   },
   watch: {
-    '$route.query': {
-      handler() {
-        this.load()
-      },
-      deep: true
+    items() {
+      this.$nextTick(this.updateRankingScrollState)
     }
   },
   created() {
@@ -335,35 +386,99 @@ export default {
   mounted() {
     this.load()
     this.loadPerformers()
+    window.addEventListener('resize', this.updateRankingScrollState)
   },
   beforeUnmount() {
     this.stopSlide()
+    window.removeEventListener('resize', this.updateRankingScrollState)
   },
   methods: {
+    updateRankingScrollState() {
+      const el = this.$refs.rankingScrollRef
+      if (!el) return
+      this.rankingScrollLeft = el.scrollLeft
+      this.rankingScrollWidth = el.scrollWidth
+      this.rankingClientWidth = el.clientWidth
+    },
+    scrollRanking(dir) {
+      const el = this.$refs.rankingScrollRef
+      if (!el) return
+      const step = Math.max(200, el.clientWidth * 0.8)
+      el.scrollBy({ left: dir === 'left' ? -step : step, behavior: 'smooth' })
+    },
+    setRankingCat(value) {
+      if (this.rankingCat === value) return
+      this.rankingCat = value
+      this.loadRanking()
+    },
+    formatDateRange(start, end) {
+      if (!start && !end) return '-'
+      const fmt = (d) => {
+        if (!d) return ''
+        const date = typeof d === 'string' ? new Date(d) : d
+        if (isNaN(date.getTime())) return ''
+        return date.toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\. /g, '.').replace(/\.$/, '')
+      }
+      const s = fmt(start)
+      const e = fmt(end)
+      if (s && e && s !== e) return `${s} ~ ${e}`
+      return s || e || '-'
+    },
     async load() {
       this.loading = true
+      this.rankingLoading = true
       try {
         const params = new URLSearchParams()
         params.set('page', '0')
         params.set('size', '20')
-        if (this.cat) params.set('category', this.cat)
-        if (this.q) params.set('keyword', this.q)
+        if (this.rankingCat) params.set('category', this.rankingCat)
+        const res = await this.api.get(`${ENDPOINTS.concerts()}?${params.toString()}`)
+        const list = res.content ?? res.items ?? []
+        // ConcertListDto: id, title, category, venueName, scheduleCount, scheduleStartDate, scheduleEndDate, thumImgUrl
+        this.items = list.map((c) => ({
+          id: c.id,
+          title: c.title ?? c.name,
+          category: c.category ?? '',
+          status: c.status ?? '',
+          ageLimit: c.ageLimit ?? 0,
+          organizerName: c.concertMemberResDto?.name ?? null,
+          posterUrl:
+            c.thumImgUrl ?? c.thum_img_url ?? c.posterUrl ?? c.thumbnailUrl ?? c.imageUrl ?? 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?auto=format&fit=crop&w=800&q=60',
+          venueName: c.venueName ?? c.venue?.name ?? null,
+          scheduleCount: c.scheduleCount ?? c.schedule_count ?? null,
+          scheduleStartDate: c.scheduleStartDate ?? c.schedule_start_date ?? null,
+          scheduleEndDate: c.scheduleEndDate ?? c.schedule_end_date ?? null
+        }))
+      } finally {
+        this.loading = false
+        this.rankingLoading = false
+      }
+    },
+    async loadRanking() {
+      this.rankingLoading = true
+      try {
+        const params = new URLSearchParams()
+        params.set('page', '0')
+        params.set('size', '20')
+        if (this.rankingCat) params.set('category', this.rankingCat)
         const res = await this.api.get(`${ENDPOINTS.concerts()}?${params.toString()}`)
         const list = res.content ?? res.items ?? []
         this.items = list.map((c) => ({
           id: c.id,
           title: c.title ?? c.name,
-          shortDesc: c.shortDesc ?? c.description ?? '',
-          category: c.category ?? '콘서트',
-          rating: c.rating ?? '0',
-          priceRange: c.priceRange ?? '',
+          category: c.category ?? '',
+          status: c.status ?? '',
+          ageLimit: c.ageLimit ?? 0,
+          organizerName: c.concertMemberResDto?.name ?? null,
           posterUrl:
-            c.posterUrl ?? c.thumbnailUrl ?? c.imageUrl ?? 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?auto=format&fit=crop&w=800&q=60',
-          statusBadge: c.statusBadge ?? '예매중',
-          venue: c.venue ?? {}
+            c.thumImgUrl ?? c.thum_img_url ?? c.posterUrl ?? c.thumbnailUrl ?? c.imageUrl ?? 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?auto=format&fit=crop&w=800&q=60',
+          venueName: c.venueName ?? c.venue?.name ?? null,
+          scheduleCount: c.scheduleCount ?? c.schedule_count ?? null,
+          scheduleStartDate: c.scheduleStartDate ?? c.schedule_start_date ?? null,
+          scheduleEndDate: c.scheduleEndDate ?? c.schedule_end_date ?? null
         }))
       } finally {
-        this.loading = false
+        this.rankingLoading = false
       }
     },
     async loadPerformers() {
@@ -403,11 +518,6 @@ export default {
       if (n >= 1000) return (n / 1000).toFixed(1) + 'k'
       return String(n)
     },
-    badgeTone(label) {
-      if (label === '매진임박') return { tone: 'solid', color: 'red' }
-      if (label === '오픈예정') return { tone: 'soft', color: 'amber' }
-      return { tone: 'soft', color: 'green' }
-    }
   }
 }
 </script>
@@ -424,6 +534,28 @@ export default {
   transform: translateY(8px);
 }
 .artist-fade-leave-to {
+  opacity: 0;
+}
+
+.ranking-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.ranking-fade-enter-active,
+.ranking-fade-leave-active {
+  transition: opacity 0.25s ease;
+}
+.ranking-fade-enter-from,
+.ranking-fade-leave-to {
+  opacity: 0;
+}
+
+.overlay-fade-enter-active,
+.overlay-fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+.overlay-fade-enter-from,
+.overlay-fade-leave-to {
   opacity: 0;
 }
 </style>

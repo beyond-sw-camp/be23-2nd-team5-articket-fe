@@ -3,7 +3,7 @@
     <div class="flex items-end justify-between gap-3">
       <div>
         <div class="text-sm font-semibold text-slate-900">내 공연 목록</div>
-        <div class="mt-1 text-sm text-slate-500">초안/게시/종료 · 회차/주문/매출 요약(mock)</div>
+        <div class="mt-1 text-sm text-slate-500">초안/게시/종료 · 회차/주문/매출 요약</div>
       </div>
       <UiButton class="h-11 px-5" @click="$router.push('/organizer/concerts/new')">공연 생성</UiButton>
     </div>
@@ -12,9 +12,12 @@
 
     <UiTable :columns="columns" :rows="filtered">
       <template #cell:title="{ row }">
-        <button class="font-semibold text-slate-900 hover:underline" type="button" @click="$router.push(`/organizer/concerts/${row.id}`)">
-          {{ row.title }}
-        </button>
+        <div class="flex flex-col gap-0.5">
+          <button class="font-semibold text-slate-900 hover:underline text-left" type="button" @click="$router.push(`/organizer/concerts/${row.id}`)">
+            {{ row.title }}
+          </button>
+          <span v-if="row.category" class="text-xs text-slate-500">{{ categoryLabel(row.category) }}</span>
+        </div>
       </template>
       <template #cell:status="{ row }">
         <UiBadge :tone="row.status === 'PUBLISHED' ? 'solid' : 'soft'" :color="row.status === 'PUBLISHED' ? 'red' : 'slate'">
@@ -35,6 +38,7 @@ import UiBadge from '../../components/common/UiBadge.vue'
 import UiButton from '../../components/common/UiButton.vue'
 import { useApi } from '../../composables/useApi'
 import { ENDPOINTS } from '../../lib/api/endpoints'
+import { getCategoryLabel } from '../../lib/constants/concertCategory'
 
 export default {
   name: 'OrganizerConcertsView',
@@ -80,6 +84,9 @@ export default {
     this.load()
   },
   methods: {
+    categoryLabel(cat) {
+      return getCategoryLabel(cat)
+    },
     async load() {
       this.loading = true
       try {

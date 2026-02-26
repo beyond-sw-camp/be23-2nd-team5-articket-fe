@@ -27,6 +27,25 @@
             placeholder="공연 제목"
           />
         </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-500">카테고리 (category) *</label>
+          <select
+            v-model="form.category"
+            required
+            class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+          >
+            <option v-for="opt in categoryOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-500">썸네일 이미지 URL (thumImgUrl)</label>
+          <input
+            v-model="form.thum_img_url"
+            type="url"
+            class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+            placeholder="https://..."
+          />
+        </div>
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="block text-xs font-semibold text-slate-500">상태 (status) *</label>
@@ -118,7 +137,7 @@
           <div class="mt-1 text-xs text-slate-500">
             공연: <span class="font-semibold">{{ createdConcert?.title }}</span> (ID: {{ createdConcert?.id }})<br />
             필수: play_time, booking_start, booking_end, status (READY/OPEN/CLOSED)<br />
-            선택: concert_thum_img_url, concert_detail_img_url (concert_id는 자동)
+            선택: concert_detail_img_url (썸네일은 공연에 관리, concert_id는 자동)
           </div>
         </div>
         <div>
@@ -162,25 +181,14 @@
             <option value="CLOSED">CLOSED</option>
           </select>
         </div>
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-xs font-semibold text-slate-500">썸네일 이미지 URL (concert_thum_img_url)</label>
-            <input
-              v-model="scheduleForm.concert_thum_img_url"
-              type="url"
-              class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
-              placeholder="https://..."
-            />
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-500">상세 이미지 URL (concert_detail_img_url)</label>
-            <input
-              v-model="scheduleForm.concert_detail_img_url"
-              type="url"
-              class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
-              placeholder="https://..."
-            />
-          </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-500">상세 이미지 URL (concert_detail_img_url)</label>
+          <input
+            v-model="scheduleForm.concert_detail_img_url"
+            type="url"
+            class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+            placeholder="https://..."
+          />
         </div>
       </form>
       <template #footer>
@@ -201,6 +209,7 @@ import UiModal from '../../components/common/UiModal.vue'
 import { useApi } from '../../composables/useApi'
 import { showErrorAlert } from '../../composables/useErrorToast'
 import { ENDPOINTS } from '../../lib/api/endpoints'
+import { CONCERT_CATEGORY_OPTIONS } from '../../lib/constants/concertCategory'
 
 // ERD: concert 테이블
 // 필수: title, status (DRAFT/PUBLISHED), seat_map_id
@@ -215,10 +224,12 @@ const DUMMY_CONCERT = {
 function getDefaultForm() {
   return {
     title: DUMMY_CONCERT.title,
+    category: 'CONCERT',
     status: DUMMY_CONCERT.status,
     venue_id: null,
     seat_map_id: null,
-    age_limit: DUMMY_CONCERT.age_limit
+    age_limit: DUMMY_CONCERT.age_limit,
+    thum_img_url: ''
   }
 }
 
@@ -232,7 +243,6 @@ function getDefaultScheduleForm() {
     booking_start: formatDateTimeLocal(now),
     booking_end: formatDateTimeLocal(tomorrow),
     status: 'READY',
-    concert_thum_img_url: '',
     concert_detail_img_url: ''
   }
 }
@@ -250,6 +260,11 @@ export default {
     UiButton,
     UiBadge,
     UiModal
+  },
+  computed: {
+    categoryOptions() {
+      return CONCERT_CATEGORY_OPTIONS
+    }
   },
   data() {
     return {
@@ -310,11 +325,15 @@ export default {
       this.saving = true
       const payload = {
         title: this.form.title || DUMMY_CONCERT.title,
+        category: this.form.category || 'CONCERT',
         status: this.form.status || DUMMY_CONCERT.status,
         seatMapId: this.form.seat_map_id
       }
       if (this.form.age_limit !== null && this.form.age_limit !== undefined && this.form.age_limit !== '') {
         payload.ageLimit = Number(this.form.age_limit)
+      }
+      if (this.form.thum_img_url) {
+        payload.thumImgUrl = this.form.thum_img_url
       }
       try {
         const res = await this.api.post(ENDPOINTS.organizerCreateConcert(), payload)
@@ -350,9 +369,6 @@ export default {
         bookingStart: toIso(this.scheduleForm.booking_start),
         bookingEnd: toIso(this.scheduleForm.booking_end),
         status: this.scheduleForm.status
-      }
-      if (this.scheduleForm.concert_thum_img_url) {
-        schedulePayload.concertThumImgUrl = this.scheduleForm.concert_thum_img_url
       }
       if (this.scheduleForm.concert_detail_img_url) {
         schedulePayload.concertDetailImgUrl = this.scheduleForm.concert_detail_img_url

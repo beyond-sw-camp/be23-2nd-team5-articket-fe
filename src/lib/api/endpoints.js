@@ -3,15 +3,18 @@ export const ENDPOINTS = {
   concerts: () => `/concerts`,
   concert: (concertId) => `/concerts/${concertId}`,
   concertSchedules: (concertId) => `/concerts/${concertId}/schedules`,
-  schedule: (scheduleId) => `/schedules/${scheduleId}`,
-  seatMap: (scheduleId) => `/schedules/${scheduleId}/seat-map`,
+  schedule: (scheduleId) => `/schedule/${scheduleId}`,
+  seatMap: (scheduleId) => `/schedule/${scheduleId}/seat-map`,
   seats: (scheduleId) => `/schedule/${scheduleId}/seats`,
 
   // AUTH
   signup: () => `/member/create`,
   login: () => `/member/doLogin`,
+  googleLogin: () => `/member/google/doLogin`,
+  kakaoLogin: () => `/member/kakao/doLogin`,
   refreshAt: () => `/member/refresh-at`,
   inicis: () => `/member/inicis`,
+  memberIsVerified: () => `/member/isVerified`,
 
   // USER
   me: () => `/users/me`,
@@ -98,6 +101,18 @@ export const ENDPOINTS = {
   },
   adminApproveOrganizer: (id) => `/admin/organizer-requests/${id}/approve`,
   adminRejectOrganizer: (id) => `/admin/organizer-requests/${id}/reject`,
+  adminUsers: (params = {}) => {
+    const p = new URLSearchParams()
+    if (params.page != null) p.set('page', params.page)
+    if (params.size != null) p.set('size', params.size)
+    const q = p.toString()
+    return `/admin/users${q ? `?${q}` : ''}`
+  },
+  adminMemberDetail: (memberId) => `/member/${memberId}`,
+
+  // SSE
+  sseConnect: () => `/sse/connect`,
+  sseDisconnect: () => `/sse/disconnect`,
 
   // GEO / VENUES
   venueNearby: ({ latitude, longitude, radiusKm, page, size }) =>
@@ -119,8 +134,8 @@ export const ENDPOINTS = {
   performerDetail: (performerId) => `/performers/${performerId}`,
   performerConcerts: (performerId) => `/performers/${performerId}/concerts`,
   performerSchedules: (performerId) => `/performers/${performerId}/schedules`,
-  performerLike: () => `/performers/like`,
-  performerDeleteLike: () => `/performers/deleteLike`,
+  performerLike: (performerId) => `/performers/like${performerId != null ? `?id=${performerId}` : ''}`,
+  performerDeleteLike: (performerId) => `/performers/deleteLike${performerId != null ? `?id=${performerId}` : ''}`,
   performerLikeList: () => `/performers/likeList`,
   performerCreate: () => `/performers/create`,
 
