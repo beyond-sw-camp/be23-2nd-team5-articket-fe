@@ -40,7 +40,6 @@
 ***
 
 ## 주요 기능
-<a href="https://ticket-service-fe.vercel.app/">🔗 [서비스 체험(Interactive Prototype)]</a> - 서비스 배포 시 제거될 예정입니다.<br/>
 <a href="https://www.figma.com/design/zUP4s1rnn62eMA5T0WlaEG/be23-2nd-team5?node-id=0-1&p=f">🔗 [디자인 프로토타입(Figma)]</a>
 
 ### 비인증 사용자(GUEST)
