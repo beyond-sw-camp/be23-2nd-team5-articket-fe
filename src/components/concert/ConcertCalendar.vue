@@ -85,9 +85,11 @@ export default {
     // availableDates: ['2026-03-21', '2026-03-22']
     availableDates: { type: Array, default: () => [] },
     // schedulesByDate: { '2026-03-21': [{scheduleId, playTime, status}] }
-    schedulesByDate: { type: Object, default: () => ({}) }
+    schedulesByDate: { type: Object, default: () => ({}) },
+    // 초기 선택 날짜 (부모와 동기화용)
+    modelValue: { type: String, default: null }
   },
-  emits: ['select-schedule'],
+  emits: ['select-schedule', 'update:selectedDate', 'update:modelValue'],
   data() {
     const now = new Date()
     return {
@@ -108,8 +110,9 @@ export default {
       return cells
     },
     selectedSlots() {
-      if (!this.selectedDate) return []
-      return this.schedulesByDate[this.selectedDate] ?? []
+      const key = this.selectedDate || this.modelValue
+      if (!key) return []
+      return this.schedulesByDate[key] ?? []
     },
     selectedDateLabel() {
       if (!this.selectedDate) return ''
@@ -133,11 +136,15 @@ export default {
       return this.availableDates.includes(this.toKey(date))
     },
     isSelected(date) {
-      return this.selectedDate === this.toKey(date)
+      const key = this.toKey(date)
+      return (this.selectedDate || this.modelValue) === key
     },
     selectDate(date) {
       if (!this.hasSchedule(date)) return
-      this.selectedDate = this.toKey(date)
+      const key = this.toKey(date)
+      this.selectedDate = key
+      this.$emit('update:selectedDate', key)
+      this.$emit('update:modelValue', key)
     },
     formatTime(playTime) {
       // playTime: "18:00:00" or "18:00"
