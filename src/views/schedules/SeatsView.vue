@@ -305,11 +305,21 @@ export default {
       this.stompClient = null
     }
     // 결제 페이지 이동이 아닌 이탈(뒤로 가기, 다른 메뉴)이면 선점된 모든 좌석 해제
+    // keepalive: true → 페이지 이탈 시에도 요청 완료 보장 (axios는 unmount 시 취소됨)
     if (!this.proceedingToCheckout && this.selected.length > 0) {
       const toRelease = [...this.selected]
-      Promise.all(toRelease.map(seatId =>
-        this.api.del(ENDPOINTS.seatHold(seatId)).catch(() => {})
-      ))
+      const baseUrl = import.meta.env.VITE_API_BASE || 'http://localhost:8082'
+      const token = localStorage.getItem('accessToken')
+      toRelease.forEach(seatId => {
+        fetch(`${baseUrl}/seat-holds/${seatId}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          keepalive: true,
+        }).catch(() => {})
+      })
     }
     if (this.konvaStageInstance) {
       this.konvaStageInstance.destroy()
@@ -417,7 +427,8 @@ export default {
       if (this.selectedSet.has(seat.seatId)) return '#3b82f6'
       switch (seat.status) {
         case 'AVAILABLE': return seat.sectionColor || gradeColor(seat.grade)
-        case 'HOLD':      return '#f59e0b'
+        case 'HOLD':      // WebSocket 메시지 값
+        case 'HELD':      return '#f59e0b'  // DB enum 값
         case 'SOLD':      return '#cbd5e1'
         default:          return '#e2e8f0'
       }
@@ -791,13 +802,32 @@ export default {
       }
     },
 
-    // 탭 닫기 / 새로고침 시 localStorage 정리 (Redis TTL로 백엔드는 자동 만료)
+    // 탭 닫기 / 새로고침 시 선점 해제 + localStorage 정리
     handleBeforeUnload() {
       const scheduleId = this.$route.params.scheduleId
       if (!scheduleId) return
       const stored = JSON.parse(localStorage.getItem('seatHolds') || '[]')
       const filtered = stored.filter(h => String(h.scheduleId) !== String(scheduleId))
       localStorage.setItem('seatHolds', JSON.stringify(filtered))
+      // 선점 중인 좌석 해제 (탭 닫기/새로고침 대응)
+      // keepalive: true → 페이지 언로드 이후에도 요청 완료 보장
+      if (!this.proceedingToCheckout && this.selected.length > 0) {
+        const toRelease = [...this.selected]
+        const baseUrl = import.meta.env.VITE_API_BASE || 'http://localhost:8082'
+        const token = localStorage.getItem('accessToken')
+        toRelease.forEach(seatId => {
+          fetch(`${baseUrl}/seat-holds/${seatId}`, {
+            method: 'DELETE',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+            keepalive: true,
+          }).catch(() => {})
+        })
+        // beforeUnmount에서 중복 호출 방지용으로 selected 초기화
+        this.selected = []
+      }
     },
   }
 }
