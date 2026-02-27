@@ -347,6 +347,29 @@ export default {
     window.addEventListener('beforeunload', this.handleBeforeUnload)
   },
 
+  // Vue Router가 같은 컴포넌트를 재사용할 때 scheduleId가 바뀌면 데이터 재로드
+  watch: {
+    '$route.params.scheduleId'(newId, oldId) {
+      if (!newId || newId === oldId) return
+      // 기존 선점/타이머/WebSocket 정리
+      this.clearHoldTimer()
+      this.selected = []
+      this.holdError = null
+      if (this.stompClient) {
+        this.stompClient.deactivate()
+        this.stompClient = null
+      }
+      // 새 회차의 입장 권한 확인
+      const { isAdmissionValidFor } = useQueueStore()
+      if (!isAdmissionValidFor(newId)) {
+        this.$router.replace(`/schedules/${newId}/queue`)
+        return
+      }
+      this.load()
+      this.connectWebSocket()
+    }
+  },
+
   beforeUnmount() {
     window.removeEventListener('beforeunload', this.handleBeforeUnload)
     this.clearAdmissionTimer()
@@ -558,6 +581,8 @@ export default {
           const isSelected  = this.selectedSet.has(seat.seatId)
           const isAvailable = seat.status === 'AVAILABLE'
           const isSold      = seat.status === 'SOLD'
+          // 내가 선점한 좌석은 status가 'HOLD'로 바뀌어도 클릭 해제 가능해야 함 (WebSocket 레이스 컨디션 방지)
+          const isClickable = isAvailable || isSelected
 
           const circle = new Konva.Circle({
             x: cx, y: cy,
@@ -568,7 +593,7 @@ export default {
             opacity:     isSold ? 0.3 : 1,
           })
 
-          if (isAvailable) {
+          if (isClickable) {
             circle.on('mouseenter', () => {
               circle.radius(SEAT_R + 1.5)
               circle.opacity(0.85)
@@ -689,6 +714,9 @@ export default {
           // ── 선점 해제 ──
           await this.api.del(ENDPOINTS.seatHold(seat.seatId))
           this.selected.splice(idx, 1)
+          // WebSocket RELEASE 메시지가 splice 전에 이미 처리되어 버릴 수 있으므로
+          // 명시적으로 상태를 AVAILABLE로 초기화 (레이스 컨디션 방지)
+          seat.status = 'AVAILABLE'
           if (this.selected.length === 0) {
             this.clearHoldTimer()
           }
@@ -720,8 +748,15 @@ export default {
     },
 
     clearAll() {
+      const toRelease = [...this.selected]
       this.selected = []
       this.clearHoldTimer()
+      // 각 좌석 상태를 AVAILABLE로 초기화 + 백엔드 선점 해제 API 호출
+      toRelease.forEach(seatId => {
+        const seat = this.seats.find(s => s.seatId === seatId)
+        if (seat) seat.status = 'AVAILABLE'
+        this.api.del(ENDPOINTS.seatHold(seatId)).catch(() => {})
+      })
       this.renderAll()
     },
 
@@ -810,6 +845,11 @@ export default {
       this.clearHoldTimer()
       const toRelease = [...this.selected]
       this.selected = []
+      // renderAll() 전에 각 좌석 상태를 AVAILABLE로 초기화해야 색상이 복원됨
+      toRelease.forEach(seatId => {
+        const seat = this.seats.find(s => s.seatId === seatId)
+        if (seat) seat.status = 'AVAILABLE'
+      })
       this.renderAll()
       await Promise.all(toRelease.map(seatId =>
         this.api.del(ENDPOINTS.seatHold(seatId)).catch(() => {})
