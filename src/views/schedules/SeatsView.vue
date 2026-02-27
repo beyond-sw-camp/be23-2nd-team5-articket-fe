@@ -1,6 +1,20 @@
 <template>
   <div class="flex flex-col gap-3">
 
+    <!-- 입장 권한 10분 카운트다운 배너 -->
+    <div
+      v-if="admissionRemainingMs > 0"
+      class="flex items-center justify-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3"
+    >
+      <span class="text-sm font-semibold text-amber-800">⏳ 입장 권한 남은 시간:</span>
+      <span
+        class="font-mono text-lg font-bold tabular-nums"
+        :class="admissionIsUrgent ? 'text-red-600' : 'text-amber-700'"
+      >
+        {{ admissionCountdownText }}
+      </span>
+    </div>
+
     <!-- 등급 범례 -->
     <div v-if="gradeLabels.length > 0"
          class="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5">
@@ -152,6 +166,14 @@
       </div>
 
     </div>
+
+    <!-- 입장 권한 만료 모달 -->
+    <UiModal :open="admissionExpiredModal" title="입장 권한 만료" @close="closeAdmissionExpiredModal">
+      <p class="text-sm text-slate-600">입장 권한이 만료되었습니다. 다시 대기열에 진입해 주세요.</p>
+      <template #footer>
+        <UiButton @click="goToQueue">대기열 화면으로 이동</UiButton>
+      </template>
+    </UiModal>
   </div>
 </template>
 
@@ -160,6 +182,11 @@ import Konva from 'konva'
 import { Client } from '@stomp/stompjs'
 import SockJS from 'sockjs-client'
 import { useApi } from '../../composables/useApi'
+import { useQueueStore } from '../../stores/useQueueStore'
+import { parseErrorResponse } from '../../lib/api/parseError'
+import { showErrorAlert } from '../../composables/useErrorToast'
+import UiButton from '../../components/common/UiButton.vue'
+import UiModal from '../../components/common/UiModal.vue'
 import { ENDPOINTS } from '../../lib/api/endpoints'
 
 // 에디터와 동일한 좌석 간격 (위치 호환성 유지)
@@ -197,6 +224,8 @@ function resolveVisible(seat) {
 export default {
   name: 'SeatsView',
 
+  components: { UiButton, UiModal },
+
   data() {
     return {
       loading:      false,
@@ -215,10 +244,25 @@ export default {
       holdCountdown:    '',        // "04:32" 형식 카운트다운 표시
       holdTimerInterval: null,     // setInterval ID
       stompClient:      null,      // WebSocket STOMP 클라이언트
+      admissionTimerInterval: null,
+      admissionExpiredModal: false,
     }
   },
 
   computed: {
+    admissionRemainingMs() {
+      return useQueueStore().getRemainingAdmissionMs()
+    },
+    admissionCountdownText() {
+      const ms = this.admissionRemainingMs
+      if (ms <= 0) return '00:00'
+      const m = Math.floor(ms / 60000)
+      const s = Math.floor((ms % 60000) / 1000)
+      return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+    },
+    admissionIsUrgent() {
+      return this.admissionRemainingMs > 0 && this.admissionRemainingMs < 60000
+    },
     // 카운트다운이 1분 미만이면 긴급(빨간색)으로 표시
     holdIsUrgent() {
       return this.holdCountdown.startsWith('00:')
@@ -290,6 +334,13 @@ export default {
   },
 
   mounted() {
+    const scheduleId = this.$route.params.scheduleId
+    const { isAdmissionValidFor } = useQueueStore()
+    if (scheduleId && !isAdmissionValidFor(scheduleId)) {
+      this.$router.replace(`/schedules/${scheduleId}/queue`)
+      return
+    }
+    this.startAdmissionTimer()
     this.load()
     this.cleanupOldHolds()
     this.connectWebSocket()
@@ -298,6 +349,7 @@ export default {
 
   beforeUnmount() {
     window.removeEventListener('beforeunload', this.handleBeforeUnload)
+    this.clearAdmissionTimer()
     this.clearHoldTimer()
     // WebSocket 연결 해제
     if (this.stompClient) {
@@ -654,6 +706,12 @@ export default {
           }
         }
       } catch (e) {
+        const msg = parseErrorResponse(e?.responseData)?.message ?? e?.message ?? ''
+        if (msg.includes('대기열을 통해 입장해야 합니다')) {
+          showErrorAlert(e)
+          this.$router.replace(`/schedules/${this.$route.params.scheduleId}/queue`)
+          return
+        }
         this.holdError = e?.message || '좌석 선점에 실패했습니다.'
       } finally {
         this.seatToggling = false
@@ -716,6 +774,35 @@ export default {
       }
       this.holdExpiresAt = null
       this.holdCountdown = ''
+    },
+
+    startAdmissionTimer() {
+      this.clearAdmissionTimer()
+      this.admissionTimerInterval = setInterval(() => {
+        const remaining = useQueueStore().getRemainingAdmissionMs()
+        if (remaining <= 0) {
+          this.admissionExpiredModal = true
+          this.clearAdmissionTimer()
+        }
+      }, 1000)
+    },
+
+    clearAdmissionTimer() {
+      if (this.admissionTimerInterval) {
+        clearInterval(this.admissionTimerInterval)
+        this.admissionTimerInterval = null
+      }
+    },
+
+    closeAdmissionExpiredModal() {
+      this.admissionExpiredModal = false
+      this.goToQueue()
+    },
+
+    goToQueue() {
+      const scheduleId = this.$route.params.scheduleId
+      useQueueStore().reset()
+      this.$router.replace(`/schedules/${scheduleId}/queue`)
     },
 
     // 타이머 만료: 모든 선점 자동 해제

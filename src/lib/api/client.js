@@ -90,7 +90,7 @@ export function createApiClient(opts = {}) {
     }
   )
 
-  async function request(method, path, body) {
+  async function request(method, path, body, opts = {}) {
     try {
       let response
       switch (method) {
@@ -123,16 +123,16 @@ export function createApiClient(opts = {}) {
       err.code = code
       err.details = details
       err.responseData = data
-      if (status !== 403) showErrorAlert(err)
+      if (status !== 403 && !opts.skipErrorAlert) showErrorAlert(err)
       throw err
     }
   }
 
   return {
-    get: (path) => request('GET', path),
-    post: (path, body) => request('POST', path, body),
-    put: (path, body) => request('PUT', path, body),
-    patch: (path, body) => request('PATCH', path, body),
-    del: (path, body) => request('DELETE', path, body),
+    get: (path, opts) => request('GET', path, undefined, opts),
+    post: (path, body, opts) => request('POST', path, body, opts),
+    put: (path, body, opts) => request('PUT', path, body, opts),
+    patch: (path, body, opts) => request('PATCH', path, body, opts),
+    del: (path, body, opts) => request('DELETE', path, body, opts),
   }
 }
