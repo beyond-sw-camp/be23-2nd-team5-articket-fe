@@ -27,8 +27,8 @@ import SignupCompleteView from '../views/member/SignupCompleteView.vue'
 // user
 import ProfileView from '../views/me/ProfileView.vue'
 import IdentityVerificationView from '../views/me/IdentityVerificationView.vue'
-import MyOrdersView from '../views/me/MyOrdersView.vue'
-import MyOrderDetailView from '../views/me/MyOrderDetailView.vue'
+import MyOrdersView from '../views/orders/MyOrdersView.vue'
+import MyOrderDetailView from '../views/orders/MyOrderDetailView.vue'
 import MyPerformerLikesView from '../views/me/MyPerformerLikesView.vue'
 import ForUView from '../views/me/ForUView.vue'
 import HoldCreateView from '../views/hold/HoldCreateView.vue'
@@ -72,8 +72,8 @@ import ForbiddenView from '../views/system/ForbiddenView.vue'
 import NotFoundView from '../views/system/NotFoundView.vue'
 import GoogleRedirect from '../views/member/oauth/GoogleRedirect.vue'
 import KakaoRedirect from '../views/member/oauth/KakaoRedirect.vue'
-import Order from '../views/me/Order.vue'
-import OrderComplete from '../views/me/OrderComplete.vue'
+import Order from '../views/orders/Order.vue'
+import OrderComplete from '../views/orders/OrderComplete.vue'
 
 // 단일 DefaultLayout 하에 모든 자식 라우트 → 레이아웃 리마운트 없이 RouterView만 교체 (헤더 깜빡임 방지)
 const childRoute = (path, component, meta = {}, props = {}) => ({

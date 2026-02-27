@@ -42,7 +42,7 @@
 
         <tr v-else v-for="order in orders" :key="order.bookingNumber">
           <td>
-            <div class="booking-date">{{ order.bookingDate }}</div>
+            <div class="booking-date">{{ order.bookingDate?.slice(0, 10) }}</div>
             <div class="booking-number">{{ order.bookingNumber }}</div>
           </td>
           <td>
@@ -115,16 +115,28 @@ function formatDateOnly(isoStr) {
   return `${y}.${m}.${d}`;
 }
 
+const PERIOD_MAP = {
+  '전체':0,
+  '1개월': 1,
+  '3개월': 3,
+  '6개월': 6
+};
+
 export default {
   name: 'MyOrdersView',
   data() {
     return {
-      filters: ['1주일', '1개월', '3개월', '6개월'],
+      filters: ['전체','1개월','3개월', '6개월'],
       activeFilter: '1개월',
       orders: [],
       loading: false,
       api: null
     };
+  },
+  watch: {
+    activeFilter() {
+      this.loadOrders();
+    }
   },
   created() {
     this.api = useApi();
@@ -136,12 +148,13 @@ export default {
     async loadOrders() {
       this.loading = true;
       try {
-        const result = await this.api.get(ENDPOINTS.myOrders());
+        const period = PERIOD_MAP[this.activeFilter];
+        const result = await this.api.get(ENDPOINTS.myOrders(period));
         console.log(result)
         const list = result.content || [];
         this.orders = list.map(order => ({
           paymentId: order.paymentId,
-          bookingDate: formatDateOnly(order.scheduleDate),
+          bookingDate: order.createdAt,
           bookingNumber: order.paymentId ? 'T' + order.paymentId.slice(-8) : '-',
           posterUrl: order.concertUrl,
           title: order.concertName || '-',

@@ -35,7 +35,7 @@ export const ENDPOINTS = {
   // USER
   me: () => `/users/me`,
   requestOrganizer: () => `/users/requestOrganizer`,
-  myOrders: () => `/users/me/orders`,
+  myOrders: (period) => period != null ? `/users/me/orders?period=${period}` : `/users/me/orders`,
   myOrder: (orderId) => `/users/me/orders/${orderId}`,
   seatHold: (seatId) => `/seat-holds/${seatId}`,
 
