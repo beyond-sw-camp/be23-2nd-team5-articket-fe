@@ -134,10 +134,10 @@
           <!-- 예매하기 -->
           <UiButton
             class="mt-auto h-12 w-full rounded-xl text-base font-semibold"
-            :disabled="!canBook"
+            :disabled="!canBook || queueEntering"
             @click="goToBooking"
           >
-            예매하기
+            {{ queueEntering ? '대기열 진입 중…' : '예매하기' }}
           </UiButton>
         </div>
       </div>
@@ -295,6 +295,7 @@ import UiCard from '../../components/common/UiCard.vue'
 import UiTabs from '../../components/common/UiTabs.vue'
 import { useApi } from '../../composables/useApi'
 import { isAuthed } from '../../composables/useRole'
+import { useQueueStore } from '../../stores/useQueueStore'
 import { ENDPOINTS } from '../../lib/api/endpoints'
 
 export default {
@@ -333,7 +334,8 @@ export default {
       activeTab: 'info',
       selectedScheduleId: null,
       selectedDateKey: null,
-      venueModalOpen: false
+      venueModalOpen: false,
+      queueEntering: false
     }
   },
   computed: {
@@ -572,11 +574,37 @@ export default {
         this.submittingReview = false
       }
     },
-    goToBooking() {
-      if (this.canBook) {
-        this.$router.push(`/schedules/${this.selectedScheduleId}/seats`)
-      } else if (this.item?.id) {
-        this.$router.push(`/concerts/${this.item.id}/schedules`)
+    async goToBooking() {
+      if (!this.canBook) {
+        if (this.item?.id) this.$router.push(`/concerts/${this.item.id}/schedules`)
+        return
+      }
+      if (!this.authed) {
+        this.$router.push({ path: '/member/doLogin', query: { redirect: this.$route.fullPath } })
+        return
+      }
+      const scheduleId = this.selectedScheduleId
+      this.queueEntering = true
+      try {
+        const res = await this.api.post(ENDPOINTS.queueEnter(scheduleId))
+        const data = res?.data ?? res
+        const position = data?.position ?? 0
+        const total = data?.total ?? 0
+
+        if (position === 0) {
+          const { setWaiting, handleAdmitted } = useQueueStore()
+          setWaiting(scheduleId, 0, total || 0)
+          handleAdmitted(String(scheduleId))
+          this.$router.push(`/schedules/${scheduleId}/seats`)
+        } else {
+          const { setWaiting } = useQueueStore()
+          setWaiting(scheduleId, position, total)
+          this.$router.push(`/schedules/${scheduleId}/queue`)
+        }
+      } catch {
+        // 에러는 client의 showErrorAlert로 표시됨
+      } finally {
+        this.queueEntering = false
       }
     },
     fmtDate(iso) {
