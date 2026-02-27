@@ -38,6 +38,10 @@ export const ENDPOINTS = {
   myOrders: () => `/users/me/orders`,
   myOrder: (orderId) => `/users/me/orders/${orderId}`,
   seatHold: (seatId) => `/seat-holds/${seatId}`,
+
+  // QUEUE (Virtual Waiting Queue)
+  queueEnter: (scheduleId) => `/queue/schedule/${scheduleId}`,
+  queuePosition: (scheduleId) => `/queue/schedule/${scheduleId}/position`,
   orderCreate: () => `/order/create`,
   orders: () => `/orders`,
   payment: () => `/payment`,
