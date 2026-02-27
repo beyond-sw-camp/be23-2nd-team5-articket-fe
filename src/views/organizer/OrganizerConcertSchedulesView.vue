@@ -49,7 +49,7 @@
           </div>
         </template>
 
-        <template #cell:actions="{ row }">
+        <template #cell:performers="{ row }">
           <div class="flex gap-1">
             <UiButton
               variant="ghost"
