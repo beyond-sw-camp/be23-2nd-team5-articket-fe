@@ -118,7 +118,12 @@
 
 ***
 
-### 테스트 계획 및 결과 보고서
+## API 설계 문서
+<a href="https://documenter.getpostman.com/view/52251055/2sBXcHgy9C">🔗 [POSTMAN URL]</a>
+
+***
+
+## 테스트 계획 및 결과 보고서
 <details>
 <summary>홈화면</summary>
 <div markdown="1">
