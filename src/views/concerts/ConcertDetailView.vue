@@ -401,6 +401,14 @@ export default {
       return this.selectedScheduleId && this.schedules.some((s) => s.id === this.selectedScheduleId && s.status === 'OPEN')
     }
   },
+  watch: {
+    selectedDateKey(newKey) {
+      if (!newKey) return
+      const slots = this.schedulesByDate[newKey] ?? []
+      const firstOpen = slots.find((s) => s.status === 'OPEN')
+      this.selectedScheduleId = firstOpen ? firstOpen.scheduleId : null
+    }
+  },
   created() {
     this.api = useApi()
     this.authed = isAuthed()

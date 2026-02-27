@@ -155,7 +155,7 @@ export default {
           category: detail.category ?? 'CONCERT',
           status: detail.status ?? 'DRAFT',
           ageLimit: detail.ageLimit ?? detail.age_limit ?? null,
-          seatMapId: detail.seatMapId ?? detail.seat_map_id ?? null,
+          seatMapId: detail.seatMapId ?? detail.seat_map_id ?? detail.concertSeatMapResDto?.id ?? null,
           thumImgUrl: detail.thumImgUrl ?? detail.thum_img_url ?? ''
         }
       } catch (err) {
@@ -176,9 +176,7 @@ export default {
           status: this.form.status,
           seatMapId: this.form.seatMapId,
           category: this.form.category ?? 'CONCERT',
-        }
-        if (this.form.ageLimit != null && this.form.ageLimit !== '') {
-          payload.ageLimit = Number(this.form.ageLimit)
+          ageLimit: this.form.ageLimit != null && this.form.ageLimit !== '' ? Number(this.form.ageLimit) : 0,
         }
         if (this.form.thumImgUrl) {
           payload.thumImgUrl = this.form.thumImgUrl
