@@ -1001,14 +1001,32 @@ const loadLayout = async () => {
     const defaultStageX = Math.round(konvaStage.width() / 2 - 200)
     const defaultStageY = Math.round(konvaStage.height() / 2 - 50)
 
-    // SeatMapCreateResDto에 stageX/Y가 포함되어 mapRes에서 바로 읽음
-    const stageObj = {
-      id: uid(), type: 'stage', name: 'STAGE',
-      x: mapRes?.stageX ?? mapRes?.stage_x ?? defaultStageX,
-      y: mapRes?.stageY ?? mapRes?.stage_y ?? defaultStageY,
-      width: mapRes?.stageWidth ?? mapRes?.stage_width ?? 400,
-      height: mapRes?.stageHeight ?? mapRes?.stage_height ?? 100,
-      rotation: mapRes?.stageRotation ?? mapRes?.stage_rotation ?? 0
+    // stageListJson이 있으면 여러 stage 파싱, 없으면 기존 단일 stage 필드로 폴백
+    let stageObjs = []
+    const stageListJson = mapRes?.stageListJson ?? mapRes?.stage_list_json
+    if (stageListJson) {
+      try {
+        const list = JSON.parse(stageListJson)
+        stageObjs = list.map(s => ({
+          id: uid(), type: 'stage',
+          name: s.name || 'STAGE',
+          x: s.x ?? 0, y: s.y ?? 0,
+          width: s.width ?? 300, height: s.height ?? 100,
+          rotation: s.rotation ?? 0
+        }))
+      } catch (e) {
+        console.warn('stageListJson 파싱 실패, 단일 stage 폴백:', e)
+      }
+    }
+    if (stageObjs.length === 0) {
+      stageObjs = [{
+        id: uid(), type: 'stage', name: 'STAGE',
+        x: mapRes?.stageX ?? mapRes?.stage_x ?? defaultStageX,
+        y: mapRes?.stageY ?? mapRes?.stage_y ?? defaultStageY,
+        width: mapRes?.stageWidth ?? mapRes?.stage_width ?? 400,
+        height: mapRes?.stageHeight ?? mapRes?.stage_height ?? 100,
+        rotation: mapRes?.stageRotation ?? mapRes?.stage_rotation ?? 0
+      }]
     }
 
     const gridObjs = await Promise.all((sections || []).map(async sec => {
@@ -1049,7 +1067,7 @@ const loadLayout = async () => {
       }
     }))
 
-    objects.value = [stageObj, ...gridObjs]
+    objects.value = [...stageObjs, ...gridObjs]
     saveState()
     renderAll()
   } catch (e) {
@@ -1066,18 +1084,26 @@ const handleSave = async () => {
 
   saving.value = true
   try {
-    const stageObj = objects.value.find(o => o.type === 'stage')
+    const stageObjs = objects.value.filter(o => o.type === 'stage')
     const grids = objects.value.filter(o => o.type === 'seatGrid')
 
     // 저장 전 현재 배치도를 JPEG Base64로 캡처 → DB thumbnailUrl 필드에 저장
     const thumbnailDataUrl = captureLayoutDataUrl()
 
     const payload = {
-      stageX: stageObj?.x || 0,
-      stageY: stageObj?.y || 0,
-      stageWidth: stageObj?.width || 300,
-      stageHeight: stageObj?.height || 100,
-      stageRotation: stageObj?.rotation || 0,
+      // 하위 호환: 첫 번째 stage를 단일 stage 필드로도 전송
+      stageX: stageObjs[0]?.x || 0,
+      stageY: stageObjs[0]?.y || 0,
+      stageWidth: stageObjs[0]?.width || 300,
+      stageHeight: stageObjs[0]?.height || 100,
+      stageRotation: stageObjs[0]?.rotation || 0,
+      // 여러 stage 배열
+      stages: stageObjs.map(s => ({
+        x: s.x, y: s.y,
+        width: s.width, height: s.height,
+        rotation: s.rotation || 0,
+        name: s.name || 'STAGE'
+      })),
       thumbnailUrl: thumbnailDataUrl || undefined,
       sections: grids.map(g => {
         // uid()는 'obj_'로 시작하는 문자열, 로드된 기존 구역은 숫자 문자열('5' 등)

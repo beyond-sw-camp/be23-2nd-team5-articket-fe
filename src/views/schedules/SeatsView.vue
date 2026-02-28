@@ -246,6 +246,8 @@ export default {
       stompClient:      null,      // WebSocket STOMP 클라이언트
       admissionTimerInterval: null,
       admissionExpiredModal: false,
+      stageListJson:    null,      // 여러 무대(stage) JSON
+      seatMapData:      null,      // seatMap API 응답 전체 (stage 폴백용)
     }
   },
 
@@ -295,21 +297,30 @@ export default {
             seats:        []
           }
         }
-        map[id].seats.push(seat)
+        if (seat.isVisible !== false) map[id].seats.push(seat)
       }
       return Object.values(map)
     },
-    // 첫 번째 좌석에서 스테이지 정보 추출
-    stageInfo() {
-      const s = this.seats[0]
-      if (!s || s.stageWidth == null) return null
-      return {
-        x:        s.stageX,
-        y:        s.stageY,
-        width:    s.stageWidth,
-        height:   s.stageHeight,
-        rotation: s.stageRotation,
+    // 여러 무대(stage) 목록 반환
+    stageList() {
+      // 1순위: stageListJson 파싱
+      if (this.stageListJson) {
+        try {
+          const list = JSON.parse(this.stageListJson)
+          if (Array.isArray(list) && list.length > 0) return list
+        } catch (e) {
+          // 파싱 실패 시 다음 폴백으로
+        }
       }
+      // 2순위: seatMap API 응답의 단일 stage 필드
+      const sm = this.seatMapData
+      if (sm && sm.stageWidth != null) {
+        return [{ x: sm.stageX ?? 0, y: sm.stageY ?? 0, width: sm.stageWidth, height: sm.stageHeight ?? 100, rotation: sm.stageRotation ?? 0, name: 'STAGE' }]
+      }
+      // 3순위: 좌석 데이터의 단일 stage 필드 (기존 폴백)
+      const s = this.seats[0]
+      if (!s || s.stageWidth == null) return []
+      return [{ x: s.stageX, y: s.stageY, width: s.stageWidth, height: s.stageHeight, rotation: s.stageRotation, name: 'STAGE' }]
     },
     // 범례용 등급 목록
     gradeLabels() {
@@ -345,6 +356,29 @@ export default {
     this.cleanupOldHolds()
     this.connectWebSocket()
     window.addEventListener('beforeunload', this.handleBeforeUnload)
+  },
+
+  // Vue Router가 같은 컴포넌트를 재사용할 때 scheduleId가 바뀌면 데이터 재로드
+  watch: {
+    '$route.params.scheduleId'(newId, oldId) {
+      if (!newId || newId === oldId) return
+      // 기존 선점/타이머/WebSocket 정리
+      this.clearHoldTimer()
+      this.selected = []
+      this.holdError = null
+      if (this.stompClient) {
+        this.stompClient.deactivate()
+        this.stompClient = null
+      }
+      // 새 회차의 입장 권한 확인
+      const { isAdmissionValidFor } = useQueueStore()
+      if (!isAdmissionValidFor(newId)) {
+        this.$router.replace(`/schedules/${newId}/queue`)
+        return
+      }
+      this.load()
+      this.connectWebSocket()
+    }
   },
 
   beforeUnmount() {
@@ -396,8 +430,17 @@ export default {
         this.konvaStageInstance = null
       }
       try {
-        const res = await this.api.get(ENDPOINTS.seats(scheduleId))
-        const raw = Array.isArray(res) ? res : res?.content ?? res?.items ?? []
+        const [res, seatMapRes] = await Promise.allSettled([
+          this.api.get(ENDPOINTS.seats(scheduleId)),
+          this.api.get(ENDPOINTS.seatMap(scheduleId))
+        ])
+        // seatMap API 응답 저장 (stage 정보 추출용)
+        if (seatMapRes.status === 'fulfilled' && seatMapRes.value) {
+          this.seatMapData = seatMapRes.value
+          this.stageListJson = seatMapRes.value.stageListJson ?? null
+        }
+        const seatsData = res.status === 'fulfilled' ? res.value : []
+        const raw = Array.isArray(seatsData) ? seatsData : seatsData?.content ?? seatsData?.items ?? []
         // 백엔드 응답 확인용 (isVisible 필드 존재 여부 체크)
         if (raw.length > 0) {
           console.log('[SeatsView] 첫 번째 좌석 데이터:', raw[0])
@@ -407,6 +450,9 @@ export default {
             visible: raw[0].visible,
           })
         }
+        console.log('[SeatsView] seatMapRes 상태:', seatMapRes.status, seatMapRes.status === 'fulfilled' ? seatMapRes.value : seatMapRes.reason)
+        console.log('[SeatsView] seatMapData:', this.seatMapData)
+        console.log('[SeatsView] stageListJson:', this.stageListJson)
         // 백엔드 필드명 다양성 대응
         this.seats = raw.map(s => ({
           ...s,
@@ -491,16 +537,16 @@ export default {
       if (!layer) return
       layer.destroyChildren()
 
-      // ── 스테이지(무대) ──
-      const si = this.stageInfo
-      if (si) {
+      // ── 스테이지(무대) - 여러 stage 지원 ──
+      console.log('[SeatsView] renderAll - stageList:', JSON.stringify(this.stageList))
+      for (const si of this.stageList) {
         const grp = new Konva.Group({ x: si.x, y: si.y, rotation: si.rotation ?? 0 })
         grp.add(new Konva.Rect({
           width: si.width, height: si.height,
-          fill: '#e2e8f0', stroke: '#94a3b8', strokeWidth: 1.5, cornerRadius: 10,
+          fill: '#cbd5e1', stroke: '#64748b', strokeWidth: 2, cornerRadius: 10,
         }))
         grp.add(new Konva.Text({
-          text: 'STAGE',
+          text: si.name || 'STAGE',
           fontSize: Math.max(14, Math.min(20, si.height * 0.4)),
           fontStyle: 'bold', fill: '#64748b',
           width: si.width, height: si.height,
@@ -558,6 +604,8 @@ export default {
           const isSelected  = this.selectedSet.has(seat.seatId)
           const isAvailable = seat.status === 'AVAILABLE'
           const isSold      = seat.status === 'SOLD'
+          // 내가 선점한 좌석은 status가 'HOLD'로 바뀌어도 클릭 해제 가능해야 함 (WebSocket 레이스 컨디션 방지)
+          const isClickable = isAvailable || isSelected
 
           const circle = new Konva.Circle({
             x: cx, y: cy,
@@ -568,7 +616,7 @@ export default {
             opacity:     isSold ? 0.3 : 1,
           })
 
-          if (isAvailable) {
+          if (isClickable) {
             circle.on('mouseenter', () => {
               circle.radius(SEAT_R + 1.5)
               circle.opacity(0.85)
@@ -617,12 +665,11 @@ export default {
         maxY = Math.max(maxY, (section.y ?? 0) + h + 10)
       }
 
-      const si = this.stageInfo
-      if (si) {
-        minX = Math.min(minX, si.x)
-        minY = Math.min(minY, si.y)
-        maxX = Math.max(maxX, si.x + si.width)
-        maxY = Math.max(maxY, si.y + si.height)
+      for (const si of this.stageList) {
+        minX = Math.min(minX, si.x ?? 0)
+        minY = Math.min(minY, si.y ?? 0)
+        maxX = Math.max(maxX, (si.x ?? 0) + (si.width ?? 0))
+        maxY = Math.max(maxY, (si.y ?? 0) + (si.height ?? 0))
       }
 
       if (!isFinite(minX)) return
@@ -689,6 +736,9 @@ export default {
           // ── 선점 해제 ──
           await this.api.del(ENDPOINTS.seatHold(seat.seatId))
           this.selected.splice(idx, 1)
+          // WebSocket RELEASE 메시지가 splice 전에 이미 처리되어 버릴 수 있으므로
+          // 명시적으로 상태를 AVAILABLE로 초기화 (레이스 컨디션 방지)
+          seat.status = 'AVAILABLE'
           if (this.selected.length === 0) {
             this.clearHoldTimer()
           }
@@ -720,8 +770,15 @@ export default {
     },
 
     clearAll() {
+      const toRelease = [...this.selected]
       this.selected = []
       this.clearHoldTimer()
+      // 각 좌석 상태를 AVAILABLE로 초기화 + 백엔드 선점 해제 API 호출
+      toRelease.forEach(seatId => {
+        const seat = this.seats.find(s => s.seatId === seatId)
+        if (seat) seat.status = 'AVAILABLE'
+        this.api.del(ENDPOINTS.seatHold(seatId)).catch(() => {})
+      })
       this.renderAll()
     },
 
@@ -810,6 +867,11 @@ export default {
       this.clearHoldTimer()
       const toRelease = [...this.selected]
       this.selected = []
+      // renderAll() 전에 각 좌석 상태를 AVAILABLE로 초기화해야 색상이 복원됨
+      toRelease.forEach(seatId => {
+        const seat = this.seats.find(s => s.seatId === seatId)
+        if (seat) seat.status = 'AVAILABLE'
+      })
       this.renderAll()
       await Promise.all(toRelease.map(seatId =>
         this.api.del(ENDPOINTS.seatHold(seatId)).catch(() => {})
