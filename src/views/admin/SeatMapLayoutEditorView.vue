@@ -90,12 +90,12 @@
 
           <div class="sfe-field-group">
             <label class="sfe-label">브러시 모드</label>
-            <div class="flex rounded bg-slate-800 p-1 text-xs">
+            <div class="flex rounded bg-slate-100 p-1 text-xs">
               <button class="flex-1 py-2 rounded transition-colors"
-                      :class="brushMode === 'state' ? 'bg-emerald-700 text-white' : 'text-slate-400 hover:text-white'"
+                      :class="brushMode === 'state' ? 'bg-emerald-600 text-white' : 'text-slate-600 hover:bg-slate-200'"
                       @click="brushMode = 'state'">상태 토글</button>
               <button class="flex-1 py-2 rounded transition-colors"
-                      :class="brushMode === 'grade' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'"
+                      :class="brushMode === 'grade' ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-200'"
                       @click="brushMode = 'grade'">등급 칠하기</button>
             </div>
             <p class="text-[10px] text-slate-500 mt-1.5">
@@ -142,12 +142,12 @@
 
           <div class="sfe-field-group">
             <label class="sfe-label">사용 여부</label>
-            <div class="flex rounded bg-slate-800 p-1">
+            <div class="flex rounded bg-slate-100 p-1">
               <button class="flex-1 py-1.5 text-xs rounded transition-colors"
-                      :class="bulkVisible === true ? 'bg-green-600 text-white' : 'text-slate-400 hover:text-white'"
+                      :class="bulkVisible === true ? 'bg-green-600 text-white' : 'text-slate-600 hover:bg-slate-200'"
                       @click="bulkUpdateVisibility(true)">사용</button>
               <button class="flex-1 py-1.5 text-xs rounded transition-colors"
-                      :class="bulkVisible === false ? 'bg-red-600 text-white' : 'text-slate-400 hover:text-white'"
+                      :class="bulkVisible === false ? 'bg-red-600 text-white' : 'text-slate-600 hover:bg-slate-200'"
                       @click="bulkUpdateVisibility(false)">미사용</button>
             </div>
           </div>
@@ -199,10 +199,10 @@
           <template v-if="selectedObj.type === 'seatGrid'">
             <div class="sfe-field-group">
               <label class="sfe-label">열 번호 표시</label>
-              <div class="flex rounded bg-slate-800 p-1">
+              <div class="flex rounded bg-slate-100 p-1">
                 <button v-for="opt in ['none', 'left', 'right']" :key="opt"
                         class="flex-1 py-1 text-[10px] rounded transition-colors"
-                        :class="(selectedObj.rowLabelType || 'left') === opt ? 'bg-blue-600 text-white' : 'text-slate-400'"
+                        :class="(selectedObj.rowLabelType || 'left') === opt ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-200'"
                         @click="selectedObj.rowLabelType = opt; renderAll(); pushHistory()">
                   {{ opt === 'none' ? '없음' : opt === 'left' ? '왼쪽' : '오른쪽' }}
                 </button>
@@ -210,7 +210,7 @@
             </div>
           </template>
 
-          <div class="mt-4 pt-4 border-t border-slate-700 flex gap-2">
+          <div class="mt-4 pt-4 border-t border-slate-200 flex gap-2">
             <button class="sfe-btn sfe-ghost flex-1" @click="duplicateObj">복제</button>
             <button class="sfe-btn sfe-danger flex-1" @click="deleteObj">삭제</button>
           </div>
@@ -222,9 +222,9 @@
           <div class="text-4xl mb-4">👆</div>
           <p class="text-sm">구역이나 무대를 클릭하여<br>속성을 편집하세요.</p>
           <div class="mt-6 text-[11px] text-slate-600 text-left space-y-1.5">
-            <p><span class="text-slate-400">👆 선택</span> — 구역 이동·크기 조절</p>
-            <p><span class="text-slate-400">✏️ 좌석수정</span> — 드래그로 상태·등급 칠하기</p>
-            <p><span class="text-slate-400">▦ 구역생성</span> — 드래그로 크기 지정 후 생성</p>
+            <p><span class="text-slate-500">👆 선택</span> — 구역 이동·크기 조절</p>
+            <p><span class="text-slate-500">✏️ 좌석수정</span> — 드래그로 상태·등급 칠하기</p>
+            <p><span class="text-slate-500">▦ 구역생성</span> — 드래그로 크기 지정 후 생성</p>
           </div>
         </div>
 
@@ -604,7 +604,7 @@ const renderAll = () => {
     if (obj.type === 'stage') {
       grp.add(new Konva.Rect({
         width: obj.width, height: obj.height,
-        fill: '#1e293b', stroke: '#3b82f6', strokeWidth: 2, cornerRadius: 4
+        fill: '#f1f5f9', stroke: '#3b82f6', strokeWidth: 2, cornerRadius: 4
       }))
       grp.add(new Konva.Text({
         text: obj.name, fontSize: 20, fontStyle: 'bold', fill: '#60a5fa',
@@ -651,7 +651,7 @@ const renderAll = () => {
 
           // 좌석별 등급 색상 (seatDef.grade → 등급 색상, 없으면 구역 기본색)
           const seatGrade = def?.grade || obj.grade || 'R'
-          const fill = state === 'inactive' ? '#334155' : gradeColor(seatGrade)
+          const fill = state === 'inactive' ? '#cbd5e1' : gradeColor(seatGrade)
 
           const seatKey = `${obj.id}_${r}_${c}`
           const isSelected = selectedSeatIds.value.has(seatKey)
@@ -929,7 +929,7 @@ const renderMinimap = () => {
   const MW = canvas.width   // 160
   const MH = canvas.height  // 100
   ctx.clearRect(0, 0, MW, MH)
-  ctx.fillStyle = '#1e293b'
+  ctx.fillStyle = '#ffffff'
   ctx.fillRect(0, 0, MW, MH)
 
   if (objects.value.length === 0) return
@@ -1299,32 +1299,37 @@ const resetView = () => {
 
 <style scoped>
 /* ── Layout ── */
+/* ── 라이트 테마 ── */
 .sfe-root {
-  display: flex; flex-direction: column; height: 100vh;
-  background: #0f172a; color: #e2e8f0; font-family: 'Pretendard', sans-serif;
+  display: flex; flex-direction: column;
+  width: 100%; max-width: 100%;
+  height: calc(100vh - 112px);
+  min-height: 0; min-width: 0;
+  overflow: hidden;
+  background: #f8fafc; color: #1e293b; font-family: 'Pretendard', sans-serif;
 }
 .sfe-topbar {
-  height: 56px; background: #1e293b; border-bottom: 1px solid #334155;
-  display: flex; align-items: center; padding: 0 16px; flex-shrink: 0;
+  height: 56px; min-height: 56px; background: #ffffff; border-bottom: 1px solid #e2e8f0;
+  display: flex; align-items: center; padding: 0 16px; flex-shrink: 0; min-width: 0;
 }
 .sfe-logo-box {
   width: 32px; height: 32px; background: #3b82f6; border-radius: 6px;
   display: flex; align-items: center; justify-content: center;
 }
-.sfe-file-name { font-weight: 600; font-size: 14px; color: white; }
-.sfe-file-meta { font-size: 11px; color: #94a3b8; }
+.sfe-file-name { font-weight: 600; font-size: 14px; color: #0f172a; }
+.sfe-file-meta { font-size: 11px; color: #64748b; }
 .sfe-spacer { flex: 1; }
-.sfe-div { width: 1px; height: 24px; background: #334155; margin: 0 8px; }
+.sfe-div { width: 1px; height: 24px; background: #e2e8f0; margin: 0 8px; }
 
 /* ── Buttons ── */
 .sfe-btn {
   display: flex; align-items: center; gap: 6px; padding: 6px 12px;
   border-radius: 6px; font-size: 12px; font-weight: 500; transition: all 0.2s;
 }
-.sfe-ghost { background: transparent; color: #cbd5e1; }
-.sfe-ghost:hover { background: #334155; color: white; }
+.sfe-ghost { background: transparent; color: #475569; }
+.sfe-ghost:hover { background: #f1f5f9; color: #0f172a; }
 .sfe-ghost:disabled { opacity: 0.4; cursor: not-allowed; }
-.sfe-active { background: #334155; color: #60a5fa; }
+.sfe-active { background: #e0f2fe; color: #0369a1; }
 .sfe-primary { background: #3b82f6; color: white; }
 .sfe-primary:hover { background: #2563eb; }
 .sfe-primary:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -1332,60 +1337,60 @@ const resetView = () => {
 .sfe-danger:hover { background: #dc2626; }
 
 /* ── Main layout ── */
-.sfe-main { display: flex; flex: 1; overflow: hidden; }
+.sfe-main { display: flex; flex: 1; min-height: 0; overflow: hidden; }
 
 /* ── Left panel ── */
 .sfe-left-panel {
-  width: 100px; background: #1e293b; border-right: 1px solid #334155;
+  width: 100px; flex-shrink: 0; background: #ffffff; border-right: 1px solid #e2e8f0;
   display: flex; flex-direction: column; align-items: center; padding-top: 20px;
 }
 .sfe-tool-group { display: flex; flex-direction: column; gap: 8px; width: 100%; align-items: center; }
 .sfe-tool-label { font-size: 11px; color: #64748b; font-weight: 700; margin-bottom: 6px; letter-spacing: 0.08em; }
 .sfe-tool-btn {
-  width: 82px; height: 82px; border-radius: 12px; color: #94a3b8;
+  width: 82px; height: 82px; border-radius: 12px; color: #64748b;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px;
   transition: all 0.2s;
 }
 .sfe-tool-btn span:first-child { font-size: 32px; line-height: 1; }
 .sfe-tool-btn span:last-child { font-size: 12px; font-weight: 500; }
-.sfe-tool-btn:hover { background: #334155; color: white; }
-.sfe-tool-btn.active { background: #3b82f6; color: white; box-shadow: 0 0 0 2px #60a5fa44; }
+.sfe-tool-btn:hover { background: #f1f5f9; color: #0f172a; }
+.sfe-tool-btn.active { background: #3b82f6; color: white; box-shadow: 0 0 0 2px #60a5fa66; }
 
 /* ── Canvas ── */
 .sfe-canvas-area {
-  flex: 1; position: relative; background: #0f172a;
-  background-image: radial-gradient(#334155 1px, transparent 1px);
+  flex: 1; min-width: 0; min-height: 0; position: relative; background: #f1f5f9;
+  background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
   background-size: 20px 20px;
 }
 .sfe-hud {
   position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
-  background: #1e293b; padding: 4px; border-radius: 8px; border: 1px solid #334155;
+  background: #ffffff; padding: 4px; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
   display: flex; align-items: center; gap: 8px;
 }
-.sfe-hud-btn { width: 24px; height: 24px; border-radius: 4px; transition: background-color 0.2s; color: #e2e8f0; }
-.sfe-hud-btn:hover { background-color: #334155; }
-.sfe-hud-val { font-size: 12px; font-variant-numeric: tabular-nums; width: 40px; text-align: center; }
+.sfe-hud-btn { width: 24px; height: 24px; border-radius: 4px; transition: background-color 0.2s; color: #475569; }
+.sfe-hud-btn:hover { background-color: #f1f5f9; color: #0f172a; }
+.sfe-hud-val { font-size: 12px; font-variant-numeric: tabular-nums; width: 40px; text-align: center; color: #334155; }
 .sfe-minimap {
   position: absolute; bottom: 20px; right: 20px;
-  width: 160px; height: 100px; background: #1e293b; border: 1px solid #334155; border-radius: 8px;
+  width: 160px; height: 100px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
   overflow: hidden;
 }
 
 /* ── Right panel ── */
 .sfe-right-panel {
-  width: 210px; background: #1e293b; border-left: 1px solid #334155;
+  width: 210px; flex-shrink: 0; background: #ffffff; border-left: 1px solid #e2e8f0;
   display: flex; flex-direction: column; overflow-y: auto;
 }
-.sfe-prop-section { padding: 16px; border-bottom: 1px solid #334155; }
+.sfe-prop-section { padding: 16px; border-bottom: 1px solid #e2e8f0; }
 .sfe-prop-header {
   display: flex; justify-content: space-between; align-items: center;
-  font-size: 13px; font-weight: 600; color: white; margin-bottom: 12px;
+  font-size: 13px; font-weight: 600; color: #0f172a; margin-bottom: 12px;
 }
 .sfe-field-group { margin-bottom: 14px; }
-.sfe-label { display: block; font-size: 11px; color: #94a3b8; margin-bottom: 6px; }
+.sfe-label { display: block; font-size: 11px; color: #64748b; margin-bottom: 6px; }
 .sfe-input, .sfe-select {
-  width: 100%; background: #0f172a; border: 1px solid #334155;
-  color: white; padding: 6px 10px; border-radius: 6px; font-size: 12px;
+  width: 100%; background: #ffffff; border: 1px solid #e2e8f0;
+  color: #1e293b; padding: 6px 10px; border-radius: 6px; font-size: 12px;
 }
 .sfe-input:focus { border-color: #3b82f6; outline: none; }
 .sfe-slider { width: 100%; accent-color: #3b82f6; }
@@ -1393,19 +1398,19 @@ const resetView = () => {
   border: 1px solid; background: transparent; padding: 4px; border-radius: 4px;
   font-size: 11px; font-weight: 600; transition: all 0.2s;
 }
-.sfe-grade-btn:hover { background: rgba(255,255,255,0.1); }
+.sfe-grade-btn:hover { background: #f1f5f9; }
 .sfe-grade-mini-btn {
   border: 1px solid; padding: 3px 0; border-radius: 4px;
   font-size: 10px; font-weight: 700; transition: all 0.15s; text-align: center;
   cursor: pointer;
 }
 .sfe-grade-mini-btn:hover { opacity: 0.85; }
-.sfe-divider { height: 1px; background: #334155; margin: 8px 0 14px; }
+.sfe-divider { height: 1px; background: #e2e8f0; margin: 8px 0 14px; }
 
 /* ── Canvas hint ── */
 .sfe-canvas-hint {
-  font-size: 11px; color: #64748b; background: #0f172a;
-  border: 1px dashed #334155; border-radius: 6px;
+  font-size: 11px; color: #64748b; background: #f8fafc;
+  border: 1px dashed #cbd5e1; border-radius: 6px;
   padding: 8px 10px; line-height: 1.6;
 }
 </style>
