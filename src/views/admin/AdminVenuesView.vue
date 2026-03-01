@@ -31,9 +31,20 @@
       <template #cell:name="{ row }">
         <span class="font-semibold text-slate-900">{{ row.name }}</span>
       </template>
-      <template #cell:seatMaps="{ row }">
+      <template #cell:status="{ row }">
+        <UiBadge :tone="row.status === 'ACTIVE' ? 'soft' : 'outline'" :color="row.status === 'ACTIVE' ? 'green' : 'slate'">
+          {{ row.status === 'ACTIVE' ? '활성' : (row.status === 'INACTIVE' ? '비활성' : row.status || '-') }}
+        </UiBadge>
+      </template>
+      <template #cell:formattedAddress="{ row }">
+        <span class="text-sm text-slate-700 max-w-xs truncate block" :title="row.formattedAddress">{{ row.formattedAddress || '-' }}</span>
+      </template>
+      <template #cell:addressDetail="{ row }">
+        <span class="text-sm text-slate-600">{{ row.addressDetail || '-' }}</span>
+      </template>
+      <template #cell:seatMapCount="{ row }">
         <button class="font-semibold text-slate-700 hover:underline" type="button" @click="$router.push(`/admin/venues/${row.id}/seat-maps`)">
-          {{ row.seatMaps }}개
+          {{ row.seatMapCount ?? 0 }}개
         </button>
       </template>
       <template #cell:actions="{ row }">
@@ -338,9 +349,12 @@ export default {
   data() {
     return {
       columns: [
-        { key: 'name', label: '공연장' },
-        { key: 'address', label: '주소' },
-        { key: 'seatMaps', label: '좌석맵' },
+        { key: 'id', label: 'ID' },
+        { key: 'name', label: '공연장명' },
+        { key: 'status', label: '상태' },
+        { key: 'formattedAddress', label: '주소' },
+        { key: 'addressDetail', label: '상세주소' },
+        { key: 'seatMapCount', label: '좌석맵' },
         { key: 'actions', label: '작업' }
       ],
       api: null,
@@ -394,19 +408,15 @@ export default {
     },
     // ── 공연장 목록 ──────────────────────────────────────────────
     toVenueRow(item) {
-      const addressObj = item?.venueAddressResDto || item?.venueAddress || {}
-      const address =
-        item?.address ||
-        item?.formattedAddress ||
-        addressObj?.formattedAddress ||
-        [addressObj?.sido, addressObj?.sigungu, addressObj?.eupmyeondong, addressObj?.road, addressObj?.houseNumber]
-          .filter(Boolean)
-          .join(' ')
+      const rawStatus = item?.venueStatus ?? item?.status
+      const status = rawStatus ? String(rawStatus).toUpperCase() : ''
       return {
         id: item?.id,
         name: item?.name || '-',
-        address: address || '-',
-        seatMaps: item?.seatMapCount ?? (Array.isArray(item?.seatMapIds) ? item.seatMapIds.length : 0)
+        status: status || '-',
+        formattedAddress: item?.formattedAddress || '-',
+        addressDetail: item?.addressDetail || '-',
+        seatMapCount: item?.seatMapCount ?? (Array.isArray(item?.seatMapIds) ? item.seatMapIds.length : 0)
       }
     },
     normalizeVenueListResponse(res) {

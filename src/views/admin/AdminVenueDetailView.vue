@@ -10,8 +10,8 @@
           <h1 class="text-xl font-bold text-slate-900">{{ venue.name }}</h1>
           <p class="mt-1 text-sm text-slate-500">공연장 상세 정보</p>
         </div>
-        <UiBadge :tone="venue.status === 'ACTIVE' ? 'soft' : 'outline'" :color="venue.status === 'ACTIVE' ? 'green' : 'slate'">
-          {{ venue.status }}
+        <UiBadge :tone="venueStatus === 'ACTIVE' ? 'soft' : 'outline'" :color="venueStatus === 'ACTIVE' ? 'green' : 'slate'">
+          {{ venueStatus === 'ACTIVE' ? '활성' : (venueStatus === 'INACTIVE' ? '비활성' : venueStatus) }}
         </UiBadge>
       </div>
 
@@ -25,8 +25,8 @@
           <div>
             <div class="text-xs font-semibold text-slate-500">상태</div>
             <div class="mt-1">
-              <UiBadge :tone="venue.status === 'ACTIVE' ? 'soft' : 'outline'" :color="venue.status === 'ACTIVE' ? 'green' : 'slate'">
-                {{ venue.status === 'ACTIVE' ? '활성' : '비활성' }}
+              <UiBadge :tone="venueStatus === 'ACTIVE' ? 'soft' : 'outline'" :color="venueStatus === 'ACTIVE' ? 'green' : 'slate'">
+                {{ venueStatus === 'ACTIVE' ? '활성' : '비활성' }}
               </UiBadge>
             </div>
           </div>
@@ -94,6 +94,12 @@ export default {
   computed: {
     venueId() {
       return this.$route.params.venueId
+    },
+    venueStatus() {
+      const v = this.venue
+      if (!v) return ''
+      const raw = v.status ?? v.venueStatus ?? ''
+      return String(raw).toUpperCase()
     },
     addr() {
       const v = this.venue?.venueAddressResDto || this.venue?.venueAddress || {}
