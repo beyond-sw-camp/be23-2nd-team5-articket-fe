@@ -72,8 +72,11 @@ export const ENDPOINTS = {
   adminCreateVenue: () => `/venues/admin/create`,
   adminVenueList: (params = {}) => {
     const p = new URLSearchParams()
-    if (params.page != null) p.set('page', params.page)
-    if (params.size != null) p.set('size', params.size)
+    if (params.page != null) p.set('page', String(params.page))
+    if (params.size != null) p.set('size', String(params.size))
+    if (params.name != null && params.name !== '') p.set('name', params.name)
+    if (params.address != null && params.address !== '') p.set('address', params.address)
+    if (params.keyword != null && params.keyword !== '') p.set('keyword', params.keyword)
     const q = p.toString()
     return `/venues${q ? `?${q}` : ''}`
   },
