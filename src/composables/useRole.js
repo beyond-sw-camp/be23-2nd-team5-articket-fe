@@ -3,12 +3,23 @@ import { jwtDecode } from 'jwt-decode'
 
 const VALID_ROLES = ['USER', 'ORGANIZER', 'ADMIN']
 
+function normalizeRole(val) {
+  if (!val || typeof val !== 'string') return null
+  const s = String(val).toUpperCase().replace(/^ROLE_/, '')
+  return VALID_ROLES.includes(s) ? s : null
+}
+
 function getRoleFromToken(token) {
   if (!token || typeof token !== 'string') return null
   try {
     const payload = jwtDecode(token)
-    const r = payload?.role
-    return VALID_ROLES.includes(r) ? r : 'USER'
+    let r = payload?.role ?? payload?.roles?.[0]
+    if (Array.isArray(payload?.authorities) && payload.authorities.length) {
+      const auth = payload.authorities.find((a) => typeof a === 'string' && a.includes('ORGANIZER'))
+        || payload.authorities.find((a) => typeof a === 'string' && a.includes('ADMIN'))
+      if (auth) r = auth
+    }
+    return normalizeRole(r) ?? (r ? 'USER' : null)
   } catch {
     return null
   }
