@@ -15,40 +15,51 @@
     </div>
 
     <!-- 주최자 메뉴 -->
-    <div v-if="roleValue === 'ORGANIZER'" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <div v-if="roleValue === 'ORGANIZER'" class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
       <RouterLink
         v-for="item in organizerMenus"
         :key="item.to"
         :to="item.to"
-        class="group flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:border-red-200 hover:shadow-md"
+        class="group relative flex flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-[#FAFAFA] p-6 shadow-sm transition hover:shadow-md"
       >
-        <span class="text-2xl">{{ item.icon }}</span>
-        <div>
-          <div class="font-semibold text-slate-900 group-hover:text-red-600">{{ item.label }}</div>
-          <div class="mt-0.5 text-xs text-slate-500">{{ item.desc }}</div>
+        <!-- 장식 배경 패턴 (아이콘 테마 반영) -->
+        <div class="pointer-events-none absolute inset-0 opacity-[0.03]">
+          <component
+            :is="item.iconComponent"
+            class="absolute -right-4 -top-4 h-32 w-32 text-slate-800"
+          />
         </div>
-        <span class="mt-auto text-sm font-medium text-red-600 opacity-0 transition group-hover:opacity-100">
-          이동 →
-        </span>
+        <div class="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-slate-200/80">
+          <component :is="item.iconComponent" class="h-6 w-6 text-slate-700" />
+        </div>
+        <div class="relative mt-4">
+          <div class="text-base font-bold text-slate-800">{{ item.label }}</div>
+          <div class="mt-1 text-sm font-normal text-slate-500">{{ item.desc }}</div>
+        </div>
       </RouterLink>
     </div>
 
     <!-- 관리자 메뉴 -->
-    <div v-if="roleValue === 'ADMIN'" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <div v-if="roleValue === 'ADMIN'" class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
       <RouterLink
         v-for="item in adminMenus"
         :key="item.to"
         :to="item.to"
-        class="group flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:border-slate-300 hover:shadow-md"
+        class="group relative flex flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-[#FAFAFA] p-6 shadow-sm transition hover:shadow-md"
       >
-        <span class="text-2xl">{{ item.icon }}</span>
-        <div>
-          <div class="font-semibold text-slate-900 group-hover:text-slate-700">{{ item.label }}</div>
-          <div class="mt-0.5 text-xs text-slate-500">{{ item.desc }}</div>
+        <div class="pointer-events-none absolute inset-0 opacity-[0.03]">
+          <component
+            :is="item.iconComponent"
+            class="absolute -right-4 -top-4 h-32 w-32 text-slate-800"
+          />
         </div>
-        <span class="mt-auto text-sm font-medium text-slate-600 opacity-0 transition group-hover:opacity-100">
-          이동 →
-        </span>
+        <div class="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-slate-200/80">
+          <component :is="item.iconComponent" class="h-6 w-6 text-slate-700" />
+        </div>
+        <div class="relative mt-4">
+          <div class="text-base font-bold text-slate-800">{{ item.label }}</div>
+          <div class="mt-1 text-sm font-normal text-slate-500">{{ item.desc }}</div>
+        </div>
       </RouterLink>
     </div>
 
@@ -61,28 +72,34 @@
 </template>
 
 <script>
+import { LayoutGrid, Ticket, Users2, Building2, Package, CirclePlus } from 'lucide-vue-next'
 import UiBadge from '../../components/common/UiBadge.vue'
 import UiButton from '../../components/common/UiButton.vue'
 import { getRole } from '../../composables/useRole'
 
 const ORGANIZER_MENUS = [
-  { to: '/organizer', label: '대시보드', desc: '판매 현황, 오픈/마감 알림', icon: '📊' },
-  { to: '/organizer/concerts', label: '공연 목록', desc: '내 공연 관리', icon: '🎭' },
-  { to: '/organizer/concerts/new', label: '공연 등록', desc: '새 공연 등록', icon: '➕' },
-  { to: '/organizer/performers', label: '아티스트 관리', desc: '출연진 관리', icon: '👤' },
+  { to: '/organizer/dashboard', label: '대시보드', desc: '판매 현황, 오픈/마감 알림', iconComponent: LayoutGrid },
+  { to: '/organizer/concerts', label: '공연 관리', desc: '내 공연 관리', iconComponent: Ticket },
+  { to: '/organizer/performers', label: '아티스트 관리', desc: '출연진 관리', iconComponent: Users2 },
 ]
 
 const ADMIN_MENUS = [
-  { to: '/admin', label: '대시보드', desc: '운영 요약', icon: '📊' },
-  { to: '/admin/venues', label: '공연장', desc: '공연장·좌석맵 관리', icon: '🏟️' },
-  { to: '/admin/users', label: '회원관리', desc: '사용자 관리', icon: '👥' },
-  { to: '/admin/orders', label: '주문', desc: '주문 조회', icon: '📦' },
-  { to: '/admin/pending-organizers', label: '주최자 승인', desc: '주최자 신청 검토', icon: '✅' },
+  { to: '/admin/dashboard', label: '대시보드', desc: '운영 요약', iconComponent: LayoutGrid },
+  { to: '/admin/venues', label: '공연장', desc: '공연장·좌석맵 관리', iconComponent: Building2 },
+  { to: '/admin/users', label: '회원관리', desc: '사용자 관리', iconComponent: Users2 },
+  { to: '/admin/orders', label: '주문', desc: '주문 조회', iconComponent: Package },
+  { to: '/admin/pending-organizers', label: '주최자 승인', desc: '주최자 신청 검토', iconComponent: CirclePlus },
 ]
 
 export default {
   name: 'ManagementView',
   components: {
+    LayoutGrid,
+    Ticket,
+    Users2,
+    Building2,
+    Package,
+    CirclePlus,
     UiBadge,
     UiButton,
   },

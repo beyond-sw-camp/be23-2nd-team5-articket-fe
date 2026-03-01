@@ -126,7 +126,7 @@ export default {
         const result = await this.authApi.login(data)
 
         if (result.success) {
-          const redirect = this.$route.query.redirect || '/me'
+          const redirect = this.$route.query.redirect || '/'
           // this.$router.push(redirect)
           try {
             const accessToken = localStorage.getItem("accessToken")
