@@ -1,6 +1,5 @@
 import { reactive } from 'vue'
 import { EventSourcePolyfill } from 'event-source-polyfill'
-import { useQueueStore } from '../stores/useQueueStore'
 
 const SSE_URL = `${import.meta.env.VITE_API_BASE || 'http://localhost:8082'}/sse/connect`
 const SSE_EVENTS = ['payment', 'concert', 'admin']
@@ -48,21 +47,6 @@ export function useSSE() {
       console.log('[SSE] 연결 성공:', e.data)
       state.connected = true
       reconnectAttempts = 0
-    })
-
-    // queue_admitted: 대기열 입장 허가 (scheduleId 전달)
-    es.addEventListener('queue_admitted', (e) => {
-      console.log('[SSE] queue_admitted:', e.data)
-      try {
-        const data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data
-        const scheduleId = data?.message
-        if (scheduleId != null) {
-          const { handleAdmitted } = useQueueStore()
-          handleAdmitted(scheduleId)
-        }
-      } catch (err) {
-        console.warn('[SSE] queue_admitted 파싱 실패:', e.data, err)
-      }
     })
 
     SSE_EVENTS.forEach((eventName) => {
