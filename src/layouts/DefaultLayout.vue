@@ -37,50 +37,7 @@
           </button>
 
           <!-- 알림 (로그인 시) -->
-          <div v-if="isLoggedIn" class="notif-panel-root relative">
-            <button
-              type="button"
-              class="relative rounded-full p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
-              @click="toggleNotifPanel"
-            >
-              <Bell class="h-5 w-5" />
-              <span
-                v-if="unreadCount > 0"
-                class="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white"
-              >{{ unreadCount > 9 ? '9+' : unreadCount }}</span>
-            </button>
-            <div
-              v-show="notifPanelOpen"
-              class="absolute right-0 top-full z-50 mt-2 w-80 rounded-2xl border border-slate-200 bg-white shadow-xl"
-            >
-              <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-                <span class="text-sm font-semibold text-slate-900">알림</span>
-                <button
-                  v-if="sseState.notifications.length"
-                  type="button"
-                  class="text-xs text-slate-400 hover:text-slate-600"
-                  @click="markAllRead"
-                >모두 읽음</button>
-              </div>
-              <div class="max-h-72 overflow-y-auto">
-                <div v-if="!sseState.notifications.length" class="py-8 text-center text-sm text-slate-400">알림이 없습니다.</div>
-                <ul v-else class="divide-y divide-slate-100">
-                  <li
-                    v-for="n in sseState.notifications"
-                    :key="n.id"
-                    class="flex items-start gap-3 px-4 py-3"
-                    :class="n.read ? 'opacity-60' : 'bg-slate-50'"
-                  >
-                    <span class="mt-0.5 text-base">{{ notifIcon(n.eventName) }}</span>
-                    <div class="min-w-0 flex-1">
-                      <div class="text-xs font-semibold text-slate-500">{{ notifTitle(n.eventName) }}</div>
-                      <div class="mt-0.5 text-sm text-slate-700">{{ n.message }}</div>
-                    </div>
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </div>
+          <NotificationPanel v-if="isLoggedIn" />
 
           <!-- 구분선 -->
           <div class="h-6 w-px bg-slate-200" />
@@ -107,70 +64,8 @@
               v-else-if="roleValue === 'ORGANIZER' || roleValue === 'ADMIN'"
               to="/management"
               class="rounded-full bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-700"
-            >{{ roleValue === 'ORGANIZER' ? '주최자' : '관리자' }}</RouterLink>
-            <div class="profile-panel-root relative">
-              <button
-                type="button"
-                class="flex items-center gap-3 py-1 hover:opacity-80"
-                @click="profileMenuOpen = !profileMenuOpen"
-              >
-                <div class="flex flex-col items-start">
-                  <span class="text-xs font-bold uppercase tracking-wide text-slate-900">
-                    {{ roleLabel }}
-                  </span>
-                  <span class="text-sm font-medium text-slate-500">{{ userName }} 님</span>
-                </div>
-                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-900">
-                  <User class="h-5 w-5 text-white" />
-                </div>
-              </button>
-              <div
-                v-show="profileMenuOpen"
-                class="absolute right-0 top-full z-50 mt-2 min-w-[180px] overflow-hidden rounded-xl border border-slate-200/90 bg-white py-1.5 shadow-md"
-              >
-                <RouterLink
-                  to="/me"
-                  class="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900"
-                  @click="profileMenuOpen = false"
-                >
-                  <User class="h-4 w-4 shrink-0 text-slate-400" />
-                  마이페이지
-                </RouterLink>
-                <RouterLink
-                  to="/me/orders"
-                  class="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900"
-                  @click="profileMenuOpen = false"
-                >
-                  <Package class="h-4 w-4 shrink-0 text-slate-400" />
-                  내 주문 목록
-                </RouterLink>
-                <RouterLink
-                  to="/me/performers/likes"
-                  class="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900"
-                  @click="profileMenuOpen = false"
-                >
-                  <Heart class="h-4 w-4 shrink-0 text-slate-400" />
-                  좋아요한 아티스트
-                </RouterLink>
-                <RouterLink
-                  to="/me/foru"
-                  class="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900"
-                  @click="profileMenuOpen = false"
-                >
-                  <CalendarHeart class="h-4 w-4 shrink-0 text-slate-400" />
-                  좋아요한 공연
-                </RouterLink>
-                <div class="my-1 border-t border-slate-100" />
-                <button
-                  type="button"
-                  class="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-700"
-                  @click="profileMenuOpen = false; handleLogout()"
-                >
-                  <LogOut class="h-4 w-4 shrink-0 text-slate-400" />
-                  로그아웃
-                </button>
-              </div>
-            </div>
+            >관리자 페이지</RouterLink>
+            <ProfileDropdown />
           </template>
         </div>
       </div>
@@ -247,11 +142,13 @@
 </template>
 
 <script>
-import { Search, Bell, User, LogIn, Ticket, Navigation, ShieldAlert, Package, Heart, CalendarHeart, LogOut } from 'lucide-vue-next'
+import { Search, Bell, LogIn, Ticket, Navigation } from 'lucide-vue-next'
 import UiButton from '../components/common/UiButton.vue'
 import UiBadge from '../components/common/UiBadge.vue'
 import UiModal from '../components/common/UiModal.vue'
 import ToastNotification from '../components/common/ToastNotification.vue'
+import NotificationPanel from '../components/common/NotificationPanel.vue'
+import ProfileDropdown from '../components/common/ProfileDropdown.vue'
 import { useRole } from '../composables/useRole'
 import { useMe } from '../composables/useMe'
 import { useSSE } from '../composables/useSSE'
@@ -261,19 +158,15 @@ export default {
   components: {
     Search,
     Bell,
-    User,
     LogIn,
     Ticket,
     Navigation,
-    ShieldAlert,
-    Package,
-    Heart,
-    CalendarHeart,
-    LogOut,
     UiButton,
     UiBadge,
     UiModal,
     ToastNotification,
+    NotificationPanel,
+    ProfileDropdown,
   },
   data() {
     return {
@@ -295,16 +188,11 @@ export default {
 
       tokenVersion: 0,
       scrolled: false,
-      notifPanelOpen: false,
-      profileMenuOpen: false,
       sseState: null,
       _sse: null,
     }
   },
   computed: {
-    unreadCount() {
-      return this.sseState?.notifications.filter((n) => !n.read).length ?? 0
-    },
     currentCat() {
       if (this.$route.path === '/') return 'all'
       const m = this.$route.path.match(/^\/genre\/(\w+)$/)
@@ -388,7 +276,6 @@ export default {
     },
     $route() {
       this.bumpTokenVersion()
-      this.profileMenuOpen = false
     },
     isLoggedIn(v) {
       if (v && this._me?.refetch) this._me.refetch()
@@ -403,13 +290,8 @@ export default {
     bumpTokenVersion() {
       this.tokenVersion++
     },
-    onClickOutside(e) {
-      if (this.notifPanelOpen && !e.target.closest('.notif-panel-root')) {
-        this.notifPanelOpen = false
-      }
-      if (this.profileMenuOpen && !e.target.closest('.profile-panel-root')) {
-        this.profileMenuOpen = false
-      }
+    onClickOutside() {
+      // NotificationPanel, ProfileDropdown handle their own click-outside
     },
     onStorage(e) {
       if (e.key === 'accessToken' || e.key === 'refreshToken') {
@@ -432,42 +314,6 @@ export default {
       this.organizerBannerDismissed = true
     },
 
-    toggleNotifPanel() {
-      this.notifPanelOpen = !this.notifPanelOpen
-      if (this.notifPanelOpen) this._sse?.markAllRead()
-    },
-    markAllRead() {
-      this._sse?.markAllRead()
-    },
-    notifIcon(eventName) {
-      if (eventName === 'payment') return '💳'
-      if (eventName === 'concert') return '🎭'
-      if (eventName === 'admin')   return '🔔'
-      return '📢'
-    },
-    notifTitle(eventName) {
-      if (eventName === 'payment') return '결제 알림'
-      if (eventName === 'concert') return '공연 알림'
-      if (eventName === 'admin')   return '관리자 알림'
-      return '알림'
-    },
-
-    async handleLogout() {
-      localStorage.removeItem('accessToken')
-      localStorage.removeItem('refreshToken')
-      localStorage.removeItem('isVerified')
-      if (this._sse) this._sse.disconnect()
-      if (typeof this._logoutComposable === 'function') {
-        await this._logoutComposable()
-      }
-      if (typeof this._me?.clear === 'function') {
-        this._me.clear()
-      }
-
-      this.bumpTokenVersion()
-
-      this.$router.push('/')
-    }
   }
 }
 </script>
