@@ -14,26 +14,31 @@
       </div>
     </UiCard>
 
-    <UiTable :columns="columns" :rows="rows">
+    <!-- 통합검색 -->
+    <div class="flex gap-2 rounded-2xl border border-slate-200 bg-white p-4">
+      <input
+        v-model="searchKeyword"
+        type="text"
+        placeholder="좌석맵명, 버전으로 검색"
+        class="h-10 flex-1 min-w-0 rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+        @keydown.enter.prevent="doSearch"
+      />
+      <UiButton class="h-10 px-4 shrink-0" @click="doSearch">검색</UiButton>
+      <UiButton variant="ghost" class="h-10 px-4 shrink-0" @click="resetSearch">초기화</UiButton>
+    </div>
+
+    <div v-if="loading" class="rounded-2xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500">
+      목록을 불러오는 중…
+    </div>
+    <UiTable v-else :columns="columns" :rows="rows">
       <template #cell:id="{ row }">
-        <button
-          class="font-semibold text-slate-900 hover:underline"
-          type="button"
-          @click="$router.push({ path: `/admin/seat-maps/${row.id}`, query: { venueId: venueId } })"
-        >
-          {{ row.id }}
-        </button>
+        <span class="font-semibold text-slate-900">{{ row.id }}</span>
       </template>
       <template #cell:name="{ row }">
         <span class="text-sm text-slate-700">{{ row.name || '-' }}</span>
       </template>
       <template #cell:size="{ row }">
-        <span class="text-sm text-slate-700">
-          {{ row.row_count || row.rowCount || '-' }}행 × {{ row.col_count || row.colCount || '-' }}열
-        </span>
-      </template>
-      <template #cell:sections="{ row }">
-        <span class="text-sm text-slate-700">{{ row.sectionsCount ?? '-' }}개</span>
+        <span class="text-sm text-slate-700">{{ row.size }}</span>
       </template>
       <template #cell:version="{ row }">
         <span class="text-sm text-slate-600">{{ row.version ?? '-' }}</span>
@@ -43,16 +48,26 @@
           {{ row.status || 'DRAFT' }}
         </UiBadge>
       </template>
+      <template #cell:actions="{ row }">
+        <UiButton variant="ghost" class="h-8 px-3 text-sm" @click="$router.push({ path: `/admin/seat-maps/${row.id}`, query: { venueId: venueId } })">
+          상세보기
+        </UiButton>
+      </template>
     </UiTable>
+
+    <!-- 페이징 -->
+    <div v-if="!loading && totalPages > 1" class="flex items-center justify-center gap-2">
+      <UiButton variant="ghost" class="h-9 px-3" :disabled="page <= 0" @click="goPage(page - 1)">
+        이전
+      </UiButton>
+      <span class="text-sm text-slate-600">{{ page + 1 }} / {{ totalPages }}</span>
+      <UiButton variant="ghost" class="h-9 px-3" :disabled="page >= totalPages - 1" @click="goPage(page + 1)">
+        다음
+      </UiButton>
+    </div>
 
     <UiModal :open="createModalOpen" title="좌석맵 생성" @close="closeCreateModal">
       <form id="seatmap-create-form" class="grid gap-4" @submit.prevent="submitCreate">
-        <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
-          <div class="text-xs font-semibold text-slate-600">SeatMapController</div>
-          <div class="mt-2 text-xs text-slate-500">
-            섹션을 비워두면 `create` 호출, 섹션을 1개 이상 넣으면 `createWithSections` 호출
-          </div>
-        </div>
         <div class="grid gap-3">
           <div>
             <label class="block text-xs font-semibold text-slate-500">좌석맵 이름 (name) *</label>
@@ -77,125 +92,6 @@
               <option value="PUBLISHED">PUBLISHED</option>
               <option value="ARCHIVED">ARCHIVED</option>
             </select>
-          </div>
-        </div>
-        <div class="rounded-xl border border-slate-200 p-3">
-          <div class="flex items-center justify-between">
-            <div class="text-xs font-semibold text-slate-600">섹션(선택)</div>
-            <UiButton type="button" class="h-9 px-3" @click="addSectionDraft">섹션 추가</UiButton>
-          </div>
-          <div v-if="form.sections.length === 0" class="mt-2 text-xs text-slate-500">섹션 없이 생성 가능</div>
-          <div v-for="(section, index) in form.sections" :key="section._key" class="mt-3 rounded-lg border border-slate-200 p-3">
-            <div class="mb-2 flex items-center justify-between">
-              <div class="text-xs font-semibold text-slate-500">섹션 {{ index + 1 }}</div>
-              <button type="button" class="text-xs font-semibold text-red-600 hover:underline" @click="removeSectionDraft(section._key)">삭제</button>
-            </div>
-            <div class="grid grid-cols-2 gap-2">
-              <input
-                v-model="section.name"
-                type="text"
-                class="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900"
-                placeholder="name (예: VIP)"
-              />
-              <input
-                v-model="section.displayColor"
-                type="text"
-                class="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900"
-                placeholder="displayColor (예: #FF5733)"
-              />
-              <input
-                v-model.number="section.rows"
-                type="number"
-                min="1"
-                class="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900"
-                placeholder="rows"
-              />
-              <input
-                v-model.number="section.seatsPerRow"
-                type="number"
-                min="1"
-                class="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900"
-                placeholder="seatsPerRow"
-              />
-              <select v-model="section.initialGrade" class="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900">
-                <option value="VIP">VIP</option>
-                <option value="R">R</option>
-                <option value="S">S</option>
-                <option value="A">A</option>
-                <option value="B">B</option>
-              </select>
-              <input
-                v-model.number="section.xPos"
-                type="number"
-                step="0.1"
-                class="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900"
-                placeholder="X 좌표 (기본: 0)"
-              />
-              <input
-                v-model.number="section.yPos"
-                type="number"
-                step="0.1"
-                class="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900"
-                placeholder="Y 좌표 (기본: 0)"
-              />
-              <input
-                v-model.number="section.rotation"
-                type="number"
-                min="0"
-                max="360"
-                step="1"
-                class="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900"
-                placeholder="회전 (0-360°, 기본: 0)"
-              />
-            </div>
-
-            <!-- 규칙 입력 섹션 (선택) -->
-            <div class="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3">
-              <div class="flex items-center justify-between mb-2">
-                <div class="text-xs font-semibold text-amber-900">📋 좌석 규칙 (선택)</div>
-                <UiButton type="button" size="sm" variant="ghost" class="h-7 px-2 text-xs" @click="addRuleDraft(section._key)">규칙 추가</UiButton>
-              </div>
-              <div v-if="!section.rules || section.rules.length === 0" class="text-xs text-amber-700 mb-2">
-                규칙을 설정하면 행/열 범위별로 등급과 사용여부를 다르게 지정 가능합니다.
-              </div>
-              <div v-for="(rule, ruleIndex) in (section.rules || [])" :key="`rule-${ruleIndex}`" class="mt-2 rounded p-2 bg-white border border-amber-200">
-                <div class="flex items-center justify-between mb-2">
-                  <span class="text-xs font-semibold text-slate-600">규칙 {{ ruleIndex + 1 }}</span>
-                  <button type="button" class="text-xs text-red-500 hover:underline" @click="removeRuleDraft(section._key, ruleIndex)">삭제</button>
-                </div>
-                <div class="grid grid-cols-2 gap-2 text-xs">
-                  <input
-                    v-model="rule.rows"
-                    type="text"
-                    class="rounded border border-slate-200 px-2 py-1 text-xs text-slate-900"
-                    placeholder="행(예: 1-3)"
-                  />
-                  <input
-                    v-model="rule.cols"
-                    type="text"
-                    class="rounded border border-slate-200 px-2 py-1 text-xs text-slate-900"
-                    placeholder="열(예: 1-10)"
-                  />
-                  <select v-model="rule.grade" class="rounded border border-slate-200 px-2 py-1 text-xs text-slate-900">
-                    <option value="">등급선택(통로)</option>
-                    <option value="VIP">VIP</option>
-                    <option value="R">R</option>
-                    <option value="S">S</option>
-                    <option value="A">A</option>
-                    <option value="B">B</option>
-                  </select>
-                  <div class="flex gap-1">
-                    <button type="button"
-                            :class="rule.visible ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'"
-                            class="flex-1 rounded px-2 py-1 text-xs font-semibold transition"
-                            @click="rule.visible = !rule.visible">
-                      {{ rule.visible ? '사용' : '미사용' }}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
           </div>
         </div>
       </form>
@@ -226,8 +122,7 @@ const DUMMY_SEAT_MAP_CREATE = {
 function getDefaultForm() {
   return {
     name: DUMMY_SEAT_MAP_CREATE.name,
-    status: DUMMY_SEAT_MAP_CREATE.status,
-    sections: []
+    status: DUMMY_SEAT_MAP_CREATE.status
   }
 }
 
@@ -245,10 +140,10 @@ export default {
       columns: [
         { key: 'id', label: 'ID' },
         { key: 'name', label: '이름' },
-        { key: 'size', label: '행/열' },
-        { key: 'sections', label: '섹션' },
+        { key: 'size', label: '좌석/섹션' },
         { key: 'version', label: '버전' },
-        { key: 'status', label: '상태' }
+        { key: 'status', label: '상태' },
+        { key: 'actions', label: '작업' }
       ],
       api: null,
       venue: null,
@@ -256,7 +151,11 @@ export default {
       recentSeatMapIds: [],
       createModalOpen: false,
       form: getDefaultForm(),
-      loading: false
+      loading: false,
+      searchKeyword: '',
+      page: 0,
+      totalPages: 1,
+      pageSize: 10
     }
   },
   computed: {
@@ -271,6 +170,9 @@ export default {
   watch: {
     venueId() {
       this.loadData()
+    },
+    page() {
+      this.loadSeatMaps()
     }
   },
   methods: {
@@ -327,12 +229,20 @@ export default {
     },
     toSeatMapRow(item) {
       const sections = Array.isArray(item?.sections) ? item.sections : []
+      const totalSeats = item?.totalSeats ?? null
+      const rowCount = item?.row_count ?? item?.rowCount
+      const colCount = item?.col_count ?? item?.colCount
+      let size = '-'
+      if (totalSeats != null) size = `${totalSeats}석`
+      else if (rowCount != null && colCount != null) size = `${rowCount}행 × ${colCount}열`
       return {
         id: item?.id,
         name: item?.name || '',
         venue_id: item?.venue_id ?? item?.venueId,
-        row_count: item?.row_count ?? item?.rowCount,
-        col_count: item?.col_count ?? item?.colCount,
+        row_count: rowCount,
+        col_count: colCount,
+        totalSeats,
+        size,
         sectionsCount: item?.sectionCount ?? sections.length ?? 0,
         version: item?.version ?? null,
         status: item?.status ?? item?.seatMapStatus ?? 'DRAFT'
@@ -349,28 +259,37 @@ export default {
     },
     async loadSeatMaps() {
       if (this.venueId == null || this.venueId === '') return
+      this.loading = true
       try {
-        // GET /venues/admin/{venueId}/seat-maps (DRAFT 포함 전체 상태)
-        const res = await this.api.get(ENDPOINTS.adminVenueSeatMapsList(this.venueId, { page: 0, size: 100 }))
-        const list = Array.isArray(res?.content) ? res.content : (Array.isArray(res) ? res : res?.content || res?.items || [])
-        let rows = list.map(this.toSeatMapRow)
-        // Prepend any recently created (so they show before next full reload)
-        const fallbackIds = this.recentSeatMapIds
-          .map((id) => this.normalizeSeatMapId(id))
-          .filter((id) => id && !rows.some((r) => String(r.id) === String(id)))
-        if (fallbackIds.length > 0) {
-          const settled = await Promise.allSettled(
-            fallbackIds.map((id) => this.api.get(ENDPOINTS.adminSeatMapDetail(id)))
-          )
-          const extra = settled
-            .filter((r) => r.status === 'fulfilled' && r.value)
-            .map((r) => this.toSeatMapRow(r.value))
-          rows = [...extra, ...rows]
+        const kw = this.searchKeyword?.trim()
+        // 백엔드 검색 미지원 시: 검색어 있으면 많이 불러와서 클라이언트 필터링
+        const isSearching = !!kw
+        const params = {
+          page: isSearching ? 0 : this.page,
+          size: isSearching ? 200 : this.pageSize
         }
-        this.rows = rows
+        const res = await this.api.get(ENDPOINTS.adminVenueSeatMapsList(this.venueId, params))
+        let list = Array.isArray(res?.content) ? res.content : (Array.isArray(res) ? res : res?.content || res?.items || [])
+        let rows = list.map(this.toSeatMapRow)
+        if (isSearching) {
+          const lower = kw.toLowerCase()
+          rows = rows.filter((r) => {
+            const name = (r.name || '').toLowerCase()
+            const version = String(r.version || '').toLowerCase()
+            return name.includes(lower) || version.includes(lower)
+          })
+          this.rows = rows
+          this.totalPages = 1
+        } else {
+          this.rows = rows
+          this.totalPages = Math.max(1, res?.totalPages ?? 1)
+        }
       } catch (err) {
         this.rows = []
+        this.totalPages = 1
         console.warn('Failed to load seat maps', err)
+      } finally {
+        this.loading = false
       }
     },
     async loadData() {
@@ -382,88 +301,37 @@ export default {
         this.loading = false
       }
     },
+    doSearch() {
+      this.page = 0
+      this.loadSeatMaps()
+    },
+    resetSearch() {
+      this.searchKeyword = ''
+      this.page = 0
+      this.loadSeatMaps()
+    },
+    goPage(p) {
+      if (p < 0 || p >= this.totalPages) return
+      this.page = p
+    },
     openCreateModal() {
       this.form = getDefaultForm()
       this.createModalOpen = true
-    },
-    addSectionDraft() {
-      this.form.sections.push({
-        _key: `section-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-        name: '',
-        displayColor: '#FF5733',
-        rows: 5,
-        seatsPerRow: 10,
-        initialGrade: 'VIP',
-        xPos: 0,
-        yPos: 0,
-        rotation: 0,
-        rules: []  // 규칙 초기화
-      })
-    },
-    removeSectionDraft(key) {
-      this.form.sections = this.form.sections.filter((s) => s._key !== key)
-    },
-    addRuleDraft(sectionKey) {
-      const section = this.form.sections.find((s) => s._key === sectionKey)
-      if (section) {
-        if (!section.rules) {
-          section.rules = []
-        }
-        section.rules.push({
-          rows: '',      // 예: "1-3"
-          cols: '',      // 예: "1-10"
-          grade: 'VIP',  // 기본값
-          visible: true
-        })
-      }
-    },
-    removeRuleDraft(sectionKey, ruleIndex) {
-      const section = this.form.sections.find((s) => s._key === sectionKey)
-      if (section && section.rules) {
-        section.rules.splice(ruleIndex, 1)
-      }
     },
     closeCreateModal() {
       this.createModalOpen = false
     },
     async submitCreate() {
-      const basePayload = {
+      const payload = {
         venueId: Number(this.venueId),
         name: this.form.name || `${this.venue?.name || '좌석맵'}-${Date.now()}`
       }
       if (this.form.status) {
-        basePayload.status = this.form.status
+        payload.status = this.form.status
       }
-      const cleanedSections = this.form.sections
-        .map((s) => {
-          const cleaned = {
-            name: s.name?.trim(),
-            displayColor: s.displayColor?.trim() || '#FF5733',
-            totalRow: Number(s.rows),
-            seatsPerRow: Number(s.seatsPerRow),
-            initialGrade: s.initialGrade,
-            xPos: s.xPos != null ? Number(s.xPos) : 0,
-            yPos: s.yPos != null ? Number(s.yPos) : 0,
-            rotation: s.rotation != null ? Number(s.rotation) : 0
-          }
-          // rules가 있고, 비어있지 않으면 포함
-          if (s.rules && s.rules.length > 0) {
-            cleaned.rules = s.rules.filter(r => r.rows && r.cols)  // 행/열 범위가 있는 규칙만
-          }
-          return cleaned
-        })
-        .filter((s) => s.name && Number.isFinite(s.totalRow) && s.totalRow > 0 && Number.isFinite(s.seatsPerRow) && s.seatsPerRow > 0)
 
       try {
-        let createdRes
-        if (cleanedSections.length > 0) {
-          createdRes = await this.api.post(ENDPOINTS.adminCreateSeatMapWithSections(), {
-            ...basePayload,
-            sections: cleanedSections
-          })
-        } else {
-          createdRes = await this.api.post(ENDPOINTS.adminCreateSeatMap(), basePayload)
-        }
+        const createdRes = await this.api.post(ENDPOINTS.adminCreateSeatMap(), payload)
         this.closeCreateModal()
         // 생성된 좌석맵의 레이아웃 에디터로 바로 이동
         const newId = createdRes?.id ?? this.extractSeatMapIdFromCreateResponse(createdRes)

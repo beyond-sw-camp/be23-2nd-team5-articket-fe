@@ -1,5 +1,5 @@
 <template>
-  <div class="flex min-h-screen bg-slate-50">
+  <div class="flex min-h-screen bg-slate-50 min-w-0" :class="{ 'overflow-x-hidden': isSeatMapLayoutEditor }">
     <!-- Sidebar -->
     <aside class="fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-slate-200 bg-white">
       <RouterLink
@@ -51,7 +51,7 @@
     </aside>
 
     <!-- Main -->
-    <div class="flex flex-1 flex-col pl-64">
+    <div class="flex min-w-0 flex-1 flex-col pl-64">
       <!-- Top header -->
       <header class="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200 bg-white px-6">
         <div class="h-5 w-5 shrink-0" />
@@ -62,7 +62,7 @@
       </header>
 
       <!-- Content -->
-      <main class="flex-1 p-6">
+      <main class="min-w-0 flex-1 p-6 min-h-0 overflow-x-hidden" :class="{ 'overflow-hidden': isSeatMapLayoutEditor }">
         <RouterView />
       </main>
     </div>
@@ -115,6 +115,25 @@ export default {
     sseState() {
       return this._sse?.state ?? null
     },
+    isSeatMapLayoutEditor() {
+      return this.$route.path.includes('/seat-maps/') && this.$route.path.endsWith('/layout')
+    },
+    roleValue() {
+      const r = getRole()
+      return r ? String(r).toUpperCase() : 'GUEST'
+    },
+    navItems() {
+      return this.roleValue === 'ADMIN' ? ADMIN_NAV : ORGANIZER_NAV
+    },
+  },
+  watch: {
+    isSeatMapLayoutEditor: {
+      handler(v) {
+        document.documentElement.style.overflowX = v ? 'hidden' : ''
+        document.body.style.overflowX = v ? 'hidden' : ''
+      },
+      immediate: true
+    }
   },
   mounted() {
     const me = useMe()
@@ -123,16 +142,9 @@ export default {
     if (localStorage.getItem('accessToken')) this._sse.connect()
   },
   beforeUnmount() {
+    document.documentElement.style.overflowX = ''
+    document.body.style.overflowX = ''
     if (this._sse) this._sse.disconnect()
-  },
-  computed: {
-    roleValue() {
-      const r = getRole()
-      return r ? String(r).toUpperCase() : 'GUEST'
-    },
-    navItems() {
-      return this.roleValue === 'ADMIN' ? ADMIN_NAV : ORGANIZER_NAV
-    },
   },
   methods: {
     isActive(to) {

@@ -2,31 +2,68 @@
   <div class="grid gap-4">
     <div class="flex items-end justify-between gap-3">
       <div>
-        <div class="text-sm font-semibold text-slate-900">공연장 생성/목록</div>
-        <div class="mt-1 text-sm text-slate-500">POST /admin/venues/create · GET /admin/venues/list</div>
+        <h1 class="text-xl font-bold text-slate-900">공연장 관리</h1>
+        <p class="mt-1 text-sm text-slate-500">공연장을 등록하고 목록을 관리합니다.</p>
       </div>
-      <UiBadge tone="soft">ADMIN</UiBadge>
-    </div>
-
-    <UiCard>
-      <div class="flex items-center justify-between gap-3">
-        <div class="text-sm text-slate-600">새 공연장을 등록하고 실제 서버 목록을 갱신합니다.</div>
+      <div class="flex items-center gap-2">
+        <UiBadge tone="soft">ADMIN</UiBadge>
         <UiButton class="h-11 px-5" @click="openCreateModal">공연장 생성</UiButton>
       </div>
-    </UiCard>
+    </div>
 
-    <UiTable :columns="columns" :rows="rows">
+    <!-- 통합검색 -->
+    <div class="flex gap-2 rounded-2xl border border-slate-200 bg-white p-4">
+      <input
+        v-model="searchKeyword"
+        type="text"
+        placeholder="공연장명, 주소, 키워드로 검색"
+        class="h-10 flex-1 min-w-0 rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+        @keydown.enter.prevent="doSearch"
+      />
+      <UiButton class="h-10 px-4 shrink-0" @click="doSearch">검색</UiButton>
+      <UiButton variant="ghost" class="h-10 px-4 shrink-0" @click="resetSearch">초기화</UiButton>
+    </div>
+
+    <div v-if="loading" class="rounded-2xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500">
+      목록을 불러오는 중…
+    </div>
+    <UiTable v-else :columns="columns" :rows="rows">
       <template #cell:name="{ row }">
-        <button class="font-semibold text-slate-900 hover:underline" type="button" @click="$router.push(`/admin/venues/${row.id}`)">
-          {{ row.name }}
+        <span class="font-semibold text-slate-900">{{ row.name }}</span>
+      </template>
+      <template #cell:status="{ row }">
+        <UiBadge :tone="row.status === 'ACTIVE' ? 'soft' : 'outline'" :color="row.status === 'ACTIVE' ? 'green' : 'slate'">
+          {{ row.status === 'ACTIVE' ? '활성' : (row.status === 'INACTIVE' ? '비활성' : row.status || '-') }}
+        </UiBadge>
+      </template>
+      <template #cell:formattedAddress="{ row }">
+        <span class="text-sm text-slate-700 max-w-xs truncate block" :title="row.formattedAddress">{{ row.formattedAddress || '-' }}</span>
+      </template>
+      <template #cell:addressDetail="{ row }">
+        <span class="text-sm text-slate-600">{{ row.addressDetail || '-' }}</span>
+      </template>
+      <template #cell:seatMapCount="{ row }">
+        <button class="font-semibold text-slate-700 hover:underline" type="button" @click="$router.push(`/admin/venues/${row.id}/seat-maps`)">
+          {{ row.seatMapCount ?? 0 }}개
         </button>
       </template>
-      <template #cell:seatMaps="{ row }">
-        <button class="font-semibold text-slate-700 hover:underline" type="button" @click="$router.push(`/admin/venues/${row.id}/seat-maps`)">
-          {{ row.seatMaps }}개
-        </button>
+      <template #cell:actions="{ row }">
+        <UiButton variant="ghost" class="h-8 px-3 text-sm" @click="$router.push(`/admin/venues/${row.id}`)">
+          상세보기
+        </UiButton>
       </template>
     </UiTable>
+
+    <!-- 페이징 -->
+    <div v-if="!loading && totalPages > 1" class="flex items-center justify-center gap-2">
+      <UiButton variant="ghost" class="h-9 px-3" :disabled="page <= 0" @click="goPage(page - 1)">
+        이전
+      </UiButton>
+      <span class="text-sm text-slate-600">{{ page + 1 }} / {{ totalPages }}</span>
+      <UiButton variant="ghost" class="h-9 px-3" :disabled="page >= totalPages - 1" @click="goPage(page + 1)">
+        다음
+      </UiButton>
+    </div>
 
     <!-- 공연장 생성 모달 -->
     <UiModal :open="createModalOpen" title="공연장 생성" @close="closeCreateModal">
@@ -42,6 +79,7 @@
               required
               class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
               placeholder="세종문화회관 중극장"
+              @keydown.enter.prevent
             />
           </div>
           <div>
@@ -311,15 +349,25 @@ export default {
   data() {
     return {
       columns: [
-        { key: 'name', label: '공연장' },
-        { key: 'address', label: '주소' },
-        { key: 'seatMaps', label: '좌석맵' }
+        { key: 'id', label: 'ID' },
+        { key: 'name', label: '공연장명' },
+        { key: 'status', label: '상태' },
+        { key: 'formattedAddress', label: '주소' },
+        { key: 'addressDetail', label: '상세주소' },
+        { key: 'seatMapCount', label: '좌석맵' },
+        { key: 'actions', label: '작업' }
       ],
       api: null,
       rows: [],
       createModalOpen: false,
       form: getDefaultForm(),
       loading: false,
+
+      // 검색·페이징
+      searchKeyword: '',
+      page: 0,
+      totalPages: 1,
+      pageSize: 10,
 
       // 지도 관련
       mapSearchQuery: '',
@@ -338,23 +386,37 @@ export default {
     this.api = useApi()
     this.loadVenues()
   },
+  watch: {
+    page() {
+      this.loadVenues()
+    },
+  },
 
   methods: {
+    doSearch() {
+      this.page = 0
+      this.loadVenues()
+    },
+    resetSearch() {
+      this.searchKeyword = ''
+      this.page = 0
+      this.loadVenues()
+    },
+    goPage(p) {
+      if (p < 0 || p >= this.totalPages) return
+      this.page = p
+    },
     // ── 공연장 목록 ──────────────────────────────────────────────
     toVenueRow(item) {
-      const addressObj = item?.venueAddressResDto || item?.venueAddress || {}
-      const address =
-        item?.address ||
-        item?.formattedAddress ||
-        addressObj?.formattedAddress ||
-        [addressObj?.sido, addressObj?.sigungu, addressObj?.eupmyeondong, addressObj?.road, addressObj?.houseNumber]
-          .filter(Boolean)
-          .join(' ')
+      const rawStatus = item?.venueStatus ?? item?.status
+      const status = rawStatus ? String(rawStatus).toUpperCase() : ''
       return {
         id: item?.id,
         name: item?.name || '-',
-        address: address || '-',
-        seatMaps: item?.seatMapCount ?? (Array.isArray(item?.seatMapIds) ? item.seatMapIds.length : 0)
+        status: status || '-',
+        formattedAddress: item?.formattedAddress || '-',
+        addressDetail: item?.addressDetail || '-',
+        seatMapCount: item?.seatMapCount ?? (Array.isArray(item?.seatMapIds) ? item.seatMapIds.length : 0)
       }
     },
     normalizeVenueListResponse(res) {
@@ -364,8 +426,16 @@ export default {
     async loadVenues() {
       this.loading = true
       try {
-        const res = await this.api.get(ENDPOINTS.adminVenueList({ page: 0, size: 100 }))
-        this.rows = this.normalizeVenueListResponse(res)
+        const kw = this.searchKeyword?.trim()
+        const params = {
+          page: this.page,
+          size: this.pageSize,
+          ...(kw && { keyword: kw }),
+        }
+        const res = await this.api.get(ENDPOINTS.adminVenueList(params))
+        const list = res?.content ?? res
+        this.rows = this.normalizeVenueListResponse(list)
+        this.totalPages = Math.max(1, res?.totalPages ?? 1)
       } finally {
         this.loading = false
       }

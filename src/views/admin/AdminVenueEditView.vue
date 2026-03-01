@@ -1,9 +1,16 @@
 <template>
-  <UiCard v-if="venue">
+  <div v-if="!venue && !loadError" class="rounded-2xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500">
+    불러오는 중…
+  </div>
+  <div v-else-if="loadError" class="rounded-2xl border border-slate-200 bg-white p-8 text-center">
+    <div class="text-sm text-slate-600">공연장을 찾을 수 없습니다.</div>
+    <UiButton class="mt-3" @click="$router.push('/admin/venues')">목록으로</UiButton>
+  </div>
+  <UiCard v-else-if="venue">
     <div class="flex items-start justify-between gap-3">
       <div>
-        <div class="text-sm font-semibold text-slate-900">공연장 수정</div>
-        <div class="mt-1 text-sm text-slate-500">PUT /admin/venues/update/{{ venueId }}</div>
+        <h1 class="text-xl font-bold text-slate-900">공연장 수정</h1>
+        <p class="mt-1 text-sm text-slate-500">{{ venue.name }}</p>
       </div>
       <UiBadge tone="soft">ADMIN</UiBadge>
     </div>
@@ -128,10 +135,11 @@
         </div>
       </div>
       <p v-if="successMessage" class="text-sm text-green-600">{{ successMessage }}</p>
-      <div class="flex gap-2">
+      <div class="flex flex-wrap gap-2">
         <UiButton variant="ghost" type="button" class="h-11 px-4" @click="$router.push('/admin/venues')">목록</UiButton>
-        <UiButton type="button" class="h-11 px-4" @click="$router.push(`/admin/venues/${venueId}/seat-maps`)">좌석맵 관리</UiButton>
-        <UiButton as="button" type="submit" class="h-11 px-5" :disabled="saving">저장 (PUT)</UiButton>
+        <UiButton variant="ghost" type="button" class="h-11 px-4" @click="$router.push(`/admin/venues/${venueId}`)">상세보기</UiButton>
+        <UiButton variant="tonal" type="button" class="h-11 px-4" @click="$router.push(`/admin/venues/${venueId}/seat-maps`)">좌석맵 관리</UiButton>
+        <UiButton as="button" type="submit" class="h-11 px-5" :disabled="saving">저장</UiButton>
       </div>
     </form>
   </UiCard>
@@ -173,6 +181,7 @@ export default {
         venueAddressReqDto: defaultAddress()
       },
       venue: null,
+      loadError: false,
       saving: false,
       successMessage: ''
     }
@@ -222,11 +231,12 @@ export default {
     async loadVenue() {
       if (this.venueId == null || this.venueId === '') return
       this.successMessage = ''
+      this.loadError = false
       try {
         this.venue = await this.api.get(ENDPOINTS.adminVenueDetail(this.venueId))
       } catch (err) {
         this.venue = null
-        // 에러는 ErrorAlertModal에서 표시됨
+        this.loadError = true
       }
     },
     async submitUpdate() {

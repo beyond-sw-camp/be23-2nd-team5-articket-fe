@@ -60,6 +60,7 @@ import ManagementView from '../views/management/ManagementView.vue'
 // admin
 import AdminDashboardView from '../views/admin/AdminDashboardView.vue'
 import AdminVenuesView from '../views/admin/AdminVenuesView.vue'
+import AdminVenueDetailView from '../views/admin/AdminVenueDetailView.vue'
 import AdminVenueEditView from '../views/admin/AdminVenueEditView.vue'
 import AdminVenueSeatMapsView from '../views/admin/AdminVenueSeatMapsView.vue'
 import AdminSeatMapPreviewView from '../views/admin/AdminSeatMapPreviewView.vue'
@@ -174,7 +175,8 @@ const routes = [
       { path: '', redirect: '/admin/dashboard' },
       childRoute('dashboard', AdminDashboardView),
       childRoute('venues', AdminVenuesView),
-      childRoute('venues/:venueId', AdminVenueEditView),
+      childRoute('venues/:venueId', AdminVenueDetailView),
+      childRoute('venues/:venueId/edit', AdminVenueEditView),
       childRoute('venues/:venueId/seat-maps', AdminVenueSeatMapsView),
       childRoute('seat-maps/:seatMapId', AdminSeatMapPreviewView),
       childRoute('seat-maps/:seatMapId/publish', AdminSeatMapPublishView),

@@ -1,225 +1,174 @@
 <template>
-  <UiCard v-if="loading">
-    <div class="text-sm text-slate-500">불러오는 중…</div>
-  </UiCard>
-  <UiCard v-else-if="seatMap">
-    <div class="flex items-start justify-between gap-3">
-      <div>
-        <div class="text-sm font-semibold text-slate-900">좌석맵 관리</div>
-        <div class="mt-1 text-sm text-slate-500">
-          ID: {{ seatMap.id }} ·
-          <span class="font-semibold">{{ seatMap.name || '-' }}</span>
-          <span v-if="seatMap.version !== null && seatMap.version !== undefined"> · v{{ seatMap.version }}</span>
+  <div class="grid gap-4">
+    <UiCard v-if="loading">
+      <div class="py-12 text-center text-sm text-slate-500">불러오는 중…</div>
+    </UiCard>
+
+    <template v-else-if="seatMap">
+      <!-- 상단 헤더 -->
+      <div class="flex flex-wrap items-start justify-between gap-4 mb-2">
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-xl font-bold text-slate-900">{{ seatMap.name || '좌석맵' }}</h1>
+            <UiBadge :tone="seatMap.status === 'PUBLISHED' ? 'solid' : 'soft'" :color="seatMap.status === 'PUBLISHED' ? 'green' : 'slate'">
+              {{ seatMap.status || 'DRAFT' }}
+            </UiBadge>
+          </div>
+          <p class="mt-1 text-sm text-slate-500">ID {{ seatMap.id }} · v{{ seatMap.version ?? '-' }}</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <UiBadge tone="soft">ADMIN</UiBadge>
+          <UiButton
+            v-if="venueId"
+            variant="ghost"
+            class="h-10 px-4"
+            @click="$router.push(`/admin/venues/${venueId}/seat-maps`)"
+          >
+            목록
+          </UiButton>
         </div>
       </div>
-      <div class="flex items-center gap-2">
-        <UiButton class="h-9 px-4" @click="$router.push(`/admin/seat-maps/${seatMap.id}/layout`)">
-          🗺️ 레이아웃 편집
-        </UiButton>
-        <UiBadge tone="soft">ADMIN</UiBadge>
-      </div>
-    </div>
 
-    <!-- 저장된 배치도 썸네일 -->
-    <div v-if="seatMap.thumbnailUrl" class="mt-4 overflow-hidden rounded-xl border border-slate-200 bg-slate-950">
-      <div class="flex items-center justify-between px-4 py-2 border-b border-slate-700">
-        <span class="text-xs font-semibold text-slate-400">저장된 배치도 미리보기</span>
-        <div class="flex items-center gap-1">
-          <button
-            type="button"
-            title="줌인"
-            class="px-2 py-0.5 rounded text-sm font-bold text-slate-300 hover:bg-slate-700 transition-colors"
-            @click="imgScale = Math.min(imgScale * 1.25, 5)"
-          >+</button>
-          <span class="min-w-10 text-center text-xs text-slate-400">{{ Math.round(imgScale * 100) }}%</span>
-          <button
-            type="button"
-            title="줌아웃"
-            class="px-2 py-0.5 rounded text-sm font-bold text-slate-300 hover:bg-slate-700 transition-colors"
-            @click="imgScale = Math.max(imgScale / 1.25, 0.1)"
-          >−</button>
-          <button
-            type="button"
-            title="초기화"
-            class="ml-1 px-2 py-0.5 rounded text-xs text-slate-400 hover:bg-slate-700 transition-colors"
-            @click="resetImgView"
-          >↺</button>
-          <span class="ml-2 text-xs text-slate-500">레이아웃 편집 후 저장 시 자동 갱신</span>
-        </div>
-      </div>
-      <div
-        :style="{ height: '600px', position: 'relative', overflow: 'hidden', cursor: imgDragging ? 'grabbing' : 'grab' }"
-        @wheel.prevent="onImgWheel"
-        @mousedown.prevent="onImgMouseDown"
-        @mousemove="onImgMouseMove"
-        @mouseup="onImgMouseUp"
-        @mouseleave="onImgMouseUp"
-      >
-        <img
-          :src="seatMap.thumbnailUrl"
-          alt="배치도 미리보기"
-          draggable="false"
-          :style="{
-            position: 'absolute',
-            top: '0',
-            left: '0',
-            width: '100%',
-            height: '100%',
-            objectFit: 'contain',
-            transformOrigin: '0 0',
-            transform: `translate(${imgOffsetX}px, ${imgOffsetY}px) scale(${imgScale})`,
-            userSelect: 'none',
-            pointerEvents: 'none'
-          }"
-        />
-      </div>
-    </div>
-    <div v-else class="mt-4 flex items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50 py-8">
-      <span class="text-sm text-slate-400">저장된 배치도 이미지가 없습니다. 레이아웃 편집 후 저장해주세요.</span>
-    </div>
-
-    <div class="mt-4 grid gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
-      <div class="text-xs text-slate-500">
-        상태: <span class="font-semibold text-slate-700">{{ seatMap.status || 'DRAFT' }}</span>
-      </div>
-      <div class="flex flex-wrap items-end gap-2">
-        <div class="min-w-60 flex-1">
-          <label class="block text-xs font-semibold text-slate-500">좌석맵 이름 수정</label>
-          <input
-            v-model="seatMapNameDraft"
-            type="text"
-            class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900"
-            placeholder="좌석맵 이름"
-          />
-        </div>
-        <UiButton class="h-11 px-4" :disabled="savingSeatMapName" @click="updateSeatMapName">이름 저장</UiButton>
-      </div>
-      <p v-if="successMessage" class="text-sm text-green-600">{{ successMessage }}</p>
-    </div>
-
-    <div class="mt-4 rounded-xl border border-slate-200 p-4">
-      <div class="mb-3 flex items-center justify-between">
-        <div class="text-sm font-semibold text-slate-900">섹션 관리</div>
-        <UiButton class="h-9 px-3" :disabled="addingSection" @click="addSection">섹션 추가</UiButton>
-      </div>
-
-      <div v-if="sections.length === 0" class="text-sm text-slate-500">등록된 섹션이 없습니다.</div>
-
-      <div v-for="section in sections" :key="section.id" class="mb-3 rounded-lg border border-slate-200 p-3">
-        <div v-if="editingSectionId !== section.id" class="flex flex-wrap items-center justify-between gap-2">
-          <div>
-            <div class="text-sm font-semibold text-slate-900">{{ section.name || '-' }}</div>
-            <div class="mt-1 text-xs text-slate-500">
-              rows {{ section.rows ?? '-' }} · seatsPerRow {{ section.seatsPerRow ?? '-' }} · grade {{ section.initialGrade || '-' }}
+      <div class="grid gap-6 lg:grid-cols-3">
+        <!-- 배치도 미리보기 (왼쪽, 작은 크기) -->
+        <div class="lg:col-span-1">
+          <div class="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+            <div class="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-4 py-2">
+              <span class="text-xs font-semibold text-slate-600">배치도 미리보기</span>
+              <div class="flex items-center gap-1">
+                <button
+                  type="button"
+                  class="rounded p-1 text-slate-500 hover:bg-slate-200 transition-colors text-sm"
+                  @click="imgScale = Math.max(imgScale / 1.25, 0.25)"
+                >−</button>
+                <span class="min-w-12 text-center text-xs text-slate-500">{{ Math.round(imgScale * 100) }}%</span>
+                <button
+                  type="button"
+                  class="rounded p-1 text-slate-500 hover:bg-slate-200 transition-colors text-sm"
+                  @click="imgScale = Math.min(imgScale * 1.25, 3)"
+                >+</button>
+                <button type="button" class="rounded p-1 text-xs text-slate-500 hover:bg-slate-200" @click="resetImgView">↺</button>
+              </div>
+            </div>
+            <div
+              v-if="seatMap.thumbnailUrl"
+              class="relative bg-white"
+              :class="imgDragging ? 'cursor-grabbing' : 'cursor-grab'"
+              :style="{ height: '240px' }"
+              @wheel.prevent="onImgWheel"
+              @mousedown.prevent="onImgMouseDown"
+              @mousemove="onImgMouseMove"
+              @mouseup="onImgMouseUp"
+              @mouseleave="onImgMouseUp"
+            >
+              <img
+                :src="seatMap.thumbnailUrl"
+                alt="배치도"
+                draggable="false"
+                class="absolute left-0 top-0 w-full h-full object-contain select-none pointer-events-none"
+                :style="{
+                  transformOrigin: '0 0',
+                  transform: `translate(${imgOffsetX}px, ${imgOffsetY}px) scale(${imgScale})`
+                }"
+              />
+            </div>
+            <div v-else class="flex flex-col items-center justify-center py-16 text-slate-500 bg-slate-50">
+              <span class="text-4xl mb-2">🗺️</span>
+              <span class="text-sm">저장된 배치도가 없습니다</span>
+              <span class="text-xs mt-1 text-slate-400">레이아웃 편집 후 저장해주세요</span>
+            </div>
+            <div class="flex justify-center border-t border-slate-200 bg-slate-50 px-4 py-3">
+              <UiButton class="h-9 px-4" @click="$router.push(`/admin/seat-maps/${seatMap.id}/layout`)">
+                🗺️ 레이아웃 편집
+              </UiButton>
             </div>
           </div>
-          <div class="flex gap-2">
-            <UiButton class="h-9 px-3" @click="startEditSection(section)">수정</UiButton>
-            <UiButton class="h-9 px-3" :disabled="deletingSectionId === section.id" @click="deleteSection(section.id)">삭제</UiButton>
-          </div>
         </div>
 
-        <div v-else class="grid gap-2">
-          <div class="grid grid-cols-2 gap-2">
-            <input v-model="sectionDraft.name" type="text" class="rounded-xl border border-slate-200 px-3 py-2 text-sm" placeholder="name" />
-            <input v-model="sectionDraft.displayColor" type="text" class="rounded-xl border border-slate-200 px-3 py-2 text-sm" placeholder="#33C3F0" />
-            <input v-model.number="sectionDraft.rows" type="number" min="1" class="rounded-xl border border-slate-200 px-3 py-2 text-sm" placeholder="rows" />
-            <input v-model.number="sectionDraft.seatsPerRow" type="number" min="1" class="rounded-xl border border-slate-200 px-3 py-2 text-sm" placeholder="seatsPerRow" />
-            <select v-model="sectionDraft.initialGrade" class="rounded-xl border border-slate-200 px-3 py-2 text-sm">
-              <option value="VIP">VIP</option>
-              <option value="R">R</option>
-              <option value="S">S</option>
-              <option value="A">A</option>
-              <option value="B">B</option>
-            </select>
-          </div>
-          <div class="flex gap-2">
-            <UiButton class="h-9 px-3" @click="saveSection(section.id)">저장</UiButton>
-            <UiButton class="h-9 px-3" @click="cancelEditSection">취소</UiButton>
+        <!-- 정보 및 액션 (오른쪽) -->
+        <div class="lg:col-span-2 space-y-4">
+          <UiCard>
+            <div class="space-y-4">
+              <div>
+                <label class="block text-xs font-semibold text-slate-500 mb-1">좌석맵 이름</label>
+                <div class="flex gap-2">
+                  <input
+                    v-model="seatMapNameDraft"
+                    type="text"
+                    class="flex-1 min-w-0 rounded-xl border border-slate-200 px-3 py-2.5 text-sm text-slate-900 focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+                    placeholder="좌석맵 이름"
+                  />
+                  <UiButton class="shrink-0" :disabled="savingSeatMapName" @click="updateSeatMapName">
+                    {{ savingSeatMapName ? '저장 중…' : '이름 저장' }}
+                  </UiButton>
+                </div>
+              </div>
+
+              <div class="border-t border-slate-100 pt-4">
+                <label class="block text-xs font-semibold text-slate-500 mb-2">게시 상태</label>
+                <div class="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    class="rounded-xl px-4 py-2 text-sm font-medium transition-colors"
+                    :class="statusDraft === 'DRAFT'
+                      ? 'bg-slate-800 text-white ring-2 ring-slate-800 ring-offset-2'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
+                    :disabled="statusUpdating"
+                    @click="statusDraft = 'DRAFT'"
+                  >
+                    임시저장
+                  </button>
+                  <button
+                    type="button"
+                    class="rounded-xl px-4 py-2 text-sm font-medium transition-colors"
+                    :class="statusDraft === 'PUBLISHED'
+                      ? 'bg-green-600 text-white ring-2 ring-green-600 ring-offset-2'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
+                    :disabled="statusUpdating"
+                    @click="statusDraft = 'PUBLISHED'"
+                  >
+                    게시
+                  </button>
+                  <button
+                    type="button"
+                    class="rounded-xl px-4 py-2 text-sm font-medium transition-colors"
+                    :class="statusDraft === 'ARCHIVED'
+                      ? 'bg-amber-600 text-white ring-2 ring-amber-600 ring-offset-2'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
+                    :disabled="statusUpdating"
+                    @click="statusDraft = 'ARCHIVED'"
+                  >
+                    폐기
+                  </button>
+                  <UiButton
+                    class="ml-2 shrink-0"
+                    :disabled="statusUpdating || statusDraft === seatMap.status"
+                    @click="updateStatus(statusDraft)"
+                  >
+                    {{ statusUpdating ? '저장 중…' : '저장' }}
+                  </UiButton>
+                </div>
+                <p v-if="statusDraft !== seatMap.status" class="mt-2 text-xs text-amber-600">변경된 상태를 저장해주세요</p>
+              </div>
+
+              <p v-if="successMessage" class="text-sm text-green-600">{{ successMessage }}</p>
+            </div>
+          </UiCard>
+
+          <div class="flex flex-wrap gap-2">
+            <UiButton variant="ghost" class="h-11 px-5" @click="$router.back()">뒤로</UiButton>
           </div>
         </div>
       </div>
-    </div>
+    </template>
 
-    <div class="mt-4 rounded-xl border border-slate-200 p-4">
-      <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <div class="text-sm font-semibold text-slate-900">좌석 정의 등급 관리</div>
-        <select
-          v-model="selectedSectionId"
-          class="h-10 min-w-52 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
-        >
-          <option :value="null">섹션 선택</option>
-          <option v-for="section in sections" :key="section.id" :value="section.id">{{ section.name }}</option>
-        </select>
+    <UiCard v-else>
+      <div class="py-12 text-center text-sm text-slate-500">좌석맵 정보를 찾을 수 없습니다.</div>
+      <div class="flex justify-center mt-4">
+        <UiButton variant="ghost" @click="$router.back()">뒤로</UiButton>
       </div>
-
-      <div v-if="definitionsLoading" class="text-sm text-slate-500">좌석 정의 불러오는 중…</div>
-      <div v-else-if="!selectedSectionId" class="text-sm text-slate-500">섹션을 선택하세요.</div>
-      <div v-else-if="seatDefinitions.length === 0" class="text-sm text-slate-500">좌석 정의가 없습니다.</div>
-      <div v-else>
-        <div class="mb-2 flex flex-wrap items-center gap-2">
-          <label class="text-xs text-slate-500">일괄 등급</label>
-          <select v-model="bulkGrade" class="h-9 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900">
-            <option :value="''">선택</option>
-            <option value="VIP">VIP</option>
-            <option value="R">R</option>
-            <option value="S">S</option>
-            <option value="A">A</option>
-            <option value="B">B</option>
-          </select>
-          <UiButton class="h-9 px-3" @click="applyBulkGrade">선택 좌석 일괄 변경</UiButton>
-          <button type="button" class="text-xs font-semibold text-slate-600 hover:underline" @click="toggleSelectAllDefinitions">
-            {{ selectedDefinitionIds.length === seatDefinitions.length ? '전체 해제' : '전체 선택' }}
-          </button>
-        </div>
-
-        <div class="max-h-96 overflow-auto rounded-lg border border-slate-200">
-          <table class="w-full text-sm">
-            <thead class="bg-slate-50 text-slate-600">
-              <tr>
-                <th class="px-3 py-2 text-left">선택</th>
-                <th class="px-3 py-2 text-left">행</th>
-                <th class="px-3 py-2 text-left">좌석</th>
-                <th class="px-3 py-2 text-left">현재등급</th>
-                <th class="px-3 py-2 text-left">변경등급</th>
-                <th class="px-3 py-2 text-left">액션</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="def in seatDefinitions" :key="def.id" class="border-t border-slate-100">
-                <td class="px-3 py-2">
-                  <input :checked="selectedDefinitionIds.includes(def.id)" type="checkbox" @change="toggleDefinitionSelection(def.id)" />
-                </td>
-                <td class="px-3 py-2">{{ def.rowNo ?? def.row_no ?? '-' }}</td>
-                <td class="px-3 py-2">{{ def.seatNo ?? def.seat_no ?? '-' }}</td>
-                <td class="px-3 py-2">{{ def.gradeDefault ?? def.grade_default ?? '-' }}</td>
-                <td class="px-3 py-2">
-                  <select v-model="definitionGradeDrafts[def.id]" class="h-9 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900">
-                    <option value="VIP">VIP</option>
-                    <option value="R">R</option>
-                    <option value="S">S</option>
-                    <option value="A">A</option>
-                    <option value="B">B</option>
-                  </select>
-                </td>
-                <td class="px-3 py-2">
-                  <UiButton class="h-9 px-3" @click="updateDefinitionGrade(def.id)">저장</UiButton>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <div class="mt-4 flex gap-2">
-      <UiButton variant="ghost" class="h-11 px-4" @click="$router.back()">뒤로</UiButton>
-      <UiButton class="h-11 px-5" @click="$router.push(`/admin/seat-maps/${seatMap.id}/publish`)">게시/폐기</UiButton>
-    </div>
-  </UiCard>
-  <UiCard v-else>
-    <div class="text-sm font-semibold text-slate-900">좌석맵 정보를 찾을 수 없습니다.</div>
-  </UiCard>
+    </UiCard>
+  </div>
 </template>
 
 <script>
@@ -231,35 +180,16 @@ import { ENDPOINTS } from '../../lib/api/endpoints'
 
 export default {
   name: 'AdminSeatMapPreviewView',
-  components: {
-    UiCard,
-    UiBadge,
-    UiButton
-  },
+  components: { UiCard, UiBadge, UiButton },
   data() {
     return {
       api: null,
       loading: false,
       seatMap: null,
-      sections: [],
       seatMapNameDraft: '',
       savingSeatMapName: false,
-      addingSection: false,
-      deletingSectionId: null,
-      editingSectionId: null,
-      sectionDraft: {
-        name: '',
-        displayColor: '#FF5733',
-        rows: 5,
-        seatsPerRow: 10,
-        initialGrade: 'VIP'
-      },
-      selectedSectionId: null,
-      definitionsLoading: false,
-      seatDefinitions: [],
-      selectedDefinitionIds: [],
-      definitionGradeDrafts: {},
-      bulkGrade: '',
+      statusDraft: 'DRAFT',
+      statusUpdating: false,
       successMessage: '',
       imgScale: 1,
       imgOffsetX: 0,
@@ -272,14 +202,14 @@ export default {
   computed: {
     seatMapId() {
       return this.$route.params.seatMapId
+    },
+    venueId() {
+      return this.$route.query?.venueId || this.seatMap?.venue_id || this.seatMap?.venueId
     }
   },
   watch: {
     seatMapId() {
       this.loadAll()
-    },
-    selectedSectionId() {
-      this.loadDefinitions()
     }
   },
   created() {
@@ -288,79 +218,45 @@ export default {
   },
   methods: {
     normalizeSeatMap(item) {
+      const status = item?.status ?? item?.seatMapStatus ?? 'DRAFT'
       return {
         id: item?.id,
         name: item?.name ?? '',
         venue_id: item?.venue_id ?? item?.venueId ?? item?.venue?.id,
-        row_count: item?.row_count ?? item?.rowCount,
-        col_count: item?.col_count ?? item?.colCount,
         version: item?.version ?? null,
-        status: item?.status || 'DRAFT',
-        thumbnailUrl: item?.thumbnailUrl ?? item?.thumbnail_url ?? null,
-      }
-    },
-    normalizeSection(item) {
-      return {
-        id: item?.id,
-        name: item?.name ?? '',
-        displayColor: item?.displayColor ?? item?.display_color ?? '#FF5733',
-        rows: item?.rows ?? item?.totalRow ?? item?.total_row,
-        seatsPerRow: item?.seatsPerRow ?? item?.seats_per_row ?? item?.totalCol ?? item?.total_col,
-        initialGrade: item?.initialGrade ?? item?.initial_grade ?? 'VIP'
+        status: String(status).toUpperCase() || 'DRAFT',
+        thumbnailUrl: item?.thumbnailUrl ?? item?.thumbnail_url ?? null
       }
     },
     async loadAll() {
-      if (this.seatMapId == null || this.seatMapId === '') {
-        this.loading = false
-        return
-      }
+      if (!this.seatMapId) return
       this.loading = true
       this.successMessage = ''
       try {
         const detail = await this.api.get(ENDPOINTS.adminSeatMapDetail(this.seatMapId))
         this.seatMap = detail ? this.normalizeSeatMap(detail) : null
         this.seatMapNameDraft = this.seatMap?.name || ''
-        await this.loadSections()
+        this.statusDraft = this.seatMap?.status || 'DRAFT'
       } catch (err) {
         this.seatMap = null
-        // 에러는 ErrorAlertModal에서 표시됨
       } finally {
         this.loading = false
       }
     },
-    async loadSections() {
-      if (this.seatMapId == null || this.seatMapId === '') return
+    async updateStatus(status) {
+      if (!this.seatMapId || this.seatMap?.status === status) return
+      this.statusUpdating = true
+      this.successMessage = ''
       try {
-        const res = await this.api.get(ENDPOINTS.adminSeatSectionsBySeatMap(this.seatMapId))
-        const list = Array.isArray(res) ? res : res?.content || res?.items || []
-        this.sections = list.map(this.normalizeSection)
-        if (!this.selectedSectionId || !this.sections.some((s) => String(s.id) === String(this.selectedSectionId))) {
-          this.selectedSectionId = this.sections.length > 0 ? this.sections[0].id : null
-        }
+        await this.api.patch(ENDPOINTS.adminUpdateSeatMapStatus(this.seatMapId, status))
+        this.seatMap = this.normalizeSeatMap({ ...this.seatMap, status })
+        this.statusDraft = status
+        const labels = { DRAFT: '임시저장', PUBLISHED: '게시', ARCHIVED: '폐기' }
+        this.successMessage = `상태가 ${labels[status]}로 변경되었습니다.`
       } catch (err) {
-        this.sections = []
-      }
-    },
-    async loadDefinitions() {
-      this.selectedDefinitionIds = []
-      this.definitionGradeDrafts = {}
-      if (!this.selectedSectionId) {
-        this.seatDefinitions = []
-        return
-      }
-      this.definitionsLoading = true
-      try {
-        const res = await this.api.get(ENDPOINTS.adminSeatDefinitionsBySection(this.selectedSectionId))
-        const list = Array.isArray(res) ? res : res?.content || res?.items || []
-        this.seatDefinitions = list
-        list.forEach((item) => {
-          const current = item?.gradeDefault ?? item?.grade_default ?? 'VIP'
-          this.definitionGradeDrafts[item.id] = current
-        })
-      } catch (err) {
-        this.seatDefinitions = []
+        // ErrorAlertModal
       } finally {
-        this.definitionsLoading = false
+        this.statusUpdating = false
       }
     },
     async updateSeatMapName() {
@@ -368,107 +264,15 @@ export default {
       this.savingSeatMapName = true
       this.successMessage = ''
       try {
-        await this.api.patch(ENDPOINTS.adminUpdateSeatMapName(this.seatMapId), { name: this.seatMapNameDraft.trim() })
+        await this.api.patch(ENDPOINTS.adminUpdateSeatMapName(this.seatMapId), {
+          name: this.seatMapNameDraft.trim()
+        })
         this.successMessage = '좌석맵 이름이 수정되었습니다.'
-        await this.loadAll()
+        this.seatMap = this.normalizeSeatMap({ ...this.seatMap, name: this.seatMapNameDraft.trim() })
       } catch (err) {
-        // 에러는 ErrorAlertModal에서 표시됨
+        // ErrorAlertModal
       } finally {
         this.savingSeatMapName = false
-      }
-    },
-    async addSection() {
-      this.addingSection = true
-      this.successMessage = ''
-      try {
-        await this.api.post(ENDPOINTS.adminAddSeatMapSection(this.seatMapId), {
-          name: `NEW-${Date.now().toString().slice(-4)}`,
-          displayColor: '#33C3F0',
-          totalRow: 5,
-          totalCol: 10,
-          rows: 5,
-          seatsPerRow: 10,
-          initialGrade: 'R'
-        })
-        this.successMessage = '섹션이 추가되었습니다.'
-        await this.loadSections()
-      } catch (err) {
-        // 에러는 ErrorAlertModal에서 표시됨
-      } finally {
-        this.addingSection = false
-      }
-    },
-    startEditSection(section) {
-      this.editingSectionId = section.id
-      this.sectionDraft = {
-        name: section.name || '',
-        displayColor: section.displayColor || '#FF5733',
-        rows: section.rows || 1,
-        seatsPerRow: section.seatsPerRow || 1,
-        initialGrade: section.initialGrade || 'VIP'
-      }
-    },
-    cancelEditSection() {
-      this.editingSectionId = null
-    },
-    async saveSection(sectionId) {
-      this.successMessage = ''
-      try {
-        await this.api.put(ENDPOINTS.adminUpdateSeatSection(sectionId), {
-          name: this.sectionDraft.name,
-          displayColor: this.sectionDraft.displayColor,
-          totalRow: Number(this.sectionDraft.rows),
-          totalCol: Number(this.sectionDraft.seatsPerRow),
-          rows: Number(this.sectionDraft.rows),
-          seatsPerRow: Number(this.sectionDraft.seatsPerRow),
-          initialGrade: this.sectionDraft.initialGrade
-        })
-        this.successMessage = '섹션이 수정되었습니다.'
-        this.editingSectionId = null
-        await this.loadSections()
-      } catch (err) {
-        // 에러는 ErrorAlertModal에서 표시됨
-      }
-    },
-    async deleteSection(sectionId) {
-      this.deletingSectionId = sectionId
-      this.successMessage = ''
-      try {
-        await this.api.del(ENDPOINTS.adminDeleteSeatSection(sectionId))
-        this.successMessage = '섹션이 삭제되었습니다.'
-        await this.loadSections()
-        await this.loadDefinitions()
-      } catch (err) {
-        // 에러는 ErrorAlertModal에서 표시됨
-      } finally {
-        this.deletingSectionId = null
-      }
-    },
-    toggleDefinitionSelection(definitionId) {
-      const idx = this.selectedDefinitionIds.findIndex((id) => String(id) === String(definitionId))
-      if (idx >= 0) {
-        this.selectedDefinitionIds.splice(idx, 1)
-      } else {
-        this.selectedDefinitionIds.push(definitionId)
-      }
-    },
-    toggleSelectAllDefinitions() {
-      if (this.selectedDefinitionIds.length === this.seatDefinitions.length) {
-        this.selectedDefinitionIds = []
-      } else {
-        this.selectedDefinitionIds = this.seatDefinitions.map((d) => d.id)
-      }
-    },
-    async updateDefinitionGrade(definitionId) {
-      const grade = this.definitionGradeDrafts[definitionId]
-      if (!grade) return
-      this.successMessage = ''
-      try {
-        await this.api.patch(ENDPOINTS.adminUpdateSeatDefinitionGrade(definitionId), { grade })
-        this.successMessage = '좌석 등급이 수정되었습니다.'
-        await this.loadDefinitions()
-      } catch (err) {
-        // 에러는 ErrorAlertModal에서 표시됨
       }
     },
     onImgWheel(e) {
@@ -476,7 +280,7 @@ export default {
       const rect = e.currentTarget.getBoundingClientRect()
       const mx = e.clientX - rect.left
       const my = e.clientY - rect.top
-      const newScale = Math.min(Math.max(this.imgScale * delta, 0.1), 5)
+      const newScale = Math.min(Math.max(this.imgScale * delta, 0.25), 3)
       const actualDelta = newScale / this.imgScale
       this.imgOffsetX = mx - (mx - this.imgOffsetX) * actualDelta
       this.imgOffsetY = my - (my - this.imgOffsetY) * actualDelta
@@ -499,24 +303,6 @@ export default {
       this.imgScale = 1
       this.imgOffsetX = 0
       this.imgOffsetY = 0
-    },
-    async applyBulkGrade() {
-      if (!this.selectedSectionId || !this.bulkGrade) return
-      const definitionIds = this.selectedDefinitionIds.length > 0
-        ? this.selectedDefinitionIds
-        : this.seatDefinitions.map((d) => d.id)
-      if (definitionIds.length === 0) return
-      this.successMessage = ''
-      try {
-        await this.api.patch(
-          ENDPOINTS.adminBulkUpdateSeatDefinitionsGrade(this.selectedSectionId),
-          { definitionIds, grade: this.bulkGrade }
-        )
-        this.successMessage = `좌석 ${definitionIds.length}건 등급이 변경되었습니다.`
-        await this.loadDefinitions()
-      } catch (err) {
-        // 에러는 ErrorAlertModal에서 표시됨
-      }
     }
   }
 }
