@@ -14,26 +14,31 @@
       </div>
     </UiCard>
 
-    <UiTable :columns="columns" :rows="rows">
+    <!-- 통합검색 -->
+    <div class="flex gap-2 rounded-2xl border border-slate-200 bg-white p-4">
+      <input
+        v-model="searchKeyword"
+        type="text"
+        placeholder="좌석맵명, 버전으로 검색"
+        class="h-10 flex-1 min-w-0 rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+        @keydown.enter.prevent="doSearch"
+      />
+      <UiButton class="h-10 px-4 shrink-0" @click="doSearch">검색</UiButton>
+      <UiButton variant="ghost" class="h-10 px-4 shrink-0" @click="resetSearch">초기화</UiButton>
+    </div>
+
+    <div v-if="loading" class="rounded-2xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500">
+      목록을 불러오는 중…
+    </div>
+    <UiTable v-else :columns="columns" :rows="rows">
       <template #cell:id="{ row }">
-        <button
-          class="font-semibold text-slate-900 hover:underline"
-          type="button"
-          @click="$router.push({ path: `/admin/seat-maps/${row.id}`, query: { venueId: venueId } })"
-        >
-          {{ row.id }}
-        </button>
+        <span class="font-semibold text-slate-900">{{ row.id }}</span>
       </template>
       <template #cell:name="{ row }">
         <span class="text-sm text-slate-700">{{ row.name || '-' }}</span>
       </template>
       <template #cell:size="{ row }">
-        <span class="text-sm text-slate-700">
-          {{ row.row_count || row.rowCount || '-' }}행 × {{ row.col_count || row.colCount || '-' }}열
-        </span>
-      </template>
-      <template #cell:sections="{ row }">
-        <span class="text-sm text-slate-700">{{ row.sectionsCount ?? '-' }}개</span>
+        <span class="text-sm text-slate-700">{{ row.size }}</span>
       </template>
       <template #cell:version="{ row }">
         <span class="text-sm text-slate-600">{{ row.version ?? '-' }}</span>
@@ -43,7 +48,23 @@
           {{ row.status || 'DRAFT' }}
         </UiBadge>
       </template>
+      <template #cell:actions="{ row }">
+        <UiButton variant="ghost" class="h-8 px-3 text-sm" @click="$router.push({ path: `/admin/seat-maps/${row.id}`, query: { venueId: venueId } })">
+          상세보기
+        </UiButton>
+      </template>
     </UiTable>
+
+    <!-- 페이징 -->
+    <div v-if="!loading && totalPages > 1" class="flex items-center justify-center gap-2">
+      <UiButton variant="ghost" class="h-9 px-3" :disabled="page <= 0" @click="goPage(page - 1)">
+        이전
+      </UiButton>
+      <span class="text-sm text-slate-600">{{ page + 1 }} / {{ totalPages }}</span>
+      <UiButton variant="ghost" class="h-9 px-3" :disabled="page >= totalPages - 1" @click="goPage(page + 1)">
+        다음
+      </UiButton>
+    </div>
 
     <UiModal :open="createModalOpen" title="좌석맵 생성" @close="closeCreateModal">
       <form id="seatmap-create-form" class="grid gap-4" @submit.prevent="submitCreate">
@@ -119,10 +140,10 @@ export default {
       columns: [
         { key: 'id', label: 'ID' },
         { key: 'name', label: '이름' },
-        { key: 'size', label: '행/열' },
-        { key: 'sections', label: '섹션' },
+        { key: 'size', label: '좌석/섹션' },
         { key: 'version', label: '버전' },
-        { key: 'status', label: '상태' }
+        { key: 'status', label: '상태' },
+        { key: 'actions', label: '작업' }
       ],
       api: null,
       venue: null,
@@ -130,7 +151,11 @@ export default {
       recentSeatMapIds: [],
       createModalOpen: false,
       form: getDefaultForm(),
-      loading: false
+      loading: false,
+      searchKeyword: '',
+      page: 0,
+      totalPages: 1,
+      pageSize: 10
     }
   },
   computed: {
@@ -145,6 +170,9 @@ export default {
   watch: {
     venueId() {
       this.loadData()
+    },
+    page() {
+      this.loadSeatMaps()
     }
   },
   methods: {
@@ -201,12 +229,20 @@ export default {
     },
     toSeatMapRow(item) {
       const sections = Array.isArray(item?.sections) ? item.sections : []
+      const totalSeats = item?.totalSeats ?? null
+      const rowCount = item?.row_count ?? item?.rowCount
+      const colCount = item?.col_count ?? item?.colCount
+      let size = '-'
+      if (totalSeats != null) size = `${totalSeats}석`
+      else if (rowCount != null && colCount != null) size = `${rowCount}행 × ${colCount}열`
       return {
         id: item?.id,
         name: item?.name || '',
         venue_id: item?.venue_id ?? item?.venueId,
-        row_count: item?.row_count ?? item?.rowCount,
-        col_count: item?.col_count ?? item?.colCount,
+        row_count: rowCount,
+        col_count: colCount,
+        totalSeats,
+        size,
         sectionsCount: item?.sectionCount ?? sections.length ?? 0,
         version: item?.version ?? null,
         status: item?.status ?? item?.seatMapStatus ?? 'DRAFT'
@@ -223,28 +259,37 @@ export default {
     },
     async loadSeatMaps() {
       if (this.venueId == null || this.venueId === '') return
+      this.loading = true
       try {
-        // GET /venues/admin/{venueId}/seat-maps (DRAFT 포함 전체 상태)
-        const res = await this.api.get(ENDPOINTS.adminVenueSeatMapsList(this.venueId, { page: 0, size: 100 }))
-        const list = Array.isArray(res?.content) ? res.content : (Array.isArray(res) ? res : res?.content || res?.items || [])
-        let rows = list.map(this.toSeatMapRow)
-        // Prepend any recently created (so they show before next full reload)
-        const fallbackIds = this.recentSeatMapIds
-          .map((id) => this.normalizeSeatMapId(id))
-          .filter((id) => id && !rows.some((r) => String(r.id) === String(id)))
-        if (fallbackIds.length > 0) {
-          const settled = await Promise.allSettled(
-            fallbackIds.map((id) => this.api.get(ENDPOINTS.adminSeatMapDetail(id)))
-          )
-          const extra = settled
-            .filter((r) => r.status === 'fulfilled' && r.value)
-            .map((r) => this.toSeatMapRow(r.value))
-          rows = [...extra, ...rows]
+        const kw = this.searchKeyword?.trim()
+        // 백엔드 검색 미지원 시: 검색어 있으면 많이 불러와서 클라이언트 필터링
+        const isSearching = !!kw
+        const params = {
+          page: isSearching ? 0 : this.page,
+          size: isSearching ? 200 : this.pageSize
         }
-        this.rows = rows
+        const res = await this.api.get(ENDPOINTS.adminVenueSeatMapsList(this.venueId, params))
+        let list = Array.isArray(res?.content) ? res.content : (Array.isArray(res) ? res : res?.content || res?.items || [])
+        let rows = list.map(this.toSeatMapRow)
+        if (isSearching) {
+          const lower = kw.toLowerCase()
+          rows = rows.filter((r) => {
+            const name = (r.name || '').toLowerCase()
+            const version = String(r.version || '').toLowerCase()
+            return name.includes(lower) || version.includes(lower)
+          })
+          this.rows = rows
+          this.totalPages = 1
+        } else {
+          this.rows = rows
+          this.totalPages = Math.max(1, res?.totalPages ?? 1)
+        }
       } catch (err) {
         this.rows = []
+        this.totalPages = 1
         console.warn('Failed to load seat maps', err)
+      } finally {
+        this.loading = false
       }
     },
     async loadData() {
@@ -255,6 +300,19 @@ export default {
       } finally {
         this.loading = false
       }
+    },
+    doSearch() {
+      this.page = 0
+      this.loadSeatMaps()
+    },
+    resetSearch() {
+      this.searchKeyword = ''
+      this.page = 0
+      this.loadSeatMaps()
+    },
+    goPage(p) {
+      if (p < 0 || p >= this.totalPages) return
+      this.page = p
     },
     openCreateModal() {
       this.form = getDefaultForm()

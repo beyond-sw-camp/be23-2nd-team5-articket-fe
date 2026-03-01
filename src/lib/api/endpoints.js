@@ -91,8 +91,9 @@ export const ENDPOINTS = {
   },
   adminVenueSeatMapsList: (venueId, params = {}) => {
     const p = new URLSearchParams()
-    if (params.page != null) p.set('page', params.page)
-    if (params.size != null) p.set('size', params.size)
+    if (params.page != null) p.set('page', String(params.page))
+    if (params.size != null) p.set('size', String(params.size))
+    if (params.keyword != null && params.keyword !== '') p.set('keyword', params.keyword)
     const q = p.toString()
     return `/venues/admin/${venueId}/seat-maps${q ? `?${q}` : ''}`
   },
