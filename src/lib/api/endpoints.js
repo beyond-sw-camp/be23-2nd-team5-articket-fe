@@ -51,7 +51,13 @@ export const ENDPOINTS = {
   concertReviews: (concertId) => `/user-concerts/${concertId}/reviews`,
 
   // ORGANIZER (백엔드 ConcertController 기준)
-  organizerConcerts: () => `/concerts/organizer`,
+  organizerConcerts: (params = {}) => {
+    const p = new URLSearchParams()
+    if (params.page != null) p.set('page', String(params.page))
+    if (params.size != null) p.set('size', String(params.size))
+    const q = p.toString()
+    return `/concerts/organizer${q ? `?${q}` : ''}`
+  },
   organizerConcertStats: (concertId) => `/concerts/organizer/${concertId}/stats`,
   organizerCreateConcert: () => `/concerts/organizer/create`,
   organizerUpdateConcert: (concertId) => `/concerts/organizer/${concertId}`,

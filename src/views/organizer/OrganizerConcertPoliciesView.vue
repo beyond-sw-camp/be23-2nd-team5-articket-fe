@@ -1,5 +1,10 @@
 <template>
   <div class="grid gap-4">
+    <div v-if="fromCreate" class="rounded-xl border border-green-200 bg-green-50 px-4 py-3">
+      <p class="text-sm font-medium text-green-800">공연이 생성되었습니다.</p>
+      <p class="mt-0.5 text-sm text-green-700">가격 정책을 설정한 후 회차를 추가하세요.</p>
+    </div>
+
     <!-- Header -->
     <UiCard>
       <div class="flex items-start justify-between gap-3">
@@ -236,6 +241,7 @@ export default {
     registeredTypes() { return this.items.map((i) => i.type) },
     availableTypes() { return ALL_POLICY_TYPES.filter((t) => !this.registeredTypes.includes(t.value)) },
     hasBasePricePolicy() { return this.registeredTypes.includes('BASE_PRICE') },
+    fromCreate() { return this.$route.query?.from === 'create' },
   },
 
   created() { this.api = useApi() },
