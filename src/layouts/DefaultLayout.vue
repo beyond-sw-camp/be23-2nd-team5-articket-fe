@@ -86,52 +86,13 @@
                   주최자 (승인 대기)
                 </UiButton>
               </div>
-              <!-- ORGANIZER 메뉴 (JWT role 기준) -->
-              <div v-else-if="roleValue === 'ORGANIZER'" class="relative inline-block">
-                <UiButton variant="tonal" class="h-10 px-3 rounded-xl text-slate-800"
-                  @click="organizerMenuOpen = !organizerMenuOpen">
-                  주최자
-                </UiButton>
-                <div v-show="organizerMenuOpen"
-                  class="absolute right-0 top-full z-50 mt-1 min-w-[140px] rounded-xl border border-slate-200 bg-white py-1 shadow-lg">
-                  <RouterLink to="/organizer"
-                    class="block px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-                    @click="organizerMenuOpen = false">대시보드</RouterLink>
-                  <RouterLink to="/organizer/concerts"
-                    class="block px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-                    @click="organizerMenuOpen = false">공연 목록</RouterLink>
-                  <RouterLink to="/organizer/concerts/new"
-                    class="block px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-                    @click="organizerMenuOpen = false">공연 등록</RouterLink>
-                  <RouterLink to="/organizer/performers"
-                    class="block px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-                    @click="organizerMenuOpen = false">아티스트 관리</RouterLink>
-                </div>
-              </div>
-
-              <!-- ADMIN 메뉴 (JWT role 기준) -->
-              <div v-if="roleValue === 'ADMIN'" class="relative inline-block">
-                <UiButton variant="tonal" class="h-10 px-3 rounded-xl text-slate-800"
-                  @click="adminMenuOpen = !adminMenuOpen">
-                  관리자
-                </UiButton>
-                <div v-show="adminMenuOpen"
-                  class="absolute right-0 top-full z-50 mt-1 min-w-[140px] rounded-xl border border-slate-200 bg-white py-1 shadow-lg">
-                  <RouterLink to="/admin" class="block px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-                    @click="adminMenuOpen = false">대시보드</RouterLink>
-                  <RouterLink to="/admin/venues"
-                    class="block px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-                    @click="adminMenuOpen = false">공연장</RouterLink>
-                  <RouterLink to="/admin/users"
-                    class="block px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-                    @click="adminMenuOpen = false">회원관리</RouterLink>
-                  <RouterLink to="/admin/orders"
-                    class="block px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-                    @click="adminMenuOpen = false">주문</RouterLink>
-                  <RouterLink to="/admin/pending-organizers"
-                    class="block px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-                    @click="adminMenuOpen = false">주최자 승인</RouterLink>
-                </div>
+              <!-- ORGANIZER / ADMIN → Management 페이지로 이동 -->
+              <div v-else-if="roleValue === 'ORGANIZER' || roleValue === 'ADMIN'" class="inline-block">
+                <RouterLink to="/management">
+                  <UiButton variant="tonal" class="h-10 px-3 rounded-xl text-slate-800">
+                    관리자 페이지
+                  </UiButton>
+                </RouterLink>
               </div>
 
               <UiBadge v-if="roleValue !== 'GUEST'" tone="solid">{{ roleValue }}</UiBadge>
@@ -270,8 +231,6 @@ export default {
       ],
 
       tokenVersion: 0,
-      adminMenuOpen: false,
-      organizerMenuOpen: false,
       scrolled: false,
       notifPanelOpen: false,
       sseState: null,
@@ -351,8 +310,6 @@ export default {
       this.q = v || ''
     },
     $route() {
-      this.adminMenuOpen = false
-      this.organizerMenuOpen = false
       this.bumpTokenVersion()
     },
     isLoggedIn(v) {

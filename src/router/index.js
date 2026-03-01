@@ -53,6 +53,9 @@ import OrganizerPriceHistoryView from '../views/organizer/OrganizerPriceHistoryV
 import OrganizerPolicyHistoryView from '../views/organizer/OrganizerPolicyHistoryView.vue'
 import OrganizerSchedulePerformersView from '../views/organizer/OrganizerSchedulePerformersView.vue'
 
+// management (organizer / admin hub)
+import ManagementView from '../views/management/ManagementView.vue'
+
 // admin
 import AdminDashboardView from '../views/admin/AdminDashboardView.vue'
 import AdminVenuesView from '../views/admin/AdminVenuesView.vue'
@@ -123,6 +126,8 @@ const routes = [
       childRoute('order', Order, { requiresAuth: true, requiredRole: 'USER' }),
       childRoute('orderComplete', OrderComplete, { requiresAuth: true, requiredRole: 'USER' }),
 
+      childRoute('management', ManagementView, { requiresAuth: true }),
+
       childRoute('organizer', OrganizerDashboardView, { requiresAuth: true, requiredRole: 'ORGANIZER' }),
       childRoute('organizer/concerts', OrganizerConcertsView, { requiresAuth: true, requiredRole: 'ORGANIZER' }),
       childRoute('organizer/concerts/new', OrganizerNewConcertView, { requiresAuth: true, requiredRole: 'ORGANIZER' }),
@@ -176,7 +181,7 @@ const router = createRouter({
 router.beforeEach((to) => {
   const meta = to.meta || {}
 
-  if (!meta.requiresAuth && !meta.requiredRole) return true
+  if (!meta.requiresAuth && !meta.requiredRole && !meta.requiredRoles?.length) return true
 
   const role = getRole()
   const authed = isAuthed()
