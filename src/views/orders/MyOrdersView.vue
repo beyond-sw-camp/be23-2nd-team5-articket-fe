@@ -24,7 +24,7 @@
         <col style="width: 45%;">
         <col style="width: 10%;">
         <col style="width: 15%;">
-        <col style="width: 15%;">
+        <!-- <col style="width: 15%;"> -->
       </colgroup>
       <thead>
         <tr>
@@ -32,12 +32,12 @@
           <th>상품정보</th>
           <th>관람인원</th>
           <th>진행상태</th>
-          <th>취소/환불</th>
+          <!-- <th>취소/환불</th> -->
         </tr>
       </thead>
       <tbody>
         <tr v-if="orders.length === 0">
-          <td colspan="5" class="empty-message">예매 내역이 없습니다.</td>
+          <td colspan="4" class="empty-message">예매 내역이 없습니다.</td>
         </tr>
 
         <tr v-else v-for="order in orders" :key="order.bookingNumber">
@@ -61,7 +61,7 @@
               {{ order.status }}
             </span>
           </td>
-          <td>
+          <!-- <td>
             <div v-if="order.seatDetails.length > 0" class="seat-cancel-list">
               <div v-for="seat in order.seatDetails" :key="seat.id" class="seat-cancel-item">
                 <span class="seat-label">{{ seat.seatNo || seat.name || seat.id }}</span>
@@ -77,7 +77,7 @@
               </div>
             </div>
             <span v-else>-</span>
-          </td>
+          </td> -->
         </tr>
       </tbody>
     </table>

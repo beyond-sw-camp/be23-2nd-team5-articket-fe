@@ -7,7 +7,6 @@
     <template v-else-if="item">
       <!-- ── 헤더: 공연 제목 ── -->
       <div class="text-2xl font-bold text-slate-900">{{ item.title }}</div>
-
       <!-- ── 메인: 포스터 | 상세정보 | 예매 위젯 ── -->
       <div class="grid gap-6 lg:grid-cols-[280px_1fr_320px]">
         <!-- 왼쪽: 포스터 + 좋아요 -->
