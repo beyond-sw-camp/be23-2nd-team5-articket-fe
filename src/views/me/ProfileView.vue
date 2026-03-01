@@ -88,11 +88,6 @@
         </p>
       </div>
 
-      <div v-if="!hasAppliedForOrganizer" class="mt-4 flex flex-wrap gap-2">
-        <UiButton class="h-11 px-5" @click="$router.push('/me/orders')">내 주문 목록</UiButton>
-        <UiButton variant="tonal" class="h-11 px-5" @click="$router.push('/me/performers/likes')">좋아요한 아티스트</UiButton>
-        <UiButton variant="ghost" class="h-11 px-5" @click="$router.push('/')">둘러보기</UiButton>
-      </div>
     </UiCard>
   </div>
 </template>
