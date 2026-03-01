@@ -42,6 +42,7 @@
               required
               class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
               placeholder="세종문화회관 중극장"
+              @keydown.enter.prevent
             />
           </div>
           <div>
