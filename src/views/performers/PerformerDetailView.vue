@@ -32,7 +32,7 @@
                   v-if="isOrganizerOrAdmin"
                   variant="ghost"
                   class="h-9 px-3 text-sm"
-                  @click="$router.push('/organizer/performers')"
+                  @click="goBack"
                 >
                   ← 목록
                 </UiButton>
@@ -215,6 +215,14 @@ export default {
         this.schedules = []
       } finally {
         this.loading = false
+      }
+    },
+    goBack() {
+      const path = this.$route.path || ''
+      if (path.startsWith('/organizer/performers')) {
+        this.$router.push('/organizer/performers')
+      } else {
+        this.$router.push('/performers')
       }
     },
     async toggleLike() {

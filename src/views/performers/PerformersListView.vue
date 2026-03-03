@@ -68,7 +68,7 @@
           <!-- 이름 + 정보 -->
           <div
             class="flex-1 min-w-0 cursor-pointer"
-            @click="$router.push(`/performers/${row.id}`)"
+            @click="onRowClick(row)"
           >
             <div class="font-bold text-slate-900 truncate">{{ row.name }}</div>
             <div class="mt-0.5 text-sm font-medium text-green-600">
@@ -152,6 +152,75 @@
         </div>
       </template>
     </UiModal>
+
+    <!-- 아티스트 상세 모달 (관리자/주최자 전용) -->
+    <UiModal v-if="canManage" :open="detailModalOpen" title="아티스트 상세" @close="closeDetail">
+      <div v-if="detailLoading" class="text-sm text-slate-500">
+        불러오는 중…
+      </div>
+      <div v-else-if="detailItem" class="grid gap-4">
+        <div class="flex gap-4">
+          <div class="shrink-0">
+            <img
+              v-if="detailItem.profileImgUrl"
+              :src="detailItem.profileImgUrl"
+              :alt="detailItem.name"
+              class="h-20 w-16 rounded-xl object-cover border border-slate-200"
+            />
+            <div
+              v-else
+              class="flex h-20 w-16 items-center justify-center rounded-xl bg-slate-100 text-slate-400 text-2xl font-bold border border-slate-200"
+            >
+              {{ detailItem.name?.charAt(0) ?? '?' }}
+            </div>
+          </div>
+          <div class="min-w-0 flex-1">
+            <div class="text-lg font-bold text-slate-900">{{ detailItem.name }}</div>
+            <div v-if="detailItem.birth" class="mt-1 text-xs text-slate-500">생년월일: {{ detailItem.birth }}</div>
+            <div class="mt-1 text-xs font-medium text-green-600">
+              좋아요 {{ (detailItem.likeCount ?? 0).toLocaleString() }}명
+            </div>
+          </div>
+        </div>
+        <div v-if="detailItem.description" class="text-sm text-slate-700 leading-relaxed whitespace-pre-line">
+          {{ detailItem.description }}
+        </div>
+
+        <!-- 간단 출연 공연 목록 -->
+        <div v-if="detailItem.concerts && detailItem.concerts.length" class="mt-1 rounded-xl border border-slate-100 bg-slate-50 p-3">
+          <div class="mb-1 text-xs font-semibold text-slate-600">
+            출연 공연 (최근 {{ detailItem.concerts.length }}건)
+          </div>
+          <ul class="space-y-1">
+            <li
+              v-for="c in detailItem.concerts"
+              :key="c.id"
+              class="flex items-center justify-between gap-2 text-xs text-slate-700"
+            >
+              <div class="min-w-0 flex-1">
+                <div class="truncate font-medium text-slate-900">
+                  {{ c.title }}
+                </div>
+                <div v-if="c.venueName" class="truncate text-[11px] text-slate-500">
+                  {{ c.venueName }}
+                </div>
+              </div>
+              <div v-if="c.startDate" class="shrink-0 text-[11px] text-slate-400">
+                {{ c.startDate }}
+              </div>
+            </li>
+          </ul>
+        </div>
+      </div>
+      <template #footer>
+        <div class="flex justify-end gap-2">
+          <UiButton variant="ghost" @click="closeDetail">닫기</UiButton>
+          <UiButton v-if="detailItem" @click="goDetailPage">
+            NEXTICKET 서비스에서 자세히 보기
+          </UiButton>
+        </div>
+      </template>
+    </UiModal>
   </div>
 </template>
 
@@ -186,7 +255,10 @@ export default {
       totalPages: 0,
       totalElements: 0,
       createModalOpen: false,
-      form: { name: '', description: '', birth: '' }
+      form: { name: '', description: '', birth: '' },
+      detailModalOpen: false,
+      detailLoading: false,
+      detailItem: null
     }
   },
   computed: {
@@ -227,6 +299,13 @@ export default {
         this.loading = false
       }
     },
+    onRowClick(row) {
+      if (this.canManage) {
+        this.openDetail(row.id)
+      } else {
+        this.$router.push(`/performers/${row.id}`)
+      }
+    },
     search() {
       this.page = 0
       this.$router.replace({ query: { ...this.$route.query, name: this.searchName || undefined } }).catch(() => {})
@@ -258,6 +337,53 @@ export default {
       } catch (e) {
         console.warn('Like toggle failed', e)
       }
+    },
+    async openDetail(id) {
+      if (id == null || id === '') return
+      this.detailModalOpen = true
+      this.detailLoading = true
+      this.detailItem = null
+      try {
+        const [detail, concertsRes] = await Promise.all([
+          this.api.get(ENDPOINTS.performerDetail(id)),
+          this.api.get(ENDPOINTS.performerConcerts(id)).catch(() => []),
+        ])
+        const concertsArr = Array.isArray(concertsRes) ? concertsRes : concertsRes?.content ?? concertsRes?.items ?? []
+        const topConcerts = concertsArr.slice(0, 3).map((c) => ({
+          id: c.id ?? c.concertId,
+          title: c.title ?? c.concertTitle ?? '공연',
+          venueName: c.venueName ?? null,
+          startDate: c.startDate ?? c.date ?? null,
+        }))
+        this.detailItem = {
+          id: detail.id,
+          name: detail.name ?? '-',
+          profileImgUrl: detail.profileImgUrl ?? null,
+          description: detail.description ?? '',
+          birth: detail.birth ?? null,
+          likeCount: detail.likeCount ?? 0,
+          concerts: topConcerts,
+        }
+      } catch (e) {
+        console.warn('Load performer detail failed', e)
+        this.detailItem = null
+      } finally {
+        this.detailLoading = false
+      }
+    },
+    closeDetail() {
+      this.detailModalOpen = false
+      this.detailItem = null
+    },
+    goDetailPage() {
+      const id = this.detailItem?.id
+      if (!id) {
+        this.closeDetail()
+        return
+      }
+      this.closeDetail()
+      // 관리자 컨텍스트에서도, NEXTICKET 사용자 상세 페이지로 라우팅
+      this.$router.push(`/performers/${id}`)
     },
     openCreateModal() {
       this.form = { name: '', description: '', birth: '' }

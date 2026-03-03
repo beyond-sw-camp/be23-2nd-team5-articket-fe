@@ -18,7 +18,7 @@
           <button
             class="font-semibold text-slate-900 hover:underline"
             type="button"
-            @click="$router.push(`/performers/${row.performerId}`)"
+            @click="$router.push(`/organizer/performers/${row.performerId}`)"
           >
             {{ row.performerName || row.name || '-' }}
           </button>
