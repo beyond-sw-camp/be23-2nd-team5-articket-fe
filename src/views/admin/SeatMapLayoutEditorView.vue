@@ -1,5 +1,5 @@
 <template>
-  <div class="sfe-root">
+  <div class="sfe-root" ref="rootContainer">
     <!-- ── TOP BAR ── -->
     <div class="sfe-topbar">
       <div class="flex items-center gap-3">
@@ -45,21 +45,27 @@
       <div class="sfe-left-panel">
         <div class="sfe-tool-group">
           <div class="sfe-tool-label">TOOLS</div>
+          <button class="sfe-tool-btn" :class="{ active: isFullScreen }" @click="toggleFullScreen" title="전체 화면">
+            <span>⛶</span>
+            <span>전체화면</span>
+          </button>
           <button v-for="t in tools" :key="t.id"
                class="sfe-tool-btn" :class="{ active: currentTool === t.id }"
                @click="setTool(t.id)" :title="t.name">
             <span>{{ t.icon }}</span>
             <span>{{ t.name }}</span>
           </button>
+          <button class="sfe-tool-btn" @click="fitToView" title="화면 맞춤">
+            <span>⊞</span>
+            <span>화면맞춤</span>
+          </button>
+          <button class="sfe-tool-btn" @click="clearAllObjects">
+            <span>🗑</span>
+            <span>초기화</span>
+          </button>
         </div>
 
         <div class="sfe-spacer"></div>
-
-        <div class="sfe-tool-group pb-4">
-          <button class="sfe-tool-btn" @click="resetView" title="화면 초기화">
-            <span>⊞</span>
-          </button>
-        </div>
       </div>
 
       <!-- CENTER CANVAS AREA -->
@@ -73,10 +79,6 @@
           <button class="sfe-hud-btn" @click="zoomIn">＋</button>
         </div>
 
-        <!-- Minimap -->
-        <div class="sfe-minimap">
-          <canvas id="sfe-minimap-canvas" width="160" height="100"></canvas>
-        </div>
       </div>
 
       <!-- RIGHT PROPERTIES PANEL -->
@@ -235,7 +237,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
 import { useApi } from '../../composables/useApi'
 import Konva from 'konva'
 
@@ -243,6 +245,8 @@ const route = useRoute()
 const router = useRouter()
 const api = useApi()
 const seatMapId = route.params.seatMapId
+const rootContainer = ref(null)
+const isFullScreen = ref(false)
 
 // ── STATE ─────────────────────────────────────────────────────────────
 const fileName = ref('로딩 중...')
@@ -396,6 +400,19 @@ const redo = () => {
   }
 }
 
+// ── FULL SCREEN ───────────────────────────────────────────────────────
+const toggleFullScreen = () => {
+  if (!document.fullscreenElement) {
+    rootContainer.value?.requestFullscreen().catch((e) => {
+      console.warn('Full screen failed:', e)
+    })
+  } else {
+    if (document.exitFullscreen) {
+      document.exitFullscreen()
+    }
+  }
+}
+
 // ── TOOLS ─────────────────────────────────────────────────────────────
 const setTool = (t) => {
   currentTool.value = t
@@ -431,11 +448,12 @@ const addSeatGrid = (x, y, rows = 5, cols = 8) => {
   setTool('select')
 }
 
-const addStage = (x, y) => {
+const addStage = (x, y, w = 300, h = 100) => {
   objects.value.push({
     id: uid(), type: 'stage', name: 'STAGE',
-    x: Math.round(x - 150), y: Math.round(y - 50),
-    width: 300, height: 100, rotation: 0
+    x: Math.round(x), y: Math.round(y),
+    width: Math.round(w), height: Math.round(h),
+    rotation: 0
   })
   pushHistory()
   setTool('select')
@@ -457,6 +475,17 @@ const deleteObj = () => {
   if (!confirm('선택한 객체를 삭제하시겠습니까?')) return
   objects.value = objects.value.filter(o => o.id !== selectedId.value)
   selectedId.value = null
+  if (transformer) transformer.nodes([])
+  pushHistory()
+  renderAll()
+}
+
+const clearAllObjects = () => {
+  if (objects.value.length === 0) return
+  if (!confirm('모든 내용을 지우고 초기화하시겠습니까?')) return
+  objects.value = []
+  selectedId.value = null
+  selectedSeatIds.value.clear()
   if (transformer) transformer.nodes([])
   pushHistory()
   renderAll()
@@ -662,7 +691,10 @@ const renderAll = () => {
             fill,
             stroke: isSelected ? '#fff' : 'transparent',
             strokeWidth: 1.5,
-            opacity: state === 'inactive' ? 0.25 : 1
+            opacity: state === 'inactive' ? 0.25 : 1,
+            listening: false,             // 성능 최적화: 개별 좌석 이벤트 감지 제거
+            perfectDrawEnabled: false,    // 성능 최적화: 그리기 연산 단순화
+            shadowForStrokeEnabled: false // 성능 최적화: 스트로크 그림자 계산 제거
           })
 
           grp.add(seatShape)
@@ -675,6 +707,11 @@ const renderAll = () => {
         x: 0, y: -20,
         width: gridW, align: 'center'
       }))
+
+      // 대규모 좌석 렌더링 성능 최적화 (비트맵 캐싱)
+      // 줌 레벨에 맞춰 해상도 조절 (최대 3배)
+      const pr = Math.min(Math.max(stageScale.value, 1), 3)
+      grp.cache({ pixelRatio: pr })
     }
 
     // ── 공통 이벤트 ──
@@ -743,8 +780,7 @@ const renderAll = () => {
 
   if (transformer) transformer.moveToTop()
   updateTransformer()
-  mainLayer.draw()
-  renderMinimap()
+  mainLayer.batchDraw()
 }
 
 const updateTransformer = () => {
@@ -761,25 +797,26 @@ let selectionStart = { x: 0, y: 0 }
 const handleStageMouseDown = (e) => {
   const pos = getPointerPos()
 
-  // 구역 생성: 드래그로 크기 결정
-  if (currentTool.value === 'seatGrid') {
+  // 구역 생성 OR 무대 생성: 드래그로 크기 결정
+  if (currentTool.value === 'seatGrid' || currentTool.value === 'stage') {
     dragCreateStart = { ...pos }
     isDragCreating = true
+    const isStage = currentTool.value === 'stage'
     previewRect = new Konva.Rect({
       x: pos.x, y: pos.y, width: 0, height: 0,
-      fill: 'rgba(239, 107, 107, 0.15)',
-      stroke: '#ef6b6b', strokeWidth: 1.5, dash: [5, 4]
+      fill: isStage ? 'rgba(59, 130, 246, 0.15)' : 'rgba(239, 107, 107, 0.15)',
+      stroke: isStage ? '#3b82f6' : '#ef6b6b',
+      strokeWidth: 1.5, dash: [5, 4]
     })
     previewLabel = new Konva.Text({
       x: pos.x + 6, y: pos.y + 6,
-      text: '', fontSize: 11, fill: '#ef6b6b', fontStyle: 'bold'
+      text: '', fontSize: 11, fill: isStage ? '#3b82f6' : '#ef6b6b', fontStyle: 'bold'
     })
     guideLayer.add(previewRect)
     guideLayer.add(previewLabel)
     guideLayer.batchDraw()
     return
   }
-  if (currentTool.value === 'stage') { addStage(pos.x, pos.y); return }
 
   if (currentTool.value === 'seatEdit') {
     const hit = findSeatAtPos(pos.x, pos.y)
@@ -815,7 +852,7 @@ const handleStageMouseDown = (e) => {
 }
 
 const handleStageMouseMove = () => {
-  // 구역 드래그 생성 프리뷰 업데이트
+  // 구역/무대 드래그 생성 프리뷰 업데이트
   if (isDragCreating && dragCreateStart) {
     const pos = getPointerPos()
     const x = Math.min(dragCreateStart.x, pos.x)
@@ -824,11 +861,16 @@ const handleStageMouseMove = () => {
     const h = Math.abs(pos.y - dragCreateStart.y)
     if (previewRect) previewRect.setAttrs({ x, y, width: w, height: h })
 
-    // 드래그 중 행/열 수 미리 표시
-    const pCols = Math.max(1, Math.round((w + SEAT_GAP) / (SEAT_W + SEAT_GAP)))
-    const pRows = Math.max(1, Math.round((h + SEAT_GAP) / (SEAT_H + SEAT_GAP)))
     if (previewLabel) {
-      previewLabel.setAttrs({ x: x + 6, y: y + 6, text: `${pRows}행 × ${pCols}열` })
+      let labelText = ''
+      if (currentTool.value === 'stage') {
+        labelText = `${Math.round(w)}px × ${Math.round(h)}px`
+      } else {
+        const pCols = Math.max(1, Math.round((w + SEAT_GAP) / (SEAT_W + SEAT_GAP)))
+        const pRows = Math.max(1, Math.round((h + SEAT_GAP) / (SEAT_H + SEAT_GAP)))
+        labelText = `${pRows}행 × ${pCols}열`
+      }
+      previewLabel.setAttrs({ x: x + 6, y: y + 6, text: labelText })
     }
     guideLayer.batchDraw()
     return
@@ -865,7 +907,7 @@ const handleStageMouseMove = () => {
 }
 
 const handleStageMouseUp = () => {
-  // 구역 드래그 생성 완료
+  // 구역/무대 드래그 생성 완료
   if (isDragCreating && dragCreateStart) {
     isDragCreating = false
     const pos = getPointerPos()
@@ -880,10 +922,17 @@ const handleStageMouseUp = () => {
     guideLayer.batchDraw()
     dragCreateStart = null
 
-    // 픽셀 크기 → 행/열 수 역산
-    const cols = Math.max(1, Math.round((w + SEAT_GAP) / (SEAT_W + SEAT_GAP)))
-    const rows = Math.max(1, Math.round((h + SEAT_GAP) / (SEAT_H + SEAT_GAP)))
-    addSeatGrid(x, y, rows, cols)
+    if (currentTool.value === 'stage') {
+      // 무대 생성 (최소 크기 제한, 클릭 시 기본 크기)
+      const finalW = Math.max(20, w)
+      const finalH = Math.max(20, h)
+      addStage(x, y, finalW, finalH)
+    } else {
+      // 구역 생성
+      const cols = Math.max(1, Math.round((w + SEAT_GAP) / (SEAT_W + SEAT_GAP)))
+      const rows = Math.max(1, Math.round((h + SEAT_GAP) / (SEAT_H + SEAT_GAP)))
+      addSeatGrid(x, y, rows, cols)
+    }
     return
   }
 
@@ -921,71 +970,6 @@ const handleStageMouseUp = () => {
   renderAll()
 }
 
-// ── MINIMAP ───────────────────────────────────────────────────────────
-const renderMinimap = () => {
-  const canvas = document.getElementById('sfe-minimap-canvas')
-  if (!canvas) return
-  const ctx = canvas.getContext('2d')
-  const MW = canvas.width   // 160
-  const MH = canvas.height  // 100
-  ctx.clearRect(0, 0, MW, MH)
-  ctx.fillStyle = '#ffffff'
-  ctx.fillRect(0, 0, MW, MH)
-
-  if (objects.value.length === 0) return
-
-  // 모든 객체의 경계박스 계산
-  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
-  objects.value.forEach(obj => {
-    const w = obj.width || (obj.cols * (SEAT_W + SEAT_GAP))
-    const h = obj.height || (obj.rows * (SEAT_H + SEAT_GAP))
-    minX = Math.min(minX, obj.x)
-    minY = Math.min(minY, obj.y)
-    maxX = Math.max(maxX, obj.x + w)
-    maxY = Math.max(maxY, obj.y + h)
-  })
-
-  const PAD = 10
-  const contentW = Math.max(maxX - minX, 100)
-  const contentH = Math.max(maxY - minY, 100)
-  const scale = Math.min((MW - PAD * 2) / contentW, (MH - PAD * 2) / contentH)
-
-  // 미니맵 중앙 정렬 오프셋
-  const offsetX = (MW - contentW * scale) / 2 - minX * scale
-  const offsetY = (MH - contentH * scale) / 2 - minY * scale
-
-  // 객체 그리기
-  objects.value.forEach(obj => {
-    ctx.fillStyle = obj.type === 'stage' ? '#3b82f6' : gradeColor(obj.grade || 'R')
-    ctx.globalAlpha = 0.85
-    const w = obj.width || (obj.cols * (SEAT_W + SEAT_GAP))
-    const h = obj.height || (obj.rows * (SEAT_H + SEAT_GAP))
-    ctx.fillRect(
-      Math.round(obj.x * scale + offsetX),
-      Math.round(obj.y * scale + offsetY),
-      Math.max(3, Math.round(w * scale)),
-      Math.max(3, Math.round(h * scale))
-    )
-  })
-  ctx.globalAlpha = 1.0
-
-  // 현재 뷰포트(보이는 영역) 표시
-  const stageScaleVal = konvaStage.scaleX()
-  const vpX = -konvaStage.x() / stageScaleVal
-  const vpY = -konvaStage.y() / stageScaleVal
-  const vpW = konvaStage.width() / stageScaleVal
-  const vpH = konvaStage.height() / stageScaleVal
-
-  ctx.strokeStyle = '#60a5fa'
-  ctx.lineWidth = 1.5
-  ctx.strokeRect(
-    Math.round(vpX * scale + offsetX),
-    Math.round(vpY * scale + offsetY),
-    Math.round(vpW * scale),
-    Math.round(vpH * scale)
-  )
-}
-
 // ── API ───────────────────────────────────────────────────────────────
 const loadLayout = async () => {
   try {
@@ -997,11 +981,7 @@ const loadLayout = async () => {
 
     const sections = await api.get(`/seat-sections/admin/${seatMapId}`)
 
-    // stageX/Y가 null/undefined 일 때만 캔버스 가운데로 초기 배치
-    const defaultStageX = Math.round(konvaStage.width() / 2 - 200)
-    const defaultStageY = Math.round(konvaStage.height() / 2 - 50)
-
-    // stageListJson이 있으면 여러 stage 파싱, 없으면 기존 단일 stage 필드로 폴백
+    // stageListJson이 있으면 여러 stage 파싱
     let stageObjs = []
     const stageListJson = mapRes?.stageListJson ?? mapRes?.stage_list_json
     if (stageListJson) {
@@ -1015,18 +995,8 @@ const loadLayout = async () => {
           rotation: s.rotation ?? 0
         }))
       } catch (e) {
-        console.warn('stageListJson 파싱 실패, 단일 stage 폴백:', e)
+        console.warn('stageListJson 파싱 실패:', e)
       }
-    }
-    if (stageObjs.length === 0) {
-      stageObjs = [{
-        id: uid(), type: 'stage', name: 'STAGE',
-        x: mapRes?.stageX ?? mapRes?.stage_x ?? defaultStageX,
-        y: mapRes?.stageY ?? mapRes?.stage_y ?? defaultStageY,
-        width: mapRes?.stageWidth ?? mapRes?.stage_width ?? 400,
-        height: mapRes?.stageHeight ?? mapRes?.stage_height ?? 100,
-        rotation: mapRes?.stageRotation ?? mapRes?.stage_rotation ?? 0
-      }]
     }
 
     const gridObjs = await Promise.all((sections || []).map(async sec => {
@@ -1069,6 +1039,7 @@ const loadLayout = async () => {
 
     objects.value = [...stageObjs, ...gridObjs]
     saveState()
+    savedStatus.value = '저장됨'
     renderAll()
   } catch (e) {
     console.error('loadLayout error:', e)
@@ -1177,8 +1148,57 @@ const onWindowMouseUp = () => {
   }
 }
 
+let isKeyboardMoving = false
+const onWindowKeyDown = (e) => {
+  if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return
+
+  if (selectedObj.value) {
+    const step = e.shiftKey ? 10 : 1
+    let moved = false
+    if (e.key === 'ArrowUp') { selectedObj.value.y -= step; moved = true }
+    else if (e.key === 'ArrowDown') { selectedObj.value.y += step; moved = true }
+    else if (e.key === 'ArrowLeft') { selectedObj.value.x -= step; moved = true }
+    else if (e.key === 'ArrowRight') { selectedObj.value.x += step; moved = true }
+
+    if (moved) {
+      e.preventDefault()
+      renderAll()
+      isKeyboardMoving = true
+    }
+  }
+}
+
+const onWindowKeyUp = () => {
+  if (isKeyboardMoving) {
+    pushHistory()
+    isKeyboardMoving = false
+  }
+}
+
+// ── UNSAVED CHANGES PROTECTION ────────────────────────────────────────
+const handleBeforeUnload = (e) => {
+  if (savedStatus.value !== '저장됨') {
+    e.preventDefault()
+    e.returnValue = ''
+  }
+}
+
+onBeforeRouteLeave((to, from, next) => {
+  if (savedStatus.value !== '저장됨' && !confirm('저장하지 않은 변경사항이 있습니다. 정말 나가시겠습니까?')) {
+    next(false)
+  } else {
+    next()
+  }
+})
+
 onMounted(() => {
   window.addEventListener('mouseup', onWindowMouseUp)
+  window.addEventListener('keydown', onWindowKeyDown)
+  window.addEventListener('keyup', onWindowKeyUp)
+  window.addEventListener('beforeunload', handleBeforeUnload)
+  document.addEventListener('fullscreenchange', () => {
+    isFullScreen.value = !!document.fullscreenElement
+  })
 
   const container = document.getElementById('sfe-konva')
   konvaStage = new Konva.Stage({
@@ -1229,7 +1249,7 @@ onMounted(() => {
       y: pointer.y - mousePointTo.y * newScale,
     })
     stageScale.value = newScale
-    renderAll()
+    mainLayer.batchDraw()
   })
 
   new ResizeObserver(() => {
@@ -1243,6 +1263,9 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('mouseup', onWindowMouseUp)
+  window.removeEventListener('keydown', onWindowKeyDown)
+  window.removeEventListener('keyup', onWindowKeyUp)
+  window.removeEventListener('beforeunload', handleBeforeUnload)
 })
 
 // ── THUMBNAIL / IMAGE CAPTURE ─────────────────────────────────────────
@@ -1280,20 +1303,65 @@ const downloadLayoutImage = () => {
   document.body.removeChild(a)
 }
 
+// 줌 동작 후 선명한 렌더링을 위한 지연 처리 (Debounce)
+let zoomDebounce = null
+const debouncedRenderAll = () => {
+  if (zoomDebounce) clearTimeout(zoomDebounce)
+  zoomDebounce = setTimeout(() => {
+    renderAll()
+  }, 200)
+}
+
 const zoomIn = () => {
   const s = stageScale.value * 1.2
   konvaStage.scale({ x: s, y: s })
-  stageScale.value = s; renderAll()
+  stageScale.value = s
+  mainLayer.batchDraw() // 즉시 반영 (비트맵 스케일링)
+  debouncedRenderAll()  // 지연 반영 (고해상도 리렌더링)
 }
 const zoomOut = () => {
   const s = stageScale.value / 1.2
   konvaStage.scale({ x: s, y: s })
-  stageScale.value = s; renderAll()
+  stageScale.value = s
+  mainLayer.batchDraw()
+  debouncedRenderAll()
 }
-const resetView = () => {
-  konvaStage.position({ x: 0, y: 0 })
-  konvaStage.scale({ x: 1, y: 1 })
-  stageScale.value = 1; renderAll()
+const fitToView = () => {
+  if (objects.value.length === 0) {
+    konvaStage.position({ x: 0, y: 0 })
+    konvaStage.scale({ x: 1, y: 1 })
+    stageScale.value = 1
+    mainLayer.batchDraw()
+    return
+  }
+
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
+  objects.value.forEach(obj => {
+    const w = obj.width || (obj.cols * (SEAT_W + SEAT_GAP))
+    const h = obj.height || (obj.rows * (SEAT_H + SEAT_GAP))
+    minX = Math.min(minX, obj.x)
+    minY = Math.min(minY, obj.y)
+    maxX = Math.max(maxX, obj.x + w)
+    maxY = Math.max(maxY, obj.y + h)
+  })
+
+  const PAD = 50
+  const contentW = Math.max(maxX - minX, 100)
+  const contentH = Math.max(maxY - minY, 100)
+  const scale = Math.min(
+    (konvaStage.width() - PAD * 2) / contentW,
+    (konvaStage.height() - PAD * 2) / contentH
+  )
+  const finalScale = Math.min(scale, 1.5)
+
+  const centerX = (konvaStage.width() - contentW * finalScale) / 2 - minX * finalScale
+  const centerY = (konvaStage.height() - contentH * finalScale) / 2 - minY * finalScale
+
+  konvaStage.scale({ x: finalScale, y: finalScale })
+  konvaStage.position({ x: centerX, y: centerY })
+  stageScale.value = finalScale
+  mainLayer.batchDraw()
+  debouncedRenderAll()
 }
 </script>
 
@@ -1307,6 +1375,9 @@ const resetView = () => {
   min-height: 0; min-width: 0;
   overflow: hidden;
   background: #f8fafc; color: #1e293b; font-family: 'Pretendard', sans-serif;
+}
+.sfe-root:fullscreen {
+  height: 100vh;
 }
 .sfe-topbar {
   height: 56px; min-height: 56px; background: #ffffff; border-bottom: 1px solid #e2e8f0;
@@ -1370,11 +1441,6 @@ const resetView = () => {
 .sfe-hud-btn { width: 24px; height: 24px; border-radius: 4px; transition: background-color 0.2s; color: #475569; }
 .sfe-hud-btn:hover { background-color: #f1f5f9; color: #0f172a; }
 .sfe-hud-val { font-size: 12px; font-variant-numeric: tabular-nums; width: 40px; text-align: center; color: #334155; }
-.sfe-minimap {
-  position: absolute; bottom: 20px; right: 20px;
-  width: 160px; height: 100px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-  overflow: hidden;
-}
 
 /* ── Right panel ── */
 .sfe-right-panel {
