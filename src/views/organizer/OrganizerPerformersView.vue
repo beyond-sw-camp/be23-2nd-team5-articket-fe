@@ -33,7 +33,7 @@
           v-for="row in rows"
           :key="row.id"
           class="flex cursor-pointer items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-red-300 hover:shadow"
-          @click="$router.push(`/performers/${row.id}`)"
+          @click="openViewConfirm(row)"
         >
           <div class="shrink-0">
             <img
@@ -103,6 +103,25 @@
         </div>
       </template>
     </UiModal>
+
+    <!-- 상세 이동 확인 모달 -->
+    <UiModal :open="viewConfirmOpen" title="아티스트 상세 보기" @close="closeViewConfirm">
+      <div class="space-y-3 text-sm text-slate-700">
+        <p>
+          <span class="font-semibold">{{ selectedPerformer?.name || '선택한 아티스트' }}</span>
+          의 NEXTICKET 상세 페이지로 이동하시겠습니까?
+        </p>
+        <p class="text-xs text-slate-500">
+          확인을 누르면 사용자용 서비스 화면에서 아티스트 정보를 자세히 살펴볼 수 있습니다.
+        </p>
+      </div>
+      <template #footer>
+        <div class="flex justify-end gap-2">
+          <UiButton variant="ghost" @click="closeViewConfirm">아니요</UiButton>
+          <UiButton @click="confirmViewPerformer">예, 상세 보기</UiButton>
+        </div>
+      </template>
+    </UiModal>
   </div>
 </template>
 
@@ -123,7 +142,9 @@ export default {
       loading: false,
       searchName: '',
       createModalOpen: false,
-      form: { name: '', description: '', birth: '' }
+      form: { name: '', description: '', birth: '' },
+      viewConfirmOpen: false,
+      selectedPerformer: null
     }
   },
   created() {
@@ -166,6 +187,23 @@ export default {
     closeCreateModal() {
       this.createModalOpen = false
     },
+    openViewConfirm(row) {
+      this.selectedPerformer = row
+      this.viewConfirmOpen = true
+    },
+    closeViewConfirm() {
+      this.viewConfirmOpen = false
+      this.selectedPerformer = null
+    },
+    confirmViewPerformer() {
+      const id = this.selectedPerformer?.id
+      if (!id) {
+        this.closeViewConfirm()
+        return
+      }
+      this.closeViewConfirm()
+      this.$router.push(`/performers/${id}`)
+    },
     async submitCreate() {
       try {
         const formData = new FormData()
@@ -176,8 +214,26 @@ export default {
         if (birth) formData.append('birth', birth)
         const fileInput = this.$refs.profileImgInput
         if (fileInput?.files?.length) formData.append('profileImg', fileInput.files[0])
-        await this.api.post(ENDPOINTS.performerCreate(), formData)
+        const res = await this.api.post(ENDPOINTS.performerCreate(), formData)
+        const createdId = res?.id
+        const name = this.form.name.trim()
         this.closeCreateModal()
+
+        // 회차 출연진 플로우에서 진입한 경우: 다시 회차 출연진 화면으로 이동하며 방금 생성한 공연자 자동 선택
+        const from = this.$route.query?.from
+        const scheduleId = this.$route.query?.scheduleId
+        if (from === 'schedule' && scheduleId && createdId) {
+          this.$router.push({
+            path: `/organizer/schedules/${scheduleId}/performers`,
+            query: {
+              newPerformerId: createdId,
+              newPerformerName: name
+            }
+          })
+          return
+        }
+
+        // 일반 진입인 경우: 목록만 새로고침
         await this.load()
       } catch (err) {
         console.error('Performer create failed. Server response:', err.responseData)
