@@ -33,7 +33,7 @@
           v-for="row in rows"
           :key="row.id"
           class="flex cursor-pointer items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-red-300 hover:shadow"
-          @click="$router.push(`/performers/${row.id}`)"
+          @click="$router.push(`/organizer/performers/${row.id}`)"
         >
           <div class="shrink-0">
             <img
@@ -103,6 +103,7 @@
         </div>
       </template>
     </UiModal>
+
   </div>
 </template>
 
@@ -176,8 +177,26 @@ export default {
         if (birth) formData.append('birth', birth)
         const fileInput = this.$refs.profileImgInput
         if (fileInput?.files?.length) formData.append('profileImg', fileInput.files[0])
-        await this.api.post(ENDPOINTS.performerCreate(), formData)
+        const res = await this.api.post(ENDPOINTS.performerCreate(), formData)
+        const createdId = res?.id
+        const name = this.form.name.trim()
         this.closeCreateModal()
+
+        // 회차 출연진 플로우에서 진입한 경우: 다시 회차 출연진 화면으로 이동하며 방금 생성한 공연자 자동 선택
+        const from = this.$route.query?.from
+        const scheduleId = this.$route.query?.scheduleId
+        if (from === 'schedule' && scheduleId && createdId) {
+          this.$router.push({
+            path: `/organizer/schedules/${scheduleId}/performers`,
+            query: {
+              newPerformerId: createdId,
+              newPerformerName: name
+            }
+          })
+          return
+        }
+
+        // 일반 진입인 경우: 목록만 새로고침
         await this.load()
       } catch (err) {
         console.error('Performer create failed. Server response:', err.responseData)

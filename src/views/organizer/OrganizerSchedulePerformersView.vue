@@ -15,13 +15,25 @@
     <template v-else>
       <UiTable :columns="castingColumns" :rows="castingRows" row-key="performerId">
         <template #cell:performerName="{ row }">
-          <button
-            class="font-semibold text-slate-900 hover:underline"
-            type="button"
-            @click="$router.push(`/performers/${row.performerId}`)"
-          >
-            {{ row.performerName || row.name || '-' }}
-          </button>
+          <div class="flex items-center gap-2">
+            <div class="h-8 w-8 shrink-0 overflow-hidden rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-xs font-semibold text-slate-600">
+              <img
+                v-if="row.profileImgUrl"
+                :src="row.profileImgUrl"
+                :alt="row.performerName || row.name"
+                class="h-full w-full object-cover"
+                @error="$event.target.style.display='none'"
+              />
+              <span v-else>{{ (row.performerName || row.name || '?').charAt(0) }}</span>
+            </div>
+            <button
+              class="font-semibold text-slate-900 hover:underline text-left"
+              type="button"
+              @click="openViewConfirm(row)"
+            >
+              {{ row.performerName || row.name || '-' }}
+            </button>
+          </div>
         </template>
         <template #cell:role="{ row }">
           <span class="text-slate-700">{{ row.role || '-' }}</span>
@@ -43,23 +55,69 @@
     <UiModal :open="addModalOpen" title="출연진 추가" @close="closeAddModal">
       <form id="add-casting-form" class="grid gap-4" @submit.prevent="submitAdd">
         <div>
-          <label class="block text-xs font-semibold text-slate-500">아티스트 ID (performerId) *</label>
-          <input
-            v-model.number="addForm.performerId"
-            type="number"
-            required
-            min="1"
-            class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
-            placeholder="1"
-          />
+          <label class="block text-xs font-semibold text-slate-500">아티스트 검색 *</label>
+          <div class="mt-1 flex gap-2">
+            <input
+              v-model="addSearchName"
+              type="text"
+              class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+              placeholder="이름으로 검색 (예: 홍길동)"
+              @keydown.enter.prevent="doSearchPerformers"
+            />
+            <UiButton type="button" class="h-10 px-4 whitespace-nowrap" :disabled="searchLoading" @click="doSearchPerformers">
+              {{ searchLoading ? '검색 중…' : '검색' }}
+            </UiButton>
+          </div>
+          <div v-if="searchResults.length" class="mt-2 max-h-48 space-y-1 overflow-y-auto rounded-xl border border-slate-200 bg-slate-50 p-2">
+            <button
+              v-for="p in searchResults"
+              :key="p.id"
+              type="button"
+              class="flex w-full items-center gap-3 rounded-xl px-2 py-1.5 text-left text-sm transition hover:bg-slate-100"
+              :class="addForm.performerId === p.id ? 'bg-red-50 border border-red-200' : ''"
+              @click="selectPerformer(p)"
+            >
+              <div class="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-slate-200 text-xs font-semibold text-slate-700">
+                <img
+                  v-if="p.profileImgUrl"
+                  :src="p.profileImgUrl"
+                  :alt="p.name"
+                  class="h-full w-full object-cover"
+                  @error="$event.target.style.display='none'"
+                />
+                <span v-else>{{ (p.name || '?').charAt(0) }}</span>
+              </div>
+              <div class="min-w-0 flex-1 whitespace-normal">
+                <div class="font-semibold text-slate-900 break-words">{{ p.name }}</div>
+                <div v-if="p.description" class="mt-0.5 text-xs text-slate-500 break-words">{{ p.description }}</div>
+              </div>
+              <span v-if="addForm.performerId === p.id" class="text-xs font-semibold text-red-600">선택됨</span>
+            </button>
+          </div>
+          <div v-else-if="addSearchName && !searchLoading" class="mt-2 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-dashed border-slate-200 bg-slate-50 px-3 py-2">
+            <p class="text-xs text-slate-500">
+              "{{ addSearchName }}"에 대한 아티스트를 찾을 수 없습니다.
+            </p>
+            <UiButton
+              type="button"
+              variant="ghost"
+              class="h-8 px-3 text-xs whitespace-nowrap"
+              @click="goToPerformerCreate"
+            >
+              새 아티스트 등록하기
+            </UiButton>
+          </div>
+          <p v-if="addForm.performerName" class="mt-2 text-xs text-green-700">
+            선택된 아티스트: <span class="font-semibold">{{ addForm.performerName }}</span> (ID: {{ addForm.performerId }})
+          </p>
         </div>
         <div>
-          <label class="block text-xs font-semibold text-slate-500">역할 (role)</label>
+          <label class="block text-xs font-semibold text-slate-500">배역 (casting) *</label>
           <input
             v-model="addForm.role"
             type="text"
             class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
-            placeholder="주연, 조연 등"
+            placeholder="예: 주인공, 조연 등"
           />
         </div>
       </form>
@@ -75,12 +133,12 @@
     <UiModal :open="editModalOpen" title="출연진 수정" @close="closeEditModal">
       <form id="edit-casting-form" class="grid gap-4" @submit.prevent="submitEdit">
         <div>
-          <label class="block text-xs font-semibold text-slate-500">역할 (role)</label>
+          <label class="block text-xs font-semibold text-slate-500">배역 (casting) *</label>
           <input
             v-model="editForm.role"
             type="text"
             class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
-            placeholder="주연, 조연 등"
+            placeholder="예: 주인공, 조연 등"
           />
         </div>
       </form>
@@ -88,6 +146,25 @@
         <div class="flex justify-end gap-2">
           <UiButton variant="ghost" @click="closeEditModal">취소</UiButton>
           <UiButton as="button" type="submit" form="edit-casting-form">저장</UiButton>
+        </div>
+      </template>
+    </UiModal>
+
+    <!-- 아티스트 상세 이동 확인 모달 -->
+    <UiModal :open="viewConfirmOpen" title="아티스트 상세 보기" @close="closeViewConfirm">
+      <div class="space-y-3 text-sm text-slate-700">
+        <p>
+          <span class="font-semibold">{{ selectedPerformer?.performerName || selectedPerformer?.name || '선택한 아티스트' }}</span>
+          의 아티스트 관리 상세 화면으로 이동하시겠습니까?
+        </p>
+        <p class="text-xs text-slate-500">
+          확인을 누르면 조직자용 아티스트 상세 뷰로 이동하고, 취소를 누르면 현재 화면에 머무릅니다.
+        </p>
+      </div>
+      <template #footer>
+        <div class="flex justify-end gap-2">
+          <UiButton variant="ghost" @click="closeViewConfirm">아니요</UiButton>
+          <UiButton @click="confirmViewPerformer">예, 상세 보기</UiButton>
         </div>
       </template>
     </UiModal>
@@ -109,7 +186,7 @@ export default {
     return {
       castingColumns: [
         { key: 'performerName', label: '아티스트' },
-        { key: 'role', label: '역할' },
+        { key: 'role', label: '배역' },
         { key: 'actions', label: '관리' }
       ],
       api: null,
@@ -117,8 +194,13 @@ export default {
       loading: false,
       addModalOpen: false,
       editModalOpen: false,
-      addForm: { performerId: null, role: '' },
-      editForm: { performerId: null, role: '' }
+      addForm: { performerId: null, performerName: '', role: '' },
+      editForm: { performerId: null, role: '' },
+      addSearchName: '',
+      searchResults: [],
+      searchLoading: false,
+      viewConfirmOpen: false,
+      selectedPerformer: null
     }
   },
   computed: {
@@ -131,8 +213,24 @@ export default {
   },
   mounted() {
     if (this.scheduleId) this.load()
+    this.applyNewPerformerFromRoute()
   },
   methods: {
+    applyNewPerformerFromRoute() {
+      const q = this.$route.query || {}
+      const id = q.newPerformerId
+      const name = q.newPerformerName
+      if (!id) return
+      // 미리 addForm에 선택 적용
+      this.openAddModal()
+      this.addForm.performerId = Number(id)
+      this.addForm.performerName = name || ''
+      this.addSearchName = name || ''
+      this.searchResults = []
+      // 한 번만 적용되도록 쿼리 정리
+      const { newPerformerId, newPerformerName, ...rest } = q
+      this.$router.replace({ path: this.$route.path, query: rest })
+    },
     async load() {
       if (this.scheduleId == null || this.scheduleId === '') return
       this.loading = true
@@ -142,7 +240,9 @@ export default {
         this.castingRows = arr.map((item) => ({
           performerId: item.performerId ?? item.id,
           performerName: item.performerName ?? item.name,
-          role: item.role ?? ''
+          profileImgUrl: item.profileImgUrl ?? null,
+          // 백엔드 DTO: casting (배역명)
+          role: item.casting ?? item.role ?? ''
         }))
       } catch {
         this.castingRows = []
@@ -151,18 +251,83 @@ export default {
       }
     },
     openAddModal() {
-      this.addForm = { performerId: null, role: '' }
+      this.addForm = { performerId: null, performerName: '', role: '' }
+      this.addSearchName = ''
+      this.searchResults = []
       this.addModalOpen = true
     },
     closeAddModal() {
       this.addModalOpen = false
     },
+    goToPerformerCreate() {
+      // 공연자 관리 화면으로 이동 (등록 후 돌아오기 위한 컨텍스트 함께 전달)
+      this.$router.push({
+        path: '/organizer/performers',
+        query: {
+          from: 'schedule',
+          scheduleId: this.scheduleId
+        }
+      })
+    },
+    async doSearchPerformers() {
+      const q = (this.addSearchName || '').trim()
+      if (!q) {
+        this.searchResults = []
+        return
+      }
+      this.searchLoading = true
+      try {
+        const res = await this.api.get(ENDPOINTS.performers({ name: q, size: 20, page: 0 }))
+        const content = Array.isArray(res) ? res : res?.content ?? res?.items ?? []
+        this.searchResults = content.map((item) => ({
+          id: item.id ?? item.performerId,
+          name: item.name ?? item.performerName,
+          profileImgUrl: item.profileImgUrl ?? item.performerProfileImgUrl ?? null,
+          description: item.description ?? item.performerDescription ?? null
+        }))
+      } catch (err) {
+        console.warn('Search performers failed', err)
+        this.searchResults = []
+      } finally {
+        this.searchLoading = false
+      }
+    },
+    selectPerformer(p) {
+      this.addForm.performerId = p.id
+      this.addForm.performerName = p.name
+    },
+    openViewConfirm(row) {
+      this.selectedPerformer = row
+      this.viewConfirmOpen = true
+    },
+    closeViewConfirm() {
+      this.viewConfirmOpen = false
+      this.selectedPerformer = null
+    },
+    confirmViewPerformer() {
+      const id = this.selectedPerformer?.performerId
+      if (!id) {
+        this.closeViewConfirm()
+        return
+      }
+      this.closeViewConfirm()
+      this.$router.push(`/organizer/performers/${id}`)
+    },
     async submitAdd() {
       if (this.scheduleId == null || this.scheduleId === '') return
       try {
+        if (this.addForm.performerId == null || this.addForm.performerId === '') {
+          window.alert('아티스트를 선택해 주세요.')
+          return
+        }
+        const casting = (this.addForm.role || '').trim()
+        if (!casting) {
+          window.alert('배역명을 입력해 주세요.')
+          return
+        }
         await this.api.post(ENDPOINTS.scheduleOrganizerAddPerformer(this.scheduleId), {
           performerId: this.addForm.performerId,
-          role: this.addForm.role?.trim() || null
+          casting
         })
         this.closeAddModal()
         await this.load()
@@ -182,8 +347,13 @@ export default {
       const performerId = this.editForm?.performerId
       if (performerId == null || performerId === '') return
       try {
+        const casting = (this.editForm.role || '').trim()
+        if (!casting) {
+          window.alert('배역명을 입력해 주세요.')
+          return
+        }
         await this.api.put(ENDPOINTS.scheduleOrganizerUpdatePerformer(this.scheduleId, performerId), {
-          role: this.editForm.role?.trim() || null
+          casting
         })
         this.closeEditModal()
         await this.load()

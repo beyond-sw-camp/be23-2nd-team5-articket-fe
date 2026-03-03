@@ -68,7 +68,7 @@
           <!-- 이름 + 정보 -->
           <div
             class="flex-1 min-w-0 cursor-pointer"
-            @click="$router.push(`/performers/${row.id}`)"
+            @click="onRowClick(row)"
           >
             <div class="font-bold text-slate-900 truncate">{{ row.name }}</div>
             <div class="mt-0.5 text-sm font-medium text-green-600">
@@ -152,6 +152,7 @@
         </div>
       </template>
     </UiModal>
+
   </div>
 </template>
 
@@ -226,6 +227,13 @@ export default {
       } finally {
         this.loading = false
       }
+    },
+    onRowClick(row) {
+      if (this.canManage) {
+        this.$router.push(`/organizer/performers/${row.id}`)
+        return
+      }
+      this.$router.push(`/performers/${row.id}`)
     },
     search() {
       this.page = 0

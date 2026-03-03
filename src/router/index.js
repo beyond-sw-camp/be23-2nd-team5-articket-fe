@@ -165,7 +165,9 @@ const routes = [
       childRoute('orders/:orderId', OrganizerOrderDetailView),
       childRoute('concerts/:concertId/price-history', OrganizerPriceHistoryView),
       childRoute('concerts/:concertId/policy-history', OrganizerPolicyHistoryView),
+      // 아티스트 목록: 동일 컴포넌트 재사용, canManage=true로 관리자 기능 노출
       childRoute('performers', PerformersListView, {}, { canManage: true }),
+      childRoute('performers/:performerId', PerformerDetailView, {}, { canManage: true }),
       childRoute('schedules/:scheduleId/performers', OrganizerSchedulePerformersView),
     ],
   },
