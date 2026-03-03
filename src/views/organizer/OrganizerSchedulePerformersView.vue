@@ -15,13 +15,25 @@
     <template v-else>
       <UiTable :columns="castingColumns" :rows="castingRows" row-key="performerId">
         <template #cell:performerName="{ row }">
-          <button
-            class="font-semibold text-slate-900 hover:underline"
-            type="button"
-            @click="$router.push(`/organizer/performers/${row.performerId}`)"
-          >
-            {{ row.performerName || row.name || '-' }}
-          </button>
+          <div class="flex items-center gap-2">
+            <div class="h-8 w-8 shrink-0 overflow-hidden rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-xs font-semibold text-slate-600">
+              <img
+                v-if="row.profileImgUrl"
+                :src="row.profileImgUrl"
+                :alt="row.performerName || row.name"
+                class="h-full w-full object-cover"
+                @error="$event.target.style.display='none'"
+              />
+              <span v-else>{{ (row.performerName || row.name || '?').charAt(0) }}</span>
+            </div>
+            <button
+              class="font-semibold text-slate-900 hover:underline text-left"
+              type="button"
+              @click="openViewConfirm(row)"
+            >
+              {{ row.performerName || row.name || '-' }}
+            </button>
+          </div>
         </template>
         <template #cell:role="{ row }">
           <span class="text-slate-700">{{ row.role || '-' }}</span>
@@ -137,6 +149,25 @@
         </div>
       </template>
     </UiModal>
+
+    <!-- 아티스트 상세 이동 확인 모달 -->
+    <UiModal :open="viewConfirmOpen" title="아티스트 상세 보기" @close="closeViewConfirm">
+      <div class="space-y-3 text-sm text-slate-700">
+        <p>
+          <span class="font-semibold">{{ selectedPerformer?.performerName || selectedPerformer?.name || '선택한 아티스트' }}</span>
+          의 아티스트 관리 상세 화면으로 이동하시겠습니까?
+        </p>
+        <p class="text-xs text-slate-500">
+          확인을 누르면 조직자용 아티스트 상세 뷰로 이동하고, 취소를 누르면 현재 화면에 머무릅니다.
+        </p>
+      </div>
+      <template #footer>
+        <div class="flex justify-end gap-2">
+          <UiButton variant="ghost" @click="closeViewConfirm">아니요</UiButton>
+          <UiButton @click="confirmViewPerformer">예, 상세 보기</UiButton>
+        </div>
+      </template>
+    </UiModal>
   </div>
 </template>
 
@@ -167,7 +198,9 @@ export default {
       editForm: { performerId: null, role: '' },
       addSearchName: '',
       searchResults: [],
-      searchLoading: false
+      searchLoading: false,
+      viewConfirmOpen: false,
+      selectedPerformer: null
     }
   },
   computed: {
@@ -207,6 +240,7 @@ export default {
         this.castingRows = arr.map((item) => ({
           performerId: item.performerId ?? item.id,
           performerName: item.performerName ?? item.name,
+          profileImgUrl: item.profileImgUrl ?? null,
           // 백엔드 DTO: casting (배역명)
           role: item.casting ?? item.role ?? ''
         }))
@@ -261,6 +295,23 @@ export default {
     selectPerformer(p) {
       this.addForm.performerId = p.id
       this.addForm.performerName = p.name
+    },
+    openViewConfirm(row) {
+      this.selectedPerformer = row
+      this.viewConfirmOpen = true
+    },
+    closeViewConfirm() {
+      this.viewConfirmOpen = false
+      this.selectedPerformer = null
+    },
+    confirmViewPerformer() {
+      const id = this.selectedPerformer?.performerId
+      if (!id) {
+        this.closeViewConfirm()
+        return
+      }
+      this.closeViewConfirm()
+      this.$router.push(`/organizer/performers/${id}`)
     },
     async submitAdd() {
       if (this.scheduleId == null || this.scheduleId === '') return
