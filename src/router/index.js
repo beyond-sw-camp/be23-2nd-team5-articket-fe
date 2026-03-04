@@ -9,6 +9,7 @@ import ManagementLayout from '../layouts/ManagementLayout.vue'
 // guest
 import HomeView from '../views/home/HomeView.vue'
 import ConcertDetailView from '../views/concerts/ConcertDetailView.vue'
+import ConcertRankingView from '../views/concerts/ConcertRankingView.vue'
 import GenreConcertsView from '../views/concerts/GenreConcertsView.vue'
 import ConcertSchedulesView from '../views/concerts/ConcertSchedulesView.vue'
 import ScheduleDetailView from '../views/schedules/ScheduleDetailView.vue'
@@ -97,6 +98,7 @@ const routes = [
     children: [
       childRoute('', HomeView, { roleScope: 'guest' }),
       childRoute('genre/:genre', GenreConcertsView, { roleScope: 'guest' }),
+      childRoute('concerts/ranking', ConcertRankingView, { roleScope: 'guest' }),
       childRoute('concerts/:concertId', ConcertDetailView, { roleScope: 'guest' }),
       childRoute('concerts/:concertId/schedules', ConcertSchedulesView, { roleScope: 'guest' }),
       childRoute('schedules/:scheduleId', ScheduleDetailView, { roleScope: 'guest' }),

@@ -18,6 +18,17 @@ export const ENDPOINTS = {
     return `/concerts${q ? `?${q}` : ''}`
   },
   concert: (concertId) => `/concerts/${concertId}`,
+  /** GET /concerts/ranking - period(DAY|WEEK|MONTH), baseDate(yyyy-MM-dd), category, page, size */
+  concertsRanking: (params = {}) => {
+    const p = new URLSearchParams()
+    if (params.period) p.set('period', params.period)
+    if (params.baseDate) p.set('baseDate', params.baseDate)
+    if (params.category) p.set('category', params.category)
+    if (params.page != null) p.set('page', String(params.page))
+    if (params.size != null) p.set('size', String(params.size))
+    const q = p.toString()
+    return `/concerts/ranking${q ? `?${q}` : ''}`
+  },
   concertSchedules: (concertId) => `/concerts/${concertId}/schedules`,
   schedule: (scheduleId) => `/schedule/${scheduleId}`,
   seatMap: (scheduleId) => `/schedule/${scheduleId}/seat-map`,
