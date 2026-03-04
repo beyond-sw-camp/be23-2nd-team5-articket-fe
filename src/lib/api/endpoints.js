@@ -138,6 +138,10 @@ export const ENDPOINTS = {
   },
   adminMemberDetail: (memberId) => `/member/${memberId}`,
 
+  // PROMOTIONS (히어로 배너 관리용)
+  promotions: () => `/promotions`,
+  promotion: (id) => `/promotions/${id}`,
+
   // SSE
   sseConnect: () => `/sse/connect`,
   sseDisconnect: () => `/sse/disconnect`,
