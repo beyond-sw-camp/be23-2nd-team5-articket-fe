@@ -6,8 +6,8 @@
       class="relative bg-slate-950 overflow-hidden"
       style="width:100vw;margin-left:calc(50% - 50vw)"
     >
-      <!-- 배너 이미지 영역 (고정 높이) -->
-      <div class="relative" style="height:290px">
+      <!-- 배너 이미지 영역 + 썸네일 스트립 (하단선 일치) -->
+      <div class="relative" style="height:420px">
         <!-- 로딩 스켈레톤 -->
         <div
           v-if="bannersLoading && !heroBanner"
@@ -19,43 +19,47 @@
           <div
             v-if="heroBanner"
             :key="heroBanner.id"
-            class="absolute inset-0 cursor-pointer group"
+            class="absolute inset-0 flex items-center justify-center cursor-pointer group"
+            :style="{ background: bannerBgGradient ?? undefined }"
             @click="$router.push(heroBanner.linkUrl)"
           >
             <img
               :src="heroBanner.imageUrl"
               alt="프로모션 배너"
-              class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.015]"
+              style="width:100%;height:100%;max-width:1600px;max-height:420px;object-fit:contain"
             />
             <div class="absolute inset-0 bg-white/0 group-hover:bg-white/5 transition-colors duration-300" />
           </div>
         </Transition>
-      </div>
 
-      <!-- 썸네일 스트립 (슬라이드 인디케이터 역할) -->
-      <div v-if="heroItems.length" class="relative z-10 border-t border-white/10 bg-black/40">
+        <!-- 썸네일 스트립 — 배너 하단에 오버레이, 하단선 일치 -->
         <div
-          class="max-w-6xl mx-auto px-4 flex gap-2 overflow-x-auto py-2.5"
-          style="scrollbar-width:none;-ms-overflow-style:none"
+          v-if="heroItems.length"
+          class="absolute bottom-0 left-0 right-0 z-10"
         >
           <div
-            v-for="(b, i) in heroItems"
-            :key="'thumb-' + b.id"
-            class="flex-shrink-0 relative cursor-default"
-            @mouseenter="goHero(i)"
+            class="max-w-6xl mx-auto px-4 flex gap-2 overflow-x-auto py-2.5"
+            style="scrollbar-width:none;-ms-overflow-style:none"
           >
-            <img
-              :src="b.imageUrl"
-              alt="배너 썸네일"
-              class="h-12 w-9 object-cover rounded transition-all duration-200"
-              :class="heroIndex === i
-                ? 'opacity-100 ring-2 ring-white scale-105'
-                : 'opacity-45 hover:opacity-75'"
-            />
             <div
-              v-if="heroIndex === i"
-              class="absolute -bottom-px left-0 right-0 h-0.5 bg-red-500 rounded"
-            />
+              v-for="(b, i) in heroItems"
+              :key="'thumb-' + b.id"
+              class="flex-shrink-0 relative cursor-default"
+              @mouseenter="goHero(i)"
+            >
+              <img
+                :src="b.imageUrl"
+                alt="배너 썸네일"
+                class="h-10 w-10 object-cover rounded transition-all duration-200"
+                :class="heroIndex === i
+                  ? 'opacity-100 ring-2 ring-white scale-105'
+                  : 'opacity-45 hover:opacity-75'"
+              />
+              <div
+                v-if="heroIndex === i"
+                class="absolute -bottom-px left-0 right-0 h-0.5 bg-red-500 rounded"
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -235,7 +239,7 @@
       </div>
 
       <div
-        v-if="openingSoonItems.length === 0 && !loading"
+        v-if="openingSoonItems.length === 0 && !openingSoonLoading"
         class="py-8 text-center text-sm text-slate-400"
       >
         오픈 예정 공연이 없습니다
@@ -443,14 +447,20 @@ export default {
       bestReviews: [],
       reviewsLoading: false,
 
-      // 히어로·프로모·오픈예정용 기본 목록 (장르 필터 영향 없음)
+      // 프로모션 카드 그리드용 기본 목록 (장르 필터 영향 없음)
       baseItems: [],
+
+      // 오픈 예정 (전용 API)
+      openingSoon: [],
+      openingSoonLoading: false,
 
       // 히어로 배너 (프로모션 API)
       heroBanners: [],
       bannersLoading: false,
       heroIndex: 0,
       heroInterval: null,
+      bannerBgGradient: null,
+      bannerBgCache: {},
 
       api: null,
     }
@@ -465,10 +475,7 @@ export default {
       return this.heroItems[this.heroIndex % this.heroItems.length] ?? null
     },
     openingSoonItems() {
-      return [...this.baseItems]
-        .filter(c => c.scheduleStartDate)
-        .sort((a, b) => new Date(a.scheduleStartDate) - new Date(b.scheduleStartDate))
-        .slice(0, 6)
+      return this.openingSoon
     },
     canScrollLeft() {
       return this.rankingScrollLeft > 2
@@ -483,6 +490,16 @@ export default {
     items() {
       this.$nextTick(this.updateRankingScrollState)
     },
+    heroBanner(val) {
+      if (!val) return
+      const cached = this.bannerBgCache[val.id]
+      if (cached) {
+        this.bannerBgGradient = cached
+      } else {
+        this.bannerBgGradient = null
+        this.extractBannerColors(val.imageUrl, val.id)
+      }
+    },
   },
 
   created() {
@@ -492,6 +509,7 @@ export default {
   mounted() {
     this.loadHeroBanners()
     this.load()
+    this.loadOpeningSoon()
     this.loadKeywordItems()
     window.addEventListener('resize', this.updateRankingScrollState)
   },
@@ -522,6 +540,65 @@ export default {
       this.heroIndex = idx
       this.startHeroSlide() // 수동 이동 시 타이머 리셋
     },
+
+    // ─── 배너 좌·우 엣지 색상 추출 → 배경 그라데이션 ────────
+    async extractBannerColors(imageUrl, bannerId) {
+      if (!imageUrl) return
+      try {
+        const colors = await this.sampleBannerEdges(imageUrl)
+        if (!colors) return
+        const { left, right } = colors
+        const gradient = `linear-gradient(to right, rgb(${left.r},${left.g},${left.b}), rgb(${right.r},${right.g},${right.b}))`
+        this.bannerBgCache[bannerId] = gradient
+        if (this.heroBanner?.id === bannerId) this.bannerBgGradient = gradient
+        // 나머지 배너도 미리 추출
+        this.heroItems.forEach(async (b) => {
+          if (b.id !== bannerId && !this.bannerBgCache[b.id]) {
+            const c = await this.sampleBannerEdges(b.imageUrl).catch(() => null)
+            if (c) {
+              this.bannerBgCache[b.id] = `linear-gradient(to right, rgb(${c.left.r},${c.left.g},${c.left.b}), rgb(${c.right.r},${c.right.g},${c.right.b}))`
+            }
+          }
+        })
+      } catch (_) {}
+    },
+
+    sampleBannerEdges(url) {
+      return new Promise((resolve) => {
+        const img = new Image()
+        img.crossOrigin = 'anonymous'
+        const timer = setTimeout(() => resolve(null), 5000)
+
+        img.onload = () => {
+          clearTimeout(timer)
+          try {
+            const W = 100, H = 50
+            const canvas = document.createElement('canvas')
+            canvas.width = W
+            canvas.height = H
+            const ctx = canvas.getContext('2d')
+            ctx.drawImage(img, 0, 0, W, H)
+
+            const avg = (x0, y0, w, h) => {
+              const d = ctx.getImageData(x0, y0, w, h).data
+              let r = 0, g = 0, b = 0
+              const n = w * h
+              for (let i = 0; i < d.length; i += 4) { r += d[i]; g += d[i + 1]; b += d[i + 2] }
+              return { r: Math.round(r / n), g: Math.round(g / n), b: Math.round(b / n) }
+            }
+
+            resolve({
+              left:  avg(0,     0, 5, H),   // 좌측 5px
+              right: avg(W - 5, 0, 5, H),   // 우측 5px
+            })
+          } catch (_) { resolve(null) }
+        }
+
+        img.onerror = () => { clearTimeout(timer); resolve(null) }
+        img.src = url
+      })
+    },
+    // ──────────────────────────────────────────────────────────
 
     // ─── 히어로 배너 (프로모션 API) ──────────────────────────
     async loadHeroBanners() {
@@ -590,13 +667,12 @@ export default {
       this.loading = true
       this.rankingLoading = true
       try {
-        const params = new URLSearchParams({ page: '0', size: '20' })
-        if (this.rankingCat) params.set('category', this.rankingCat)
+        // 프로모션 카드 그리드용 + 초기 랭킹 (예매수 기준 정렬)
+        const params = new URLSearchParams({ page: '0', size: '20', sort: 'bookingCount,desc' })
         const res = await this.api.get(`${ENDPOINTS.concerts()}?${params.toString()}`)
         const list = res.content ?? res.items ?? []
         const mapped = list.map(this.mapConcert)
         this.items = mapped
-        // baseItems는 최초 1회만 설정 (장르 필터 변경 시 유지)
         if (!this.baseItems.length) this.baseItems = mapped
         this.$nextTick(() => {
           this.updateRankingScrollState()
@@ -611,7 +687,7 @@ export default {
     async loadRanking() {
       this.rankingLoading = true
       try {
-        const params = new URLSearchParams({ page: '0', size: '20' })
+        const params = new URLSearchParams({ page: '0', size: '20', sort: 'bookingCount,desc' })
         if (this.rankingCat) params.set('category', this.rankingCat)
         const res = await this.api.get(`${ENDPOINTS.concerts()}?${params.toString()}`)
         const list = res.content ?? res.items ?? []
@@ -621,10 +697,33 @@ export default {
       }
     },
 
+    async loadOpeningSoon() {
+      this.openingSoonLoading = true
+      try {
+        const params = new URLSearchParams({
+          page: '0', size: '6',
+          status: 'UPCOMING',
+          sort: 'scheduleStartDate,asc',
+        })
+        const res = await this.api.get(`${ENDPOINTS.concerts()}?${params.toString()}`)
+        const list = res.content ?? res.items ?? []
+        this.openingSoon = list.map(this.mapConcert)
+      } finally {
+        this.openingSoonLoading = false
+      }
+    },
+
     async loadKeywordItems() {
       this.keywordLoading = true
       try {
-        const params = new URLSearchParams({ page: '0', size: '5', category: this.selectedKeyword })
+        // 키워드별 정렬 기준 매핑
+        const sortMap = {
+          MUSICAL: 'reviewCount,desc',   // 재관람률 높은
+          FAMILY:  'bookingCount,desc',  // 아이와 함께
+          THEATRE: 'bookingCount,desc',  // 예매 연극 추천
+        }
+        const sort = sortMap[this.selectedKeyword] ?? 'bookingCount,desc'
+        const params = new URLSearchParams({ page: '0', size: '5', category: this.selectedKeyword, sort })
         const res = await this.api.get(`${ENDPOINTS.concerts()}?${params.toString()}`)
         const list = res.content ?? res.items ?? []
         this.keywordItems = list.map(this.mapConcert)
@@ -634,31 +733,18 @@ export default {
     },
 
     async loadBestReviews() {
-      if (!this.items.length) return
       this.reviewsLoading = true
       try {
-        const topConcerts = this.baseItems.slice(0, 3)
-        const results = await Promise.all(
-          topConcerts.map(c =>
-            this.api.get(ENDPOINTS.concertReviews(c.id))
-              .then(r => ({ concert: c, reviews: Array.isArray(r) ? r : (r?.content ?? []) }))
-              .catch(() => ({ concert: c, reviews: [] }))
-          )
-        )
-        this.bestReviews = results
-          .flatMap(({ concert, reviews }) =>
-            reviews.map((r, ri) => ({
-              id: `${concert.id}-${ri}`,
-              concertId: concert.id,
-              concertTitle: concert.title,
-              posterUrl: concert.posterUrl,
-              nickname: r.nickname ?? r.memberNickname ?? r.memberName ?? r.writerNickname ?? '익명',
-              rating: r.rating ?? r.score ?? 5,
-              content: r.content ?? r.comment ?? r.reviewContent ?? '',
-            }))
-          )
-          .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
-          .slice(0, 4)
+        const list = await this.api.get(ENDPOINTS.bestReviews(4))
+        this.bestReviews = (Array.isArray(list) ? list : (list?.content ?? [])).map(r => ({
+          id: r.id,
+          concertId: r.concertId,
+          concertTitle: r.concertTitle,
+          posterUrl: r.concertThumbnailUrl,
+          nickname: r.nickname,
+          rating: r.rating,
+          content: r.content,
+        }))
       } finally {
         this.reviewsLoading = false
       }

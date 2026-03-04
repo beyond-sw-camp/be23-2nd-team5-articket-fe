@@ -49,6 +49,7 @@ export const ENDPOINTS = {
   concertUserInteraction: (concertId) => `/user-concerts/${concertId}/user-interaction`,
   concertStats: (concertId) => `/user-concerts/${concertId}/stats`,
   concertReviews: (concertId) => `/user-concerts/${concertId}/reviews`,
+  bestReviews: (size = 4) => `/user-concerts/reviews/best?size=${size}`,
 
   // ORGANIZER (백엔드 ConcertController 기준)
   organizerConcerts: (params = {}) => {
