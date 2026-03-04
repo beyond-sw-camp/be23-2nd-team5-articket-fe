@@ -73,7 +73,7 @@
 </template>
 
 <script>
-import { Ticket, LayoutGrid, CirclePlus, Users2, User } from 'lucide-vue-next'
+import { Ticket, LayoutGrid, CirclePlus, Users2, User, Megaphone } from 'lucide-vue-next'
 import { getRole } from '../composables/useRole'
 import { useMe } from '../composables/useMe'
 import { useSSE } from '../composables/useSSE'
@@ -92,6 +92,7 @@ const ADMIN_NAV = [
   { to: '/admin/venues', label: '공연장', icon: Ticket },
   { to: '/admin/users', label: '회원관리', icon: Users2 },
   { to: '/admin/pending-organizers', label: '주최자 승인', icon: CirclePlus },
+  { to: '/admin/promotions', label: '프로모션 배너', icon: Megaphone },
 ]
 
 export default {
@@ -102,6 +103,7 @@ export default {
     CirclePlus,
     Users2,
     User,
+    Megaphone,
     NotificationPanel,
     ProfileDropdown,
     ToastNotification,

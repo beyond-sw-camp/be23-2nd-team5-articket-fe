@@ -139,9 +139,12 @@ export const ENDPOINTS = {
   },
   adminMemberDetail: (memberId) => `/member/${memberId}`,
 
-  // PROMOTIONS (히어로 배너 관리용)
+  // PROMOTIONS (히어로 배너 관리용 / Admin CRUD)
   promotions: () => `/promotions`,
   promotion: (id) => `/promotions/${id}`,
+  createPromotion: () => `/promotions`,
+  updatePromotion: (id) => `/promotions/${id}/update`,
+  deletePromotion: (id) => `/promotions/${id}`,
 
   // SSE
   sseConnect: () => `/sse/connect`,

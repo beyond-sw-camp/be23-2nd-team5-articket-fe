@@ -72,6 +72,7 @@ import AdminBlocklistView from '../views/admin/AdminBlocklistView.vue'
 import AdminAuditLogsView from '../views/admin/AdminAuditLogsView.vue'
 import AdminPendingOrganizersView from '../views/admin/AdminPendingOrganizersView.vue'
 import AdminStubTableView from '../views/admin/AdminStubTableView.vue'
+import AdminPromotionsView from '../views/admin/AdminPromotionsView.vue'
 
 // errors
 import ForbiddenView from '../views/system/ForbiddenView.vue'
@@ -194,6 +195,7 @@ const routes = [
       childRoute('concerts', AdminStubTableView, { stubKey: 'concerts' }),
       childRoute('schedules', AdminStubTableView, { stubKey: 'schedules' }),
       childRoute('orders', AdminStubTableView, { stubKey: 'orders' }),
+      childRoute('promotions', AdminPromotionsView),
       childRoute('stats/revenue', AdminStubTableView, { stubKey: 'statsRevenue' }),
       childRoute('stats/concerts/ranking', AdminStubTableView, { stubKey: 'statsRanking' }),
       childRoute('stats/server-status', AdminStubTableView, { stubKey: 'serverStatus' }),
