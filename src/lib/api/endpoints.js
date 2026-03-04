@@ -59,6 +59,7 @@ export const ENDPOINTS = {
     return `/concerts/organizer${q ? `?${q}` : ''}`
   },
   organizerConcertStats: (concertId) => `/concerts/organizer/${concertId}/stats`,
+  organizerDashboardOverview: () => `/concerts/organizer/dashboard/overview`,
   organizerCreateConcert: () => `/concerts/organizer/create`,
   organizerUpdateConcert: (concertId) => `/concerts/organizer/${concertId}`,
   organizerPublishConcert: (concertId) => `/concerts/organizer/${concertId}/publish`,
