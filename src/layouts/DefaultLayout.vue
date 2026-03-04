@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-slate-50">
+  <div class="min-h-screen bg-slate-50 overflow-x-hidden">
     <header class="fixed inset-x-0 top-0 z-50 border-b border-slate-200 bg-white">
       <div class="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4">
         <!-- Logo -->

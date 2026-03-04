@@ -49,6 +49,7 @@ export const ENDPOINTS = {
   concertUserInteraction: (concertId) => `/user-concerts/${concertId}/user-interaction`,
   concertStats: (concertId) => `/user-concerts/${concertId}/stats`,
   concertReviews: (concertId) => `/user-concerts/${concertId}/reviews`,
+  bestReviews: (size = 4) => `/user-concerts/reviews/best?size=${size}`,
 
   // ORGANIZER (백엔드 ConcertController 기준)
   organizerConcerts: (params = {}) => {
@@ -138,6 +139,10 @@ export const ENDPOINTS = {
     return `/admin/users${q ? `?${q}` : ''}`
   },
   adminMemberDetail: (memberId) => `/member/${memberId}`,
+
+  // PROMOTIONS (히어로 배너 관리용)
+  promotions: () => `/promotions`,
+  promotion: (id) => `/promotions/${id}`,
 
   // SSE
   sseConnect: () => `/sse/connect`,
