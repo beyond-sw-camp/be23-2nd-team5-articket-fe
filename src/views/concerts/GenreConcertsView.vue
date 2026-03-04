@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="text-center">
     <!-- ─────────────────────────────────────────────────────
          ① 인기 공연 슬라이더
     ───────────────────────────────────────────────────────── -->
@@ -76,7 +76,7 @@
          ② 오픈 예정
     ───────────────────────────────────────────────────────── -->
     <section class="border-t border-slate-100 py-8">
-      <div class="mb-5 flex items-center justify-between">
+      <div class="mb-5 flex items-center justify-center">
         <h2 class="text-xl font-bold text-slate-900">오픈 예정</h2>
       </div>
 
