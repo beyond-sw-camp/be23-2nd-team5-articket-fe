@@ -140,7 +140,15 @@ export const ENDPOINTS = {
   adminMemberDetail: (memberId) => `/member/${memberId}`,
 
   // PROMOTIONS (히어로 배너 관리용 / Admin CRUD)
-  promotions: () => `/promotions`,
+  promotions: (params = {}) => {
+    const p = new URLSearchParams()
+    if (params.keyword != null && params.keyword !== '') p.set('keyword', params.keyword)
+    if (params.page != null) p.set('page', String(params.page))
+    if (params.size != null) p.set('size', String(params.size))
+    if (params.sort != null) p.set('sort', params.sort)
+    const q = p.toString()
+    return `/promotions${q ? `?${q}` : ''}`
+  },
   promotion: (id) => `/promotions/${id}`,
   createPromotion: () => `/promotions`,
   updatePromotion: (id) => `/promotions/${id}/update`,

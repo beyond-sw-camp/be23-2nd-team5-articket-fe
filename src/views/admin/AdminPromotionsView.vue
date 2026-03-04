@@ -12,6 +12,19 @@
       </div>
     </div>
 
+    <!-- 검색 바 -->
+    <div class="flex items-center gap-2">
+      <input
+        v-model="keyword"
+        type="text"
+        placeholder="제목으로 검색…"
+        class="h-9 w-64 rounded-xl border border-slate-200 px-3 text-sm text-slate-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+        @keydown.enter="search"
+      />
+      <UiButton class="h-9 px-4 text-sm" @click="search">검색</UiButton>
+      <UiButton v-if="keyword" variant="ghost" class="h-9 px-3 text-sm" @click="clearSearch">초기화</UiButton>
+    </div>
+
     <!-- 목록 테이블 -->
     <div v-if="loading" class="rounded-2xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500">
       목록을 불러오는 중…
@@ -62,6 +75,27 @@
       </template>
     </UiTable>
 
+    <!-- 페이지네이션 -->
+    <div v-if="totalPages > 1" class="flex items-center justify-center gap-1">
+      <button
+        class="h-8 w-8 rounded-lg text-sm font-medium text-slate-500 hover:bg-slate-100 disabled:opacity-30"
+        :disabled="page === 0"
+        @click="goPage(page - 1)"
+      >‹</button>
+      <button
+        v-for="p in pageRange"
+        :key="p"
+        class="h-8 w-8 rounded-lg text-sm font-medium"
+        :class="p === page ? 'bg-red-500 text-white' : 'text-slate-600 hover:bg-slate-100'"
+        @click="goPage(p)"
+      >{{ p + 1 }}</button>
+      <button
+        class="h-8 w-8 rounded-lg text-sm font-medium text-slate-500 hover:bg-slate-100 disabled:opacity-30"
+        :disabled="page === totalPages - 1"
+        @click="goPage(page + 1)"
+      >›</button>
+    </div>
+
     <!-- 등록 / 수정 모달 -->
     <UiModal :open="modalOpen" :title="editingId ? '배너 수정' : '새 배너 등록'" @close="closeModal">
       <form id="promotion-form" class="grid gap-5" @submit.prevent="submitForm">
@@ -81,7 +115,7 @@
         <!-- 메인 배너 이미지 -->
         <div>
           <label class="block text-xs font-semibold text-slate-500">
-            메인 배너 이미지 (mainBannerFile)
+            메인 배너 이미지
             <span v-if="!editingId" class="text-red-500"> *</span>
             <span v-else class="ml-1 font-normal text-slate-400">(새 파일 선택 시 교체)</span>
           </label>
@@ -92,7 +126,6 @@
             class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 shadow-sm file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-1 file:text-xs file:font-semibold file:text-slate-600 hover:file:bg-slate-200"
             @change="onMainBannerChange"
           />
-          <!-- 미리보기 -->
           <div v-if="form.mainBannerPreview" class="mt-2 overflow-hidden rounded-xl border border-slate-100 bg-slate-50" style="height:80px">
             <img
               :src="form.mainBannerPreview"
@@ -106,7 +139,7 @@
         <!-- 상세 이미지 -->
         <div>
           <label class="block text-xs font-semibold text-slate-500">
-            상세 이미지 (detailImageFile)
+            상세 이미지
             <span v-if="!editingId" class="text-red-500"> *</span>
             <span v-else class="ml-1 font-normal text-slate-400">(새 파일 선택 시 교체)</span>
           </label>
@@ -117,7 +150,6 @@
             class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 shadow-sm file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-1 file:text-xs file:font-semibold file:text-slate-600 hover:file:bg-slate-200"
             @change="onDetailImageChange"
           />
-          <!-- 미리보기 -->
           <div v-if="form.detailImagePreview" class="mt-2 overflow-hidden rounded-xl border border-slate-100 bg-slate-50" style="height:80px">
             <img
               :src="form.detailImagePreview"
@@ -167,8 +199,8 @@ function defaultForm() {
   return {
     title: '',
     displayOrder: 0,
-    mainBannerFile: null,     // File 객체 (업로드용)
-    mainBannerPreview: null,  // 미리보기 URL (blob 또는 기존 S3 URL)
+    mainBannerFile: null,
+    mainBannerPreview: null,
     detailImageFile: null,
     detailImagePreview: null,
   }
@@ -190,17 +222,31 @@ export default {
       rows: [],
       loading: false,
 
+      // 검색 / 페이징
+      keyword: '',
+      page: 0,
+      totalPages: 0,
+      pageSize: 10,
+
       // 모달
       modalOpen: false,
       editingId: null,
       form: defaultForm(),
       submitting: false,
 
-      // 로컬 blob URL 추적 (메모리 해제용)
       _blobUrls: [],
-
       api: null,
     }
+  },
+
+  computed: {
+    pageRange() {
+      const start = Math.max(0, this.page - 2)
+      const end = Math.min(this.totalPages - 1, start + 4)
+      const pages = []
+      for (let i = start; i <= end; i++) pages.push(i)
+      return pages
+    },
   },
 
   created() {
@@ -213,14 +259,36 @@ export default {
     async load() {
       this.loading = true
       try {
-        const res = await this.api.get(ENDPOINTS.promotions())
-        const list = Array.isArray(res) ? res : (res.content ?? res.items ?? [])
-        this.rows = [...list].sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0))
+        const res = await this.api.get(ENDPOINTS.promotions({
+          keyword: this.keyword,
+          page: this.page,
+          size: this.pageSize,
+          sort: 'displayOrder,asc',
+        }))
+        this.rows = res.content ?? (Array.isArray(res) ? res : [])
+        this.totalPages = res.totalPages ?? 1
       } catch (err) {
         alert('목록을 불러오는 데 실패했습니다.')
       } finally {
         this.loading = false
       }
+    },
+
+    // ── 검색 ──────────────────────────────────────────────────────
+    search() {
+      this.page = 0
+      this.load()
+    },
+    clearSearch() {
+      this.keyword = ''
+      this.page = 0
+      this.load()
+    },
+
+    // ── 페이지 이동 ───────────────────────────────────────────────
+    goPage(p) {
+      this.page = p
+      this.load()
     },
 
     // ── 파일 선택 핸들러 ──────────────────────────────────────────
@@ -260,7 +328,7 @@ export default {
         title: row.title ?? '',
         displayOrder: row.displayOrder ?? 0,
         mainBannerFile: null,
-        mainBannerPreview: row.mainBannerUrl ?? null,  // 기존 S3 URL로 미리보기
+        mainBannerPreview: row.mainBannerUrl ?? null,
         detailImageFile: null,
         detailImagePreview: row.detailImageUrl ?? null,
       }
@@ -268,7 +336,6 @@ export default {
     },
 
     closeModal() {
-      // blob URL 해제
       this._blobUrls.forEach(url => URL.revokeObjectURL(url))
       this._blobUrls = []
       this.modalOpen = false
@@ -277,7 +344,6 @@ export default {
 
     // ── 등록 / 수정 제출 ──────────────────────────────────────────
     async submitForm() {
-      // 신규 등록 시 이미지 필수 검증
       if (!this.editingId && !this.form.mainBannerFile) {
         alert('메인 배너 이미지를 선택해 주세요.')
         return
