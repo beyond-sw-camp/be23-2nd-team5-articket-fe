@@ -124,37 +124,6 @@
           </div>
         </div>
 
-        <!-- ── 좌석 다중 선택 시 (박스 선택) ── -->
-        <div v-if="selectedSeatIds.size > 0" class="sfe-prop-section">
-          <div class="sfe-prop-header">
-            <span>선택된 좌석 ({{ selectedSeatIds.size }})</span>
-            <button class="text-xs text-blue-400 hover:underline" @click="clearSeatSelection">해제</button>
-          </div>
-
-          <div class="sfe-field-group">
-            <label class="sfe-label">등급 일괄 변경</label>
-            <div class="grid grid-cols-3 gap-2">
-              <button v-for="g in grades" :key="g.id"
-                      class="sfe-grade-btn" :style="{ borderColor: g.color, color: g.color }"
-                      @click="bulkUpdateGrade(g.id)">
-                {{ g.label }}
-              </button>
-            </div>
-          </div>
-
-          <div class="sfe-field-group">
-            <label class="sfe-label">사용 여부</label>
-            <div class="flex rounded bg-slate-100 p-1">
-              <button class="flex-1 py-1.5 text-xs rounded transition-colors"
-                      :class="bulkVisible === true ? 'bg-green-600 text-white' : 'text-slate-600 hover:bg-slate-200'"
-                      @click="bulkUpdateVisibility(true)">사용</button>
-              <button class="flex-1 py-1.5 text-xs rounded transition-colors"
-                      :class="bulkVisible === false ? 'bg-red-600 text-white' : 'text-slate-600 hover:bg-slate-200'"
-                      @click="bulkUpdateVisibility(false)">미사용</button>
-            </div>
-          </div>
-        </div>
-
         <!-- ── 객체 선택 시 속성 ── -->
         <div v-if="selectedObj" class="sfe-prop-section">
           <div class="sfe-prop-header">
@@ -169,32 +138,32 @@
           <div class="grid grid-cols-2 gap-3 mb-4">
             <div>
               <label class="sfe-label">X 좌표</label>
-              <input type="number" class="sfe-input" v-model.number="selectedObj.x" @change="renderAll">
+              <input type="number" class="sfe-input" v-model.number="selectedObj.x" @change="syncStage">
             </div>
             <div>
               <label class="sfe-label">Y 좌표</label>
-              <input type="number" class="sfe-input" v-model.number="selectedObj.y" @change="renderAll">
+              <input type="number" class="sfe-input" v-model.number="selectedObj.y" @change="syncStage">
             </div>
             <div>
               <label class="sfe-label">{{ selectedObj.type === 'seatGrid' ? '행 수' : '너비' }}</label>
               <input v-if="selectedObj.type === 'seatGrid'" type="number" class="sfe-input"
-                     v-model.number="selectedObj.rows" @change="renderAll(); pushHistory()">
+                     v-model.number="selectedObj.rows" @change="syncStage(); pushHistory()">
               <input v-else type="number" class="sfe-input"
-                     v-model.number="selectedObj.width" @change="renderAll(); pushHistory()">
+                     v-model.number="selectedObj.width" @change="syncStage(); pushHistory()">
             </div>
             <div>
               <label class="sfe-label">{{ selectedObj.type === 'seatGrid' ? '열 수' : '높이' }}</label>
               <input v-if="selectedObj.type === 'seatGrid'" type="number" class="sfe-input"
-                     v-model.number="selectedObj.cols" @change="renderAll(); pushHistory()">
+                     v-model.number="selectedObj.cols" @change="syncStage(); pushHistory()">
               <input v-else type="number" class="sfe-input"
-                     v-model.number="selectedObj.height" @change="renderAll(); pushHistory()">
+                     v-model.number="selectedObj.height" @change="syncStage(); pushHistory()">
             </div>
           </div>
 
           <div class="sfe-field-group">
             <label class="sfe-label">회전 ({{ Math.round(selectedObj.rotation || 0) }}°)</label>
             <input type="range" class="sfe-slider" min="-180" max="180"
-                   v-model.number="selectedObj.rotation" @input="renderAll" @change="pushHistory">
+                   v-model.number="selectedObj.rotation" @input="onRotationInput" @change="pushHistory">
           </div>
 
           <!-- 구역 전용 -->
@@ -205,7 +174,7 @@
                 <button v-for="opt in ['none', 'left', 'right']" :key="opt"
                         class="flex-1 py-1 text-[10px] rounded transition-colors"
                         :class="(selectedObj.rowLabelType || 'left') === opt ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-200'"
-                        @click="selectedObj.rowLabelType = opt; renderAll(); pushHistory()">
+                        @click="selectedObj.rowLabelType = opt; syncStage(); pushHistory()">
                   {{ opt === 'none' ? '없음' : opt === 'left' ? '왼쪽' : '오른쪽' }}
                 </button>
               </div>
@@ -284,6 +253,7 @@ let isDragCreating = false
 let dragCreateStart = null
 let previewRect = null
 let previewLabel = null
+let guidelineStops = null
 
 // Constants
 const SEAT_W = 20, SEAT_H = 20, SEAT_GAP = 4
@@ -356,15 +326,17 @@ const applyStatePaint = (obj, row, col) => {
   if (!obj.states[row]) obj.states[row] = []
   obj.states[row][col] = paintValue.value
 
-  const def = obj.seatDefs.find(d => d.rowNo === row + 1 && d.seatNo === col + 1)
+  const key = `${row + 1}_${col + 1}`
+  const def = obj.seatDefs[key]
   if (def) def.isVisible = paintValue.value !== 'inactive'
 }
 
 const applyGradePaint = (obj, row, col) => {
-  let def = obj.seatDefs.find(d => d.rowNo === row + 1 && d.seatNo === col + 1)
+  const key = `${row + 1}_${col + 1}`
+  let def = obj.seatDefs[key]
   if (!def) {
     def = { id: null, rowNo: row + 1, seatNo: col + 1, grade: activePaintGrade.value, isVisible: true }
-    obj.seatDefs.push(def)
+    obj.seatDefs[key] = def
   } else {
     def.grade = activePaintGrade.value
   }
@@ -387,7 +359,7 @@ const undo = () => {
     objects.value = JSON.parse(history.value[historyIndex.value])
     selectedId.value = null
     selectedSeatIds.value.clear()
-    renderAll()
+    syncStage()
   }
 }
 const redo = () => {
@@ -396,7 +368,7 @@ const redo = () => {
     objects.value = JSON.parse(history.value[historyIndex.value])
     selectedId.value = null
     selectedSeatIds.value.clear()
-    renderAll()
+    syncStage()
   }
 }
 
@@ -440,7 +412,7 @@ const addSeatGrid = (x, y, rows = 5, cols = 8) => {
     rows, cols, grade: 'C', color: '#94a3b8',
     rotation: 0, shape: 'RECTANGLE', rowLabelType: 'left',
     states: Array(Math.max(rows, 20)).fill(0).map(() => Array(Math.max(cols, 30)).fill('empty')),
-    seatDefs: []
+    seatDefs: {}
   }
   objects.value.push(obj)
   pushHistory()
@@ -466,8 +438,8 @@ const duplicateObj = () => {
   copy.x += 20; copy.y += 20
   objects.value.push(copy)
   selectedId.value = copy.id
-  pushHistory()
-  renderAll()
+  pushHistory() // This calls saveState
+  syncStage()
 }
 
 const deleteObj = () => {
@@ -476,8 +448,8 @@ const deleteObj = () => {
   objects.value = objects.value.filter(o => o.id !== selectedId.value)
   selectedId.value = null
   if (transformer) transformer.nodes([])
-  pushHistory()
-  renderAll()
+  pushHistory() // This calls saveState
+  syncStage()
 }
 
 const clearAllObjects = () => {
@@ -486,15 +458,15 @@ const clearAllObjects = () => {
   objects.value = []
   selectedId.value = null
   selectedSeatIds.value.clear()
-  if (transformer) transformer.nodes([])
-  pushHistory()
-  renderAll()
+  if (transformer) transformer.nodes([]);
+  pushHistory() // This calls saveState
+  syncStage()
 }
 
 // ── SEAT BULK EDIT (box select) ────────────────────────────────────────
 const clearSeatSelection = () => {
   selectedSeatIds.value.clear()
-  renderAll()
+  syncStage()
 }
 
 // objId가 '_' 포함될 수 있으므로 뒤에서 두 자리를 잘라냄
@@ -512,16 +484,17 @@ const bulkUpdateGrade = (grade) => {
     const { objId, r, c } = parseSeatKey(key)
     const obj = objects.value.find(o => o.id === objId)
     if (!obj) return
-    let def = obj.seatDefs.find(d => d.rowNo === r + 1 && d.seatNo === c + 1)
+    const defKey = `${r + 1}_${c + 1}`
+    let def = obj.seatDefs[defKey]
     if (!def) {
       def = { id: null, rowNo: r + 1, seatNo: c + 1, grade, isVisible: true }
-      obj.seatDefs.push(def)
+      obj.seatDefs[defKey] = def
     } else {
       def.grade = grade
     }
   })
   pushHistory()
-  renderAll()
+  syncStage()
 }
 
 const bulkUpdateVisibility = (visible) => {
@@ -533,11 +506,12 @@ const bulkUpdateVisibility = (visible) => {
     if (!obj.states) obj.states = []
     if (!obj.states[r]) obj.states[r] = []
     obj.states[r][c] = visible ? 'empty' : 'inactive'
-    const def = obj.seatDefs.find(d => d.rowNo === r + 1 && d.seatNo === c + 1)
+    const defKey = `${r + 1}_${c + 1}`
+    const def = obj.seatDefs[defKey]
     if (def) def.isVisible = visible
   })
   pushHistory()
-  renderAll()
+  syncStage()
 }
 
 // ── ALIGNMENT GUIDES ──────────────────────────────────────────────────
@@ -613,103 +587,104 @@ const drawGuides = (guides) => {
   guideLayer.batchDraw()
 }
 
-// ── RENDER ────────────────────────────────────────────────────────────
-const renderAll = () => {
-  if (!mainLayer) return
-  mainLayer.find('.object').forEach(node => node.destroy())
+// ── RENDER (REFACTORED) ───────────────────────────────────────────────
 
-  objects.value.forEach(obj => {
-    const grp = new Konva.Group({
+/**
+ * Populates a Konva.Group for a stage object.
+ */
+function populateStageGroup(grp, obj) {
+  grp.add(new Konva.Rect({
+    width: obj.width, height: obj.height,
+    fill: '#f1f5f9', stroke: '#3b82f6', strokeWidth: 2, cornerRadius: 4,
+    name: 'shape'
+  }))
+  grp.add(new Konva.Text({
+    text: obj.name, fontSize: 20, fontStyle: 'bold', fill: '#60a5fa',
+    width: obj.width, height: obj.height, align: 'center', verticalAlign: 'middle',
+    name: 'label'
+  }))
+}
+
+/**
+ * Populates a Konva.Group for a seat grid object.
+ */
+function populateSeatGridGroup(grp, obj) {
+  const rows = obj.rows || 5
+  const cols = obj.cols || 8
+  const w = SEAT_W, h = SEAT_H, gap = SEAT_GAP
+  const gridW = cols * (w + gap) - gap
+  const gridH = rows * (h + gap) - gap
+
+  // 투명 히트 영역
+  grp.add(new Konva.Rect({ x: 0, y: 0, width: gridW, height: gridH, fill: 'transparent' }))
+
+  // 행 번호 레이블
+  if (obj.rowLabelType === 'left') {
+    for (let r = 0; r < rows; r++) {
+      grp.add(new Konva.Text({
+        text: String(r + 1), fontSize: 10, fill: '#94a3b8',
+        x: -20, y: r * (h + gap) + 4, width: 15, align: 'right'
+      }))
+    }
+  } else if (obj.rowLabelType === 'right') {
+    for (let r = 0; r < rows; r++) {
+      grp.add(new Konva.Text({
+        text: String(r + 1), fontSize: 10, fill: '#94a3b8',
+        x: gridW + 5, y: r * (h + gap) + 4, width: 15, align: 'left'
+      }))
+    }
+  }
+
+  // 좌석 렌더링
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const state = obj.states?.[r]?.[c] ?? 'empty'
+      const def = obj.seatDefs?.[`${r + 1}_${c + 1}`]
+      const seatGrade = def?.grade || obj.grade || 'R'
+      const fill = state === 'inactive' ? '#cbd5e1' : gradeColor(seatGrade)
+      const seatKey = `${obj.id}_${r}_${c}`
+      const isSelected = selectedSeatIds.value.has(seatKey)
+
+      grp.add(new Konva.Rect({
+        x: c * (w + gap), y: r * (h + gap),
+        width: w, height: h,
+        fill,
+        stroke: isSelected ? '#fff' : 'transparent',
+        strokeWidth: 1.5,
+        opacity: state === 'inactive' ? 0.25 : 1,
+        listening: false,
+        perfectDrawEnabled: false,
+        shadowForStrokeEnabled: false
+      }))
+    }
+  }
+
+  // 구역 이름 레이블
+  grp.add(new Konva.Text({
+    text: obj.name, fontSize: 12, fill: '#cbd5e1',
+    x: 0, y: -20,
+    width: gridW, align: 'center'
+  }))
+}
+
+/**
+ * Creates a new Konva.Group for a given object from the data model.
+ */
+function createObjectNode(obj) {
+  if (!mainLayer) return
+
+  const grp = new Konva.Group({
       id: obj.id,
       x: obj.x, y: obj.y,
       rotation: obj.rotation || 0,
-      scaleX: obj.scaleX || 1,
-      scaleY: obj.scaleY || 1,
       draggable: currentTool.value === 'select',
       name: 'object'
     })
 
-    // ── STAGE ──
     if (obj.type === 'stage') {
-      grp.add(new Konva.Rect({
-        width: obj.width, height: obj.height,
-        fill: '#f1f5f9', stroke: '#3b82f6', strokeWidth: 2, cornerRadius: 4
-      }))
-      grp.add(new Konva.Text({
-        text: obj.name, fontSize: 20, fontStyle: 'bold', fill: '#60a5fa',
-        width: obj.width, height: obj.height, align: 'center', verticalAlign: 'middle'
-      }))
-    }
-
-    // ── SEAT GRID ──
-    else if (obj.type === 'seatGrid') {
-      const rows = obj.rows || 5
-      const cols = obj.cols || 8
-      const w = SEAT_W, h = SEAT_H, gap = SEAT_GAP
-      const gridW = cols * (w + gap) - gap
-      const gridH = rows * (h + gap) - gap
-
-      // 투명 히트 영역 (구역 전체 클릭 감지)
-      grp.add(new Konva.Rect({
-        x: 0, y: 0, width: gridW, height: gridH,
-        fill: 'transparent'
-      }))
-
-      // 행 번호 레이블
-      if (obj.rowLabelType === 'left') {
-        for (let r = 0; r < rows; r++) {
-          grp.add(new Konva.Text({
-            text: String(r + 1), fontSize: 10, fill: '#94a3b8',
-            x: -20, y: r * (h + gap) + 4, width: 15, align: 'right'
-          }))
-        }
-      } else if (obj.rowLabelType === 'right') {
-        for (let r = 0; r < rows; r++) {
-          grp.add(new Konva.Text({
-            text: String(r + 1), fontSize: 10, fill: '#94a3b8',
-            x: gridW + 5, y: r * (h + gap) + 4, width: 15, align: 'left'
-          }))
-        }
-      }
-
-      // 좌석 렌더링
-      for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < cols; c++) {
-          const state = obj.states?.[r]?.[c] ?? 'empty'
-          const def = obj.seatDefs?.find(d => d.rowNo === r + 1 && d.seatNo === c + 1)
-
-          // 좌석별 등급 색상 (seatDef.grade → 등급 색상, 없으면 구역 기본색)
-          const seatGrade = def?.grade || obj.grade || 'R'
-          const fill = state === 'inactive' ? '#cbd5e1' : gradeColor(seatGrade)
-
-          const seatKey = `${obj.id}_${r}_${c}`
-          const isSelected = selectedSeatIds.value.has(seatKey)
-
-          const seatShape = new Konva.Rect({
-            x: c * (w + gap), y: r * (h + gap),
-            width: w, height: h,
-            fill,
-            stroke: isSelected ? '#fff' : 'transparent',
-            strokeWidth: 1.5,
-            opacity: state === 'inactive' ? 0.25 : 1,
-            listening: false,             // 성능 최적화: 개별 좌석 이벤트 감지 제거
-            perfectDrawEnabled: false,    // 성능 최적화: 그리기 연산 단순화
-            shadowForStrokeEnabled: false // 성능 최적화: 스트로크 그림자 계산 제거
-          })
-
-          grp.add(seatShape)
-        }
-      }
-
-      // 구역 이름 레이블
-      grp.add(new Konva.Text({
-        text: obj.name, fontSize: 12, fill: '#cbd5e1',
-        x: 0, y: -20,
-        width: gridW, align: 'center'
-      }))
-
-      // 대규모 좌석 렌더링 성능 최적화 (비트맵 캐싱)
-      // 줌 레벨에 맞춰 해상도 조절 (최대 3배)
+      populateStageGroup(grp, obj)
+    } else if (obj.type === 'seatGrid') {
+      populateSeatGridGroup(grp, obj)
       const pr = Math.min(Math.max(stageScale.value, 1), 3)
       grp.cache({ pixelRatio: pr })
     }
@@ -723,12 +698,16 @@ const renderAll = () => {
       }
     })
 
+    grp.on('dragstart', (e) => {
+      if (!snapEnabled.value) return
+      guidelineStops = getLineGuideStops(e.target)
+    })
+
     grp.on('dragmove', (e) => {
       if (!snapEnabled.value) return
       guideLayer.destroyChildren()
-      const lineGuideStops = getLineGuideStops(e.target)
       const itemBounds = getObjectSnappingEdges(e.target)
-      const guides = getGuides(lineGuideStops, itemBounds)
+      const guides = getGuides(guidelineStops || getLineGuideStops(e.target), itemBounds)
       if (!guides.length) return
       drawGuides(guides)
       const absPos = e.target.absolutePosition()
@@ -741,6 +720,7 @@ const renderAll = () => {
 
     grp.on('dragend', () => {
       guideLayer.destroyChildren()
+      guidelineStops = null
       const o = objects.value.find(o => o.id === obj.id)
       if (o) { o.x = Math.round(grp.x()); o.y = Math.round(grp.y()) }
       pushHistory()
@@ -772,16 +752,72 @@ const renderAll = () => {
       }
       pushHistory()
       grp.scaleX(1); grp.scaleY(1)
-      renderAll()
+      syncStage()
     })
-
     mainLayer.add(grp)
+}
+
+/**
+ * Updates an existing Konva.Group based on changed data.
+ */
+function updateObjectNode(node, obj) {
+  // Update common attributes
+  node.setAttrs({ x: obj.x, y: obj.y, rotation: obj.rotation || 0 })
+
+  // Re-populate children. This is a compromise for simplicity.
+  // It's still much faster than destroying/recreating the group and its events.
+  node.destroyChildren()
+
+  if (obj.type === 'stage') {
+    populateStageGroup(node, obj)
+  } else if (obj.type === 'seatGrid') {
+    populateSeatGridGroup(node, obj)
+    // Re-cache after updating
+    const pr = Math.min(Math.max(stageScale.value, 1), 3)
+    node.clearCache()
+    node.cache({ pixelRatio: pr })
+  }
+}
+
+/**
+ * The main rendering function. It synchronizes the Konva stage with the `objects` data model.
+ * It adds, removes, or updates nodes as necessary, avoiding a full-recreation.
+ */
+const syncStage = () => {
+  if (!mainLayer) return
+
+  const existingNodes = mainLayer.find('.object')
+  const dataIds = new Set(objects.value.map(obj => obj.id))
+
+  // 1. Remove nodes that are no longer in the data model
+  existingNodes.forEach(node => {
+    if (!dataIds.has(node.id())) {
+      if (transformer && transformer.nodes().includes(node)) {
+        transformer.nodes([])
+      }
+      node.destroy()
+    }
   })
 
-  if (transformer) transformer.moveToTop()
+  // 2. Add new nodes or update existing ones
+  objects.value.forEach(obj => {
+    try {
+      const node = mainLayer.findOne('#' + obj.id)
+      if (node) {
+        updateObjectNode(node, obj)
+      } else {
+        createObjectNode(obj)
+      }
+    } catch (e) {
+      console.error('Error syncing object:', obj, e)
+    }
+  })
+
   updateTransformer()
   mainLayer.batchDraw()
 }
+
+const renderAll = syncStage // Alias for backward compatibility in a few places
 
 const updateTransformer = () => {
   if (!transformer) return
@@ -833,7 +869,7 @@ const handleStageMouseDown = (e) => {
       }
       isPainting.value = true
       lastPaintedKey.value = `${hit.obj.id}_${hit.row}_${hit.col}`
-      renderAll()
+      syncStage()
     } else {
       // 빈 공간 → 박스 선택
       isSelecting = true
@@ -888,7 +924,7 @@ const handleStageMouseMove = () => {
         } else {
           applyGradePaint(hit.obj, hit.row, hit.col)
         }
-        renderAll()
+        syncStage()
       }
     }
     return
@@ -967,7 +1003,7 @@ const handleStageMouseUp = () => {
   })
 
   selectedSeatIds.value = newSelected
-  renderAll()
+  syncStage()
 }
 
 // ── API ───────────────────────────────────────────────────────────────
@@ -1004,9 +1040,22 @@ const loadLayout = async () => {
       // 백엔드 응답 필드명 다양성 대응 (rows/totalRow, seatsPerRow/totalCol 등)
       const rows = sec.rows ?? sec.totalRow ?? sec.total_row ?? 5
       const cols = sec.seatsPerRow ?? sec.seats_per_row ?? sec.totalCol ?? sec.total_col ?? 10
+      
+      // seatDefs 맵을 먼저 생성하여 조회 성능 최적화 (O(N) -> O(1))
+      const seatDefsMap = (defs || []).reduce((acc, d) => {
+        const r = d.rowNo ?? d.row_no
+        const c = d.seatNo ?? d.seat_no
+        acc[`${r}_${c}`] = {
+          id: d.id, rowNo: r, seatNo: c,
+          grade: d.gradeDefault ?? d.grade ?? 'R',
+          isVisible: d.isVisible ?? true
+        }
+        return acc
+      }, {})
+
       const states = Array.from({ length: rows }, (_, r) =>
         Array.from({ length: cols }, (_, c) => {
-          const d = (defs || []).find(d => d.rowNo === r + 1 && d.seatNo === c + 1)
+          const d = seatDefsMap[`${r + 1}_${c + 1}`]
           return d?.isVisible === false ? 'inactive' : 'empty'
         })
       )
@@ -1027,20 +1076,14 @@ const loadLayout = async () => {
         shape: sec.shape ?? 'RECTANGLE',
         rowLabelType: sec.rowLabelType ?? sec.row_label_type ?? 'left',
         states,
-        seatDefs: (defs || []).map(d => ({
-          id: d.id,
-          rowNo: d.rowNo ?? d.row_no,
-          seatNo: d.seatNo ?? d.seat_no,
-          grade: d.gradeDefault ?? d.grade ?? 'R',
-          isVisible: d.isVisible ?? true
-        }))
+        seatDefs: seatDefsMap
       }
     }))
 
     objects.value = [...stageObjs, ...gridObjs]
     saveState()
     savedStatus.value = '저장됨'
-    renderAll()
+    syncStage()
   } catch (e) {
     console.error('loadLayout error:', e)
   }
@@ -1081,7 +1124,7 @@ const handleSave = async () => {
         const parsedId = parseInt(g.id)
         const isExistingSection = !isNaN(parsedId) && String(parsedId) === g.id
 
-        const seatPayload = (g.seatDefs || []).map(d => {
+        const seatPayload = Object.values(g.seatDefs || {}).map(d => {
           const r = d.rowNo - 1, c = d.seatNo - 1
           const state = g.states?.[r]?.[c]
           return { id: d.id, rowNo: d.rowNo, seatNo: d.seatNo, grade: d.grade, isVisible: state !== 'inactive' }
@@ -1102,7 +1145,7 @@ const handleSave = async () => {
           const allRules = []
           for (let r = 0; r < g.rows; r++) {
             for (let c = 0; c < g.cols; c++) {
-              const def = g.seatDefs.find(d => d.rowNo === r + 1 && d.seatNo === c + 1)
+              const def = g.seatDefs[`${r + 1}_${c + 1}`]
               const state = g.states?.[r]?.[c] ?? 'empty'
               allRules.push({
                 rows: String(r + 1),
@@ -1162,7 +1205,7 @@ const onWindowKeyDown = (e) => {
 
     if (moved) {
       e.preventDefault()
-      renderAll()
+      syncStage()
       isKeyboardMoving = true
     }
   }
@@ -1255,7 +1298,7 @@ onMounted(() => {
   new ResizeObserver(() => {
     konvaStage.width(container.offsetWidth)
     konvaStage.height(container.offsetHeight)
-    renderAll()
+    syncStage()
   }).observe(container)
 
   loadLayout()
@@ -1277,7 +1320,7 @@ const captureLayoutDataUrl = () => {
   // 트랜스포머, 선택 박스 임시 숨김 (캡처 이미지에 포함되지 않도록)
   const prevNodes = transformer.nodes()
   transformer.nodes([])
-  selectionRect.visible(false)
+  if (selectionRect) selectionRect.visible(false)
   mainLayer.draw()
 
   // 현재 화면을 그대로 캡처 (stage 이동 없음 → 저장 중 화면 깜빡임 방지)
@@ -1286,9 +1329,19 @@ const captureLayoutDataUrl = () => {
 
   // 복원
   transformer.nodes(prevNodes)
+  if (selectionRect) selectionRect.visible(false) // Keep it hidden after capture
   mainLayer.draw()
 
   return dataUrl
+}
+
+// ── DEBOUNCED INPUT HANDLER ───────────────────────────────────────────
+let rotationDebounce = null
+const onRotationInput = () => {
+  if (rotationDebounce) clearTimeout(rotationDebounce)
+  rotationDebounce = setTimeout(() => {
+    syncStage()
+  }, 50)
 }
 
 // 로컬 이미지 다운로드 (🖼 이미지 저장 버튼)
