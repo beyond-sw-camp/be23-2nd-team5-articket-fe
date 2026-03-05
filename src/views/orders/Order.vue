@@ -1,97 +1,125 @@
 <template>
-  <div class="relative mx-auto max-w-5xl p-4 py-10 md:p-8">
-    <div v-if="timer"
-      class="fixed right-8 top-12 z-[100000] flex items-center gap-2 rounded-xl border-2 border-red-500 bg-white px-4 py-2 text-lg font-bold text-red-600 shadow-lg">
-      <Clock class="h-5 w-5" />
-      남은 시간: {{ timerText }}
+  <div class="mx-auto max-w-5xl space-y-6 p-4 pb-12 pt-10 md:p-8">
+    <div>
+      <h1 class="text-xl font-bold text-slate-900 sm:text-2xl">티켓 결제</h1>
+      <p class="mt-1 text-sm text-slate-500">주문 정보를 확인하고 결제를 완료해 주세요.</p>
     </div>
 
-    <h2 class="mb-6 text-2xl font-bold text-slate-900">티켓 결제</h2>
+    <!-- 결제 유효시간 (페이지 상단에 자연스럽게 배치) -->
+    <div
+      v-if="holdExpiresAt != null"
+      class="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm sm:px-5"
+      :class="remainingMs > 0 ? 'border-l-4 border-l-red-500' : 'border-l-4 border-l-slate-300'"
+    >
+      <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl" :class="remainingMs > 0 ? 'bg-red-50' : 'bg-slate-100'">
+        <Clock class="h-5 w-5" :class="remainingMs > 0 ? 'text-red-600' : 'text-slate-500'" />
+      </div>
+      <div class="min-w-0 flex-1">
+        <p class="text-sm font-medium text-slate-700">
+          {{ remainingMs > 0 ? '결제 유효시간이 지나면 좌석 선점이 해제됩니다.' : '선점 시간이 만료되었습니다.' }}
+        </p>
+        <p class="mt-0.5 text-lg font-bold tabular-nums" :class="remainingMs > 0 ? 'text-red-600' : 'text-slate-500'">
+          {{ remainingMs > 0 ? timerText : '00:00' }}
+        </p>
+      </div>
+    </div>
 
     <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
       <div class="space-y-6 md:col-span-2">
-        <UiCard>
+        <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
           <div class="mb-4 flex items-center gap-2 border-b border-slate-100 pb-3">
             <Ticket class="h-5 w-5 text-slate-500" />
-            <span class="text-base font-semibold text-slate-800">티켓 주문상세</span>
+            <span class="text-base font-semibold text-slate-900">티켓 주문상세</span>
           </div>
-          <div class="p-2" v-if="order">
+          <div v-if="order" class="space-y-4">
             <div class="border-b border-slate-100 pb-4">
-              <div class="text-base font-bold text-slate-900">{{ order.concertName }}</div>
-              <div class="mt-1 text-sm text-slate-500">{{ order.scheduleDate }} | {{ order.venueName }}</div>
+              <p class="text-base font-bold text-slate-900">{{ order.concertName }}</p>
+              <p class="mt-1 text-sm text-slate-500">{{ order.scheduleDate }} | {{ order.venueName }}</p>
             </div>
-            <div v-for="(seat, index) in order.seatDetails" :key="index"
-              class="flex items-center justify-between py-4"
-              :class="index < order.seatDetails.length - 1 ? 'border-b border-slate-100' : ''">
+            <div
+              v-for="(seat, index) in order.seatDetails"
+              :key="index"
+              class="flex items-center justify-between py-3"
+              :class="index < order.seatDetails.length - 1 ? 'border-b border-slate-100' : ''"
+            >
               <span class="text-sm font-medium text-slate-700">{{ seat.seatDefName }} 1매</span>
               <span class="text-sm font-semibold text-slate-900">{{ parseInt(seat.price).toLocaleString() }}원</span>
             </div>
           </div>
-        </UiCard>
+        </div>
 
-        <UiCard>
+        <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
           <div class="mb-4 flex items-center gap-2 border-b border-slate-100 pb-3">
             <User class="h-5 w-5 text-slate-500" />
-            <span class="text-base font-semibold text-slate-800">예매자 정보</span>
+            <span class="text-base font-semibold text-slate-900">예매자 정보</span>
           </div>
-          <div class="p-2">
+          <div class="space-y-0">
             <div class="flex items-center gap-4 border-b border-slate-100 py-4">
               <span class="w-20 shrink-0 text-sm font-medium text-slate-500">예매자</span>
-              <input v-model="buyer.name" type="text"
-                class="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
+              <input
+                v-model="buyer.name"
+                type="text"
+                class="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 transition focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+              />
             </div>
             <div class="flex items-center gap-4 border-b border-slate-100 py-4">
               <span class="w-20 shrink-0 text-sm font-medium text-slate-500">생년월일</span>
-              <input v-model="buyer.birth" type="text" placeholder="YYYY-MM-DD"
-                class="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
+              <input
+                v-model="buyer.birth"
+                type="text"
+                placeholder="YYYY-MM-DD"
+                class="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 transition focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+              />
             </div>
             <div class="flex items-center gap-4 border-b border-slate-100 py-4">
               <span class="w-20 shrink-0 text-sm font-medium text-slate-500">이메일</span>
-              <input v-model="buyer.email" type="email"
-                class="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
+              <input
+                v-model="buyer.email"
+                type="email"
+                class="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 transition focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+              />
             </div>
             <div class="flex items-center gap-4 py-4">
               <span class="w-20 shrink-0 text-sm font-medium text-slate-500">휴대폰</span>
-              <input v-model="buyer.phone" type="tel"
-                class="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
+              <input
+                v-model="buyer.phone"
+                type="tel"
+                class="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 transition focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+              />
             </div>
           </div>
-        </UiCard>
+        </div>
 
-        <UiCard>
+        <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
           <div class="mb-4 flex items-center gap-2 border-b border-slate-100 pb-3">
             <CreditCard class="h-5 w-5 text-slate-500" />
-            <span class="text-base font-semibold text-slate-800">결제수단</span>
+            <span class="text-base font-semibold text-slate-900">결제수단</span>
           </div>
-          <div class="p-2">
+          <div class="space-y-0">
             <label class="flex cursor-pointer items-center gap-3 border-b border-slate-100 py-4 text-sm font-medium text-slate-700">
-              <input v-model="payMethod" type="radio" value="CARD"
-                class="h-4 w-4 border-slate-300 text-blue-600 focus:ring-blue-500" />
+              <input v-model="payMethod" type="radio" value="CARD" class="h-4 w-4 border-slate-300 text-red-600 focus:ring-red-500" />
               신용카드, 간편결제
             </label>
             <label class="flex cursor-pointer items-center gap-3 py-4 text-sm font-medium text-slate-700">
-              <input v-model="payMethod" type="radio" value="VIRTUAL_ACCOUNT"
-                class="h-4 w-4 border-slate-300 text-blue-600 focus:ring-blue-500" />
+              <input v-model="payMethod" type="radio" value="VIRTUAL_ACCOUNT" class="h-4 w-4 border-slate-300 text-red-600 focus:ring-red-500" />
               무통장입금
             </label>
           </div>
-        </UiCard>
+        </div>
 
-        <UiCard>
+        <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
           <div class="mb-4 flex items-center justify-between border-b border-slate-100 pb-3">
-            <span class="text-base font-semibold text-slate-800">예매자동의</span>
+            <span class="text-base font-semibold text-slate-900">예매자동의</span>
             <label class="flex cursor-pointer items-center gap-2 text-sm font-medium text-slate-700">
-              <input type="checkbox" :checked="allAgreed" @change="toggleAllAgreed"
-                class="h-4 w-4 border-slate-300 text-blue-600 focus:ring-blue-500" />
+              <input type="checkbox" :checked="allAgreed" @change="toggleAllAgreed" class="h-4 w-4 border-slate-300 text-red-600 focus:ring-red-500" />
               전체동의
             </label>
           </div>
 
-          <div class="p-2">
+          <div class="space-y-0">
             <div class="border-b border-slate-100 pb-4">
               <label class="flex cursor-pointer items-start gap-2 text-sm font-medium text-slate-700">
-                <input v-model="agreements.cancelFee" type="checkbox"
-                  class="mt-0.5 h-4 w-4 shrink-0 border-slate-300 text-blue-600 focus:ring-blue-500" />
+                <input v-model="agreements.cancelFee" type="checkbox" class="mt-0.5 h-4 w-4 shrink-0 border-slate-300 text-red-600 focus:ring-red-500" />
                 [필수] 예매 및 취소 수수료/취소기한을 확인하였으며 동의합니다.
               </label>
               <div class="ml-6 mt-3">
@@ -118,8 +146,7 @@
 
             <div class="border-b border-slate-100 py-4">
               <label class="flex cursor-pointer items-center gap-2 text-sm font-medium text-slate-700">
-                <input v-model="agreements.kakaoFinance" type="checkbox"
-                  class="h-4 w-4 shrink-0 border-slate-300 text-blue-600 focus:ring-blue-500" />
+                <input v-model="agreements.kakaoFinance" type="checkbox" class="h-4 w-4 shrink-0 border-slate-300 text-red-600 focus:ring-red-500" />
                 [필수] 카카오 전자금융 이용약관 동의
                 <button type="button"
                   class="ml-1 rounded border border-slate-300 px-2 py-0.5 text-xs text-slate-500 hover:bg-slate-50">상세보기</button>
@@ -128,8 +155,7 @@
 
             <div class="border-b border-slate-100 py-4">
               <label class="flex cursor-pointer items-center gap-2 text-sm font-medium text-slate-700">
-                <input v-model="agreements.privacy" type="checkbox"
-                  class="h-4 w-4 shrink-0 border-slate-300 text-blue-600 focus:ring-blue-500" />
+                <input v-model="agreements.privacy" type="checkbox" class="h-4 w-4 shrink-0 border-slate-300 text-red-600 focus:ring-red-500" />
                 [필수] 개인정보 수집/이용에 동의합니다.
                 <button type="button"
                   class="ml-1 rounded border border-slate-300 px-2 py-0.5 text-xs text-slate-500 hover:bg-slate-50">상세보기</button>
@@ -138,51 +164,51 @@
 
             <div class="pt-4">
               <label class="flex cursor-pointer items-center gap-2 text-sm font-medium text-slate-700">
-                <input v-model="agreements.thirdParty" type="checkbox"
-                  class="h-4 w-4 shrink-0 border-slate-300 text-blue-600 focus:ring-blue-500" />
+                <input v-model="agreements.thirdParty" type="checkbox" class="h-4 w-4 shrink-0 border-slate-300 text-red-600 focus:ring-red-500" />
                 [필수] 개인정보 제3자 제공 동의 및 주의사항
-                <button type="button"
-                  class="ml-1 rounded border border-slate-300 px-2 py-0.5 text-xs text-slate-500 hover:bg-slate-50">상세보기</button>
+                <button type="button" class="ml-1 rounded border border-slate-300 px-2 py-0.5 text-xs text-slate-500 hover:bg-slate-50">상세보기</button>
               </label>
             </div>
           </div>
-        </UiCard>
+        </div>
       </div>
 
-      <div class="md:col-span-1" v-if="order">
+      <div v-if="order" class="md:col-span-1">
         <div class="sticky top-24">
-          <UiCard class="shadow-md border-slate-200">
+          <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
             <div class="mb-4 flex items-center gap-2 border-b border-slate-100 pb-3">
               <Receipt class="h-5 w-5 text-slate-500" />
-              <span class="text-base font-semibold text-slate-800">결제 정보</span>
+              <span class="text-base font-semibold text-slate-900">결제 정보</span>
             </div>
 
-            <div class="space-y-3 p-2 text-sm text-slate-600">
+            <div class="space-y-3 text-sm text-slate-600">
               <div class="flex justify-between">
                 <span>티켓금액</span>
                 <span class="font-medium text-slate-800">{{ parseInt(order.amount).toLocaleString() }}원</span>
               </div>
               <div class="flex justify-between">
                 <span>예매수수료</span>
-                <span class="font-medium text-slate-800">{{ (2000 * order.seatDetails.length).toLocaleString()
-                }}원</span>
+                <span class="font-medium text-slate-800">{{ (2000 * order.seatDetails.length).toLocaleString() }}원</span>
               </div>
             </div>
 
             <div class="my-4 border-t border-slate-100"></div>
 
-            <div class="mb-6 flex items-end justify-between p-2">
+            <div class="mb-6 flex items-end justify-between">
               <span class="font-bold text-slate-800">최종 결제금액</span>
-              <span class="text-2xl font-bold text-blue-600">
+              <span class="text-2xl font-bold text-red-600">
                 {{ (parseInt(order.amount) + 2000 * order.seatDetails.length).toLocaleString() }}원
               </span>
             </div>
 
-            <UiButton class="h-14 w-full bg-blue-600 text-base font-bold text-white hover:bg-blue-700"
-              @click="handlePayment">
+            <button
+              type="button"
+              class="h-14 w-full rounded-xl bg-red-600 text-base font-bold text-white transition hover:bg-red-700"
+              @click="handlePayment"
+            >
               {{ (parseInt(order.amount) + 2000 * order.seatDetails.length).toLocaleString() }}원 결제하기
-            </UiButton>
-          </UiCard>
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -191,29 +217,21 @@
 
 <script>
 import { Clock, Ticket, User, CreditCard, Receipt } from 'lucide-vue-next'
-import UiCard from '../../components/common/UiCard.vue'    // 경로 확인 필요
-import UiButton from '../../components/common/UiButton.vue' // 경로 확인 필요
 import PortOne from '@portone/browser-sdk/v2'
 import { useApi } from '../../composables/useApi'
+import { useSeatHoldMock } from '../../composables/useSeatHoldMock'
 import { ENDPOINTS } from '../../lib/api/endpoints'
 
 export default {
   name: 'PaymentView',
-  components: {
-    Clock,
-    Ticket,
-    User,
-    CreditCard,
-    Receipt,
-    UiCard,
-    UiButton
-  },
+  components: { Clock, Ticket, User, CreditCard, Receipt },
   data() {
     return {
-      //1
       api: null,
-      timer: true,
-      timerText: "08:52",
+      seatHoldMock: null,
+      holdExpiresAt: null,
+      now: Date.now(),
+      timerInterval: null,
       payMethod: "CARD",
       agreements: {
         cancelFee: false,
@@ -243,18 +261,48 @@ export default {
     },
     orderId() {
       return String(this.$route.query.orderId || '')
+    },
+    holdId() {
+      return String(this.$route.query.holdId || '').trim()
+    },
+    remainingMs() {
+      if (!this.holdExpiresAt) return 0
+      return Math.max(0, new Date(this.holdExpiresAt).getTime() - this.now)
+    },
+    timerText() {
+      const s = Math.floor(this.remainingMs / 1000)
+      const mm = String(Math.floor(s / 60)).padStart(2, '0')
+      const ss = String(s % 60).padStart(2, '0')
+      return `${mm}:${ss}`
     }
   },
   created() {
-    this.api = useApi();
+    this.api = useApi()
+    this.seatHoldMock = useSeatHoldMock()
   },
   async mounted() {
     try {
       const result = await this.api.get(ENDPOINTS.order(this.orderId));
-      // const result = await axios.get("http://localhost:8082/order/1");
       this.order = result;
     } catch (error) {
       console.error("주문 정보를 불러오는데 실패했습니다.", error);
+    }
+    if (this.holdId) {
+      try {
+        const hold = await this.seatHoldMock.getHold(this.holdId)
+        this.holdExpiresAt = hold?.expiresAt ?? null
+      } catch (_) {
+        this.holdExpiresAt = null
+      }
+    }
+    this.timerInterval = setInterval(() => {
+      this.now = Date.now()
+    }, 1000)
+  },
+  beforeUnmount() {
+    if (this.timerInterval) {
+      clearInterval(this.timerInterval)
+      this.timerInterval = null
     }
   },
   methods: {

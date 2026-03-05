@@ -725,8 +725,8 @@ export default {
       this.renderAll()
     },
 
-    // "선택 완료": 이미 선점 완료된 상태 → localStorage 저장 후 결제 페이지 이동
-    hold() {
+    // "선택 완료": 주문 생성 후 결제(Order) 페이지로 이동 (Checkout 단계 없음)
+    async hold() {
       if (this.selected.length === 0) return
       this.holdLoading = true
       const scheduleId = this.$route.params.scheduleId
@@ -741,9 +741,17 @@ export default {
       const stored = JSON.parse(localStorage.getItem('seatHolds') || '[]')
       stored.push(holdInfo)
       localStorage.setItem('seatHolds', JSON.stringify(stored))
-      this.proceedingToCheckout = true  // beforeUnmount에서 해제 스킵
-      this.holdLoading = false
-      this.$router.push({ path: '/checkout', query: { holdId } })
+      this.proceedingToCheckout = true
+      try {
+        const seatIds = this.selected.map((id) => Number(id)).filter(Number.isFinite)
+        const res = await this.api.post(ENDPOINTS.orderCreate(), { seats: seatIds })
+        const orderId = res?.orderId ?? res?.id ?? res
+        this.holdLoading = false
+        this.$router.push(`/order?orderId=${orderId}&holdId=${encodeURIComponent(holdId)}`)
+      } catch (e) {
+        this.holdLoading = false
+        this.proceedingToCheckout = false
+      }
     },
 
     // ── 선점 타이머 ──

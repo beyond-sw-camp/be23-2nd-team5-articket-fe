@@ -112,7 +112,9 @@
       <div class="flex flex-col items-center gap-2 mb-5">
         <h2 class="text-xl font-bold text-slate-900">장르별 랭킹</h2>
         <RouterLink
-          :to="rankingCat ? `/genre/${rankingCat}` : '/concerts'"
+          :to="rankingCat
+            ? { path: '/concerts/ranking', query: { category: rankingCat } }
+            : { path: '/concerts/ranking' }"
           class="flex items-center gap-0.5 text-sm text-slate-500 hover:text-red-600 transition-colors"
         >
           {{ rankingCat ? getCategoryLabel(rankingCat) + ' ' : '' }}랭킹 전체보기

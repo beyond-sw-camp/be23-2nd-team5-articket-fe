@@ -9,6 +9,7 @@ import ManagementLayout from '../layouts/ManagementLayout.vue'
 // guest
 import HomeView from '../views/home/HomeView.vue'
 import ConcertDetailView from '../views/concerts/ConcertDetailView.vue'
+import ConcertRankingView from '../views/concerts/ConcertRankingView.vue'
 import GenreConcertsView from '../views/concerts/GenreConcertsView.vue'
 import ConcertSchedulesView from '../views/concerts/ConcertSchedulesView.vue'
 import ScheduleDetailView from '../views/schedules/ScheduleDetailView.vue'
@@ -27,14 +28,15 @@ import SignupCompleteView from '../views/member/SignupCompleteView.vue'
 
 // user
 import ProfileView from '../views/me/ProfileView.vue'
+import ProfileEditView from '../views/me/ProfileEditView.vue'
 import IdentityVerificationView from '../views/me/IdentityVerificationView.vue'
 import MyOrdersView from '../views/orders/MyOrdersView.vue'
 import MyOrderDetailView from '../views/orders/MyOrderDetailView.vue'
 import MyPerformerLikesView from '../views/me/MyPerformerLikesView.vue'
+import MyConcertLikesView from '../views/me/MyConcertLikesView.vue'
 import ForUView from '../views/me/ForUView.vue'
 import HoldCreateView from '../views/hold/HoldCreateView.vue'
 import HoldDetailView from '../views/hold/HoldDetailView.vue'
-import CheckoutView from '../views/checkout/CheckoutView.vue'
 import OrderStatusView from '../views/orders/OrderStatusView.vue'
 import OrderCancelView from '../views/orders/OrderCancelView.vue'
 
@@ -97,6 +99,7 @@ const routes = [
     children: [
       childRoute('', HomeView, { roleScope: 'guest' }),
       childRoute('genre/:genre', GenreConcertsView, { roleScope: 'guest' }),
+      childRoute('concerts/ranking', ConcertRankingView, { roleScope: 'guest' }),
       childRoute('concerts/:concertId', ConcertDetailView, { roleScope: 'guest' }),
       childRoute('concerts/:concertId/schedules', ConcertSchedulesView, { roleScope: 'guest' }),
       childRoute('schedules/:scheduleId', ScheduleDetailView, { roleScope: 'guest' }),
@@ -118,14 +121,15 @@ const routes = [
       childRoute('oauth/kakao/redirect', KakaoRedirect, { roleScope: 'auth' }),
 
       childRoute('me', ProfileView, { requiresAuth: true }),
+      childRoute('me/edit', ProfileEditView, { requiresAuth: true }),
       childRoute('me/verify-identity', IdentityVerificationView, { requiresAuth: true }),
       childRoute('me/orders', MyOrdersView, { requiresAuth: true }),
       childRoute('me/orders/:orderId', MyOrderDetailView, { requiresAuth: true }),
       childRoute('me/performers/likes', MyPerformerLikesView, { requiresAuth: true }),
+      childRoute('me/concerts/likes', MyConcertLikesView, { requiresAuth: true }),
       childRoute('me/foru', ForUView, { requiresAuth: true }),
       childRoute('hold', HoldCreateView, { requiresAuth: true }),
       childRoute('hold/:holdId', HoldDetailView, { requiresAuth: true }),
-      childRoute('checkout', CheckoutView, { requiresAuth: true }),
       childRoute('orders/:orderId', OrderStatusView, { requiresAuth: true }),
       childRoute('orders/:orderId/cancel', OrderCancelView, { requiresAuth: true }),
 
