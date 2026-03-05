@@ -86,17 +86,44 @@
       </div>
 
       <div v-if="loading" class="mt-4 text-sm text-slate-500">불러오는 중...</div>
-      <div v-else class="mt-4 grid gap-2">
-        <div
-          v-for="day in dailySales"
-          :key="day.date"
-          class="grid items-center gap-3 sm:grid-cols-[72px_1fr_120px]"
-        >
-          <div class="text-xs font-medium text-slate-500">{{ formatShortDate(day.date) }}</div>
-          <div class="h-3 overflow-hidden rounded-full bg-slate-100">
-            <div class="h-full rounded-full bg-emerald-500" :style="{ width: `${barWidth(day.salesAmount)}%` }" />
+      <div v-else class="mt-4 grid gap-4">
+        <div class="rounded-xl border border-slate-200 bg-white p-3">
+          <svg viewBox="0 0 100 32" preserveAspectRatio="none" class="h-40 w-full">
+            <path d="M 0 31 H 100" stroke="#e2e8f0" stroke-width="0.6" fill="none" />
+            <path d="M 0 24 H 100" stroke="#f1f5f9" stroke-width="0.5" fill="none" />
+            <path d="M 0 16 H 100" stroke="#f1f5f9" stroke-width="0.5" fill="none" />
+            <path d="M 0 8 H 100" stroke="#f1f5f9" stroke-width="0.5" fill="none" />
+            <polyline
+              v-if="linePoints"
+              :points="linePoints"
+              fill="none"
+              stroke="#10b981"
+              stroke-width="1.2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+            <circle
+              v-for="(point, idx) in linePointItems"
+              :key="`pt-${dailySales[idx]?.date || idx}`"
+              :cx="point.x"
+              :cy="point.y"
+              r="1.5"
+              fill="#10b981"
+            />
+          </svg>
+        </div>
+        <div class="grid gap-2">
+          <div
+            v-for="day in dailySales"
+            :key="day.date"
+            class="grid items-center gap-3 sm:grid-cols-[72px_1fr_120px]"
+          >
+            <div class="text-xs font-medium text-slate-500">{{ formatShortDate(day.date) }}</div>
+            <div class="h-2 overflow-hidden rounded-full bg-slate-100">
+              <div class="h-full rounded-full bg-emerald-500/40" :style="{ width: `${barWidth(day.salesAmount)}%` }" />
+            </div>
+            <div class="text-right text-sm font-medium text-slate-700">{{ formatWon(day.salesAmount) }}</div>
           </div>
-          <div class="text-right text-sm font-medium text-slate-700">{{ formatWon(day.salesAmount) }}</div>
         </div>
       </div>
     </UiCard>
@@ -191,6 +218,22 @@ export default {
     },
     maxDailySales() {
       return this.dailySales.reduce((max, d) => Math.max(max, Number(d.salesAmount || 0)), 0)
+    },
+    linePointItems() {
+      const list = this.dailySales
+      if (!Array.isArray(list) || list.length === 0) return []
+
+      const max = this.maxDailySales > 0 ? this.maxDailySales : 1
+      const count = list.length
+      return list.map((d, idx) => {
+        const x = count === 1 ? 50 : (idx / (count - 1)) * 100
+        const y = 31 - (Number(d.salesAmount || 0) / max) * 28
+        return { x, y }
+      })
+    },
+    linePoints() {
+      if (!this.linePointItems.length) return ''
+      return this.linePointItems.map((p) => `${p.x},${p.y}`).join(' ')
     }
   },
   created() {
