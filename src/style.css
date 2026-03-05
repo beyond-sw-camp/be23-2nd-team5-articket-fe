@@ -5,6 +5,8 @@
 @layer base {
   :root {
     color-scheme: light;
+    /* 반응형 기준 글자 크기: 모바일 ~14px, 태블릿·데스크톱 16px */
+    font-size: clamp(14px, 0.875rem + 0.5vw, 16px);
   }
 
   html,
@@ -13,6 +15,7 @@
   }
 
   body {
-    @apply bg-slate-50 text-slate-900 antialiased;
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, 'Segoe UI', sans-serif;
+    @apply text-slate-900 antialiased;
   }
 }

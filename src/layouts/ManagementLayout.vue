@@ -10,7 +10,7 @@
           <Ticket class="h-5 w-5 text-white" />
         </div>
         <div>
-          <div class="text-base font-bold uppercase tracking-tight text-slate-900">NEXTICKET</div>
+          <div class="text-base font-bold uppercase tracking-tight text-slate-900">ARTICKET</div>
           <div class="text-xs text-slate-500">관리자 페이지</div>
         </div>
       </RouterLink>
@@ -45,7 +45,7 @@
           to="/"
           class="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
         >
-          NEXTICKET 둘러보기
+          ARTICKET 둘러보기
         </RouterLink>
       </div>
     </aside>
@@ -73,7 +73,8 @@
 </template>
 
 <script>
-import { Ticket, LayoutGrid, CirclePlus, Users2, User, LineChart, ReceiptText } from 'lucide-vue-next'
+import { Ticket, LayoutGrid, CirclePlus, Users2, User, LineChart, ReceiptText, Megaphone } from 'lucide-vue-next'
+import { Ticket, LayoutGrid, CirclePlus, Users2, User, Megaphone } from 'lucide-vue-next'
 import { getRole } from '../composables/useRole'
 import { useMe } from '../composables/useMe'
 import { useSSE } from '../composables/useSSE'
@@ -94,6 +95,7 @@ const ADMIN_NAV = [
   { to: '/admin/venues', label: '공연장', icon: Ticket },
   { to: '/admin/users', label: '회원관리', icon: Users2 },
   { to: '/admin/pending-organizers', label: '주최자 승인', icon: CirclePlus },
+  { to: '/admin/promotions', label: '프로모션 배너', icon: Megaphone },
 ]
 
 export default {
@@ -106,6 +108,7 @@ export default {
     User,
     LineChart,
     ReceiptText,
+    Megaphone,
     NotificationPanel,
     ProfileDropdown,
     ToastNotification,

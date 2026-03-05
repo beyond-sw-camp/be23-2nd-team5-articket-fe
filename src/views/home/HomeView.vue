@@ -1,5 +1,5 @@
 <template>
-  <div class="-mx-4 bg-white">
+  <div class="-mx-4 bg-white text-center">
 
     <!-- ───── ① 히어로 배너 ───── -->
     <section
@@ -72,7 +72,7 @@
           v-for="(c, idx) in baseItems.slice(0, 6)"
           :key="'promo-' + c.id"
           type="button"
-          class="relative overflow-hidden rounded-2xl group cursor-pointer text-left"
+          class="relative overflow-hidden rounded-2xl group cursor-pointer text-center"
           style="aspect-ratio:16/8"
           @click="$router.push(`/concerts/${c.id}`)"
         >
@@ -109,10 +109,12 @@
     <!-- ───── ③ 장르별 랭킹 ───── -->
     <section class="px-4 pt-8 pb-6">
       <!-- 섹션 헤더 -->
-      <div class="flex items-center justify-between mb-5">
+      <div class="flex flex-col items-center gap-2 mb-5">
         <h2 class="text-xl font-bold text-slate-900">장르별 랭킹</h2>
         <RouterLink
-          :to="rankingCat ? `/genre/${rankingCat}` : '/concerts'"
+          :to="rankingCat
+            ? { path: '/concerts/ranking', query: { category: rankingCat } }
+            : { path: '/concerts/ranking' }"
           class="flex items-center gap-0.5 text-sm text-slate-500 hover:text-red-600 transition-colors"
         >
           {{ rankingCat ? getCategoryLabel(rankingCat) + ' ' : '' }}랭킹 전체보기
@@ -122,7 +124,7 @@
 
       <!-- 장르 탭 -->
       <div
-        class="flex gap-2 overflow-x-auto pb-2 mb-5"
+        class="flex gap-2 overflow-x-auto pb-2 mb-5 justify-center"
         style="scrollbar-width:none;-ms-overflow-style:none"
       >
         <button
@@ -228,7 +230,7 @@
 
     <!-- ───── ④ 오픈 예정 ───── -->
     <section class="border-t border-slate-100 px-4 py-8">
-      <div class="flex items-center justify-between mb-5">
+      <div class="flex flex-col items-center gap-2 mb-5">
         <h2 class="text-xl font-bold text-slate-900">오픈 예정</h2>
         <RouterLink
           to="/concerts"
@@ -249,7 +251,7 @@
           v-for="c in openingSoonItems"
           :key="'soon-' + c.id"
           type="button"
-          class="flex items-start gap-3 p-3 rounded-xl border border-slate-100 hover:bg-slate-50 cursor-pointer transition text-left w-full"
+          class="flex items-start gap-3 p-3 rounded-xl border border-slate-100 hover:bg-slate-50 cursor-pointer transition text-center w-full"
           @click="$router.push(`/concerts/${c.id}`)"
         >
           <!-- 날짜 배지 -->
@@ -278,12 +280,12 @@
 
     <!-- ───── ⑤ 추천 키워드 ───── -->
     <section class="border-t border-slate-100 px-4 py-8">
-      <div class="flex items-center gap-2 mb-5">
+      <div class="flex items-center justify-center gap-2 mb-5">
         <h2 class="text-xl font-bold text-slate-900">추천 키워드</h2>
       </div>
 
       <!-- 키워드 태그 -->
-      <div class="flex gap-2 mb-6 flex-wrap">
+      <div class="flex gap-2 mb-6 flex-wrap justify-center">
         <button
           v-for="kw in keywordOptions"
           :key="kw.value"
@@ -314,7 +316,7 @@
           v-for="c in keywordItems"
           :key="'kw-' + c.id"
           type="button"
-          class="flex-shrink-0 w-[155px] cursor-pointer group text-left"
+          class="flex-shrink-0 w-[155px] cursor-pointer group text-center"
           @click="$router.push(`/concerts/${c.id}`)"
         >
           <div class="overflow-hidden rounded-xl bg-slate-100 mb-2" style="aspect-ratio:3/4">
@@ -352,7 +354,7 @@
 
     <!-- ───── ⑦ 베스트 관람후기 ───── -->
     <section class="border-t border-slate-100 px-4 py-8">
-      <div class="flex items-center justify-between mb-5">
+      <div class="flex flex-col items-center gap-2 mb-5">
         <h2 class="text-xl font-bold text-slate-900">베스트 관람후기</h2>
         <button
           type="button"
@@ -375,7 +377,7 @@
           v-for="r in bestReviews"
           :key="r.id"
           type="button"
-          class="flex gap-4 p-4 rounded-xl border border-slate-100 hover:bg-slate-50 cursor-pointer transition text-left w-full"
+          class="flex gap-4 p-4 rounded-xl border border-slate-100 hover:bg-slate-50 cursor-pointer transition text-center w-full"
           @click="$router.push(`/concerts/${r.concertId}`)"
         >
           <img

@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-slate-50 overflow-x-hidden">
+  <div class="min-h-screen overflow-x-hidden">
     <header class="fixed inset-x-0 top-0 z-50 border-b border-slate-200 bg-white">
       <div class="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4">
         <!-- Logo -->
@@ -7,7 +7,7 @@
           <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-red-600">
             <Ticket class="h-5 w-5 text-white" />
           </div>
-          <span class="text-lg font-bold uppercase tracking-tight text-red-600">NEXTICKET</span>
+          <span class="text-lg font-bold uppercase tracking-tight text-red-600">ARTICKET</span>
         </RouterLink>
 
         <!-- Search -->
@@ -130,12 +130,63 @@
       </template>
     </UiModal>
 
-    <footer class="border-t border-slate-200 bg-white">
-      <div class="mx-auto max-w-6xl px-4 py-8">
-        <div class="text-sm font-semibold text-slate-900">NexTicket</div>
-        <div class="mt-1 text-xs text-slate-500">
-          Front UI · Tailwind / Vue Router 4
+    <footer class="border-t border-slate-200 bg-slate-900 text-slate-300">
+      <div class="mx-auto max-w-6xl px-4 py-12">
+        <!-- 상단: 브랜드 + 링크 그룹 + 고객센터 -->
+        <div class="flex flex-col gap-10 md:flex-row md:items-start md:justify-between">
+          <div class="flex items-center gap-2">
+            <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-red-600">
+              <Ticket class="h-5 w-5 text-white" />
+            </div>
+            <span class="text-lg font-bold uppercase tracking-tight text-white">ARTICKET</span>
+          </div>
+
+          <div class="flex flex-wrap gap-x-10 gap-y-8">
+            <!-- 서비스 -->
+            <div>
+              <h3 class="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-400">서비스</h3>
+              <ul class="space-y-2 text-sm">
+                <li><RouterLink to="/" class="hover:text-white">공연 예매</RouterLink></li>
+                <li><RouterLink to="/concerts/ranking" class="hover:text-white">공연 랭킹</RouterLink></li>
+                <li><RouterLink to="/performers" class="hover:text-white">아티스트</RouterLink></li>
+                <li><RouterLink to="/nearby" class="hover:text-white">내 주변 공연</RouterLink></li>
+              </ul>
+            </div>
+            <!-- 고객지원 -->
+            <div>
+              <h3 class="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-400">고객지원</h3>
+              <ul class="space-y-2 text-sm">
+                <li><a href="#" class="hover:text-white">자주 묻는 질문</a></li>
+                <li><a href="#" class="hover:text-white">1:1 문의</a></li>
+                <li><a href="#" class="hover:text-white">단체/기업 문의</a></li>
+              </ul>
+            </div>
+            <!-- 고객센터 -->
+            <div>
+              <h3 class="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-400">고객센터</h3>
+              <p class="text-lg font-bold text-white">1544-0000</p>
+              <p class="mt-1 text-xs text-slate-400">평일 09:00 ~ 18:00 (점심 12:00 ~ 13:00)</p>
+              <p class="text-xs text-slate-400">주말·공휴일 휴무</p>
+            </div>
+          </div>
         </div>
+
+        <!-- 약관 링크 -->
+        <div class="mt-10 flex flex-wrap gap-x-6 gap-y-2 border-t border-slate-700 pt-8">
+          <a href="#" class="text-sm text-slate-400 hover:text-white">이용약관</a>
+          <a href="#" class="text-sm font-medium text-slate-300 hover:text-white">개인정보처리방침</a>
+          <a href="#" class="text-sm text-slate-400 hover:text-white">취소/환불 정책</a>
+        </div>
+
+        <!-- 사업자 정보 -->
+        <div class="mt-6 text-xs text-slate-500 leading-relaxed">
+          <p>주식회사 아티켓 · 대표이사 홍길동 · 서울특별시 강남구 테헤란로 123 아티켓타워 10층</p>
+          <p class="mt-1">사업자등록번호 123-45-67890 · 통신판매업신고 제2026-서울강남-00000호</p>
+        </div>
+
+        <p class="mt-6 text-xs text-slate-600">
+          © 2026 ARTICKET. All rights reserved.
+        </p>
       </div>
     </footer>
   </div>

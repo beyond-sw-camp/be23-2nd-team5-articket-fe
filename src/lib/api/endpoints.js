@@ -18,6 +18,17 @@ export const ENDPOINTS = {
     return `/concerts${q ? `?${q}` : ''}`
   },
   concert: (concertId) => `/concerts/${concertId}`,
+  /** GET /concerts/ranking - period(DAY|WEEK|MONTH), baseDate(yyyy-MM-dd), category, page, size */
+  concertsRanking: (params = {}) => {
+    const p = new URLSearchParams()
+    if (params.period) p.set('period', params.period)
+    if (params.baseDate) p.set('baseDate', params.baseDate)
+    if (params.category) p.set('category', params.category)
+    if (params.page != null) p.set('page', String(params.page))
+    if (params.size != null) p.set('size', String(params.size))
+    const q = p.toString()
+    return `/concerts/ranking${q ? `?${q}` : ''}`
+  },
   concertSchedules: (concertId) => `/concerts/${concertId}/schedules`,
   schedule: (scheduleId) => `/schedule/${scheduleId}`,
   seatMap: (scheduleId) => `/schedule/${scheduleId}/seat-map`,
@@ -34,6 +45,15 @@ export const ENDPOINTS = {
 
   // USER
   me: () => `/users/me`,
+  meUpdate: () => `/users/me`,
+  myGenrePreferences: () => `/users/me/preferences/genres`,
+  myRecentActivities: (params = {}) => {
+    const p = new URLSearchParams()
+    if (params.page != null) p.set('page', String(params.page))
+    if (params.size != null) p.set('size', String(params.size))
+    const q = p.toString()
+    return `/users/me/activities/recent${q ? `?${q}` : ''}`
+  },
   requestOrganizer: () => `/users/requestOrganizer`,
   myOrders: (period) => period != null ? `/users/me/orders?period=${period}` : `/users/me/orders`,
   myOrder: (orderId) => `/users/me/orders/${orderId}`,
@@ -45,6 +65,16 @@ export const ENDPOINTS = {
   order: (orderId) => `/order/${orderId}`,
   orderCancel: () => `/order/cancel`,
   concertLike: (concertId) => `/user-concerts/${concertId}/like`,
+  /** GET 목록: 내가 좋아요한 공연 (content 또는 배열) */
+  concertLikeList: (params = {}) => {
+    const p = new URLSearchParams()
+    if (params.page != null) p.set('page', String(params.page))
+    if (params.size != null) p.set('size', String(params.size))
+    const q = p.toString()
+    return `/user-concerts/likes${q ? `?${q}` : ''}`
+  },
+  /** DELETE: 공연 좋아요 취소 */
+  concertUnlike: (concertId) => `/user-concerts/${concertId}/like`,
   concertReview: (concertId) => `/user-concerts/${concertId}/review`,
   concertUserInteraction: (concertId) => `/user-concerts/${concertId}/user-interaction`,
   concertStats: (concertId) => `/user-concerts/${concertId}/stats`,
@@ -141,9 +171,20 @@ export const ENDPOINTS = {
   },
   adminMemberDetail: (memberId) => `/member/${memberId}`,
 
-  // PROMOTIONS (히어로 배너 관리용)
-  promotions: () => `/promotions`,
+  // PROMOTIONS (히어로 배너 관리용 / Admin CRUD)
+  promotions: (params = {}) => {
+    const p = new URLSearchParams()
+    if (params.keyword != null && params.keyword !== '') p.set('keyword', params.keyword)
+    if (params.page != null) p.set('page', String(params.page))
+    if (params.size != null) p.set('size', String(params.size))
+    if (params.sort != null) p.set('sort', params.sort)
+    const q = p.toString()
+    return `/promotions${q ? `?${q}` : ''}`
+  },
   promotion: (id) => `/promotions/${id}`,
+  createPromotion: () => `/promotions`,
+  updatePromotion: (id) => `/promotions/${id}/update`,
+  deletePromotion: (id) => `/promotions/${id}`,
 
   // SSE
   sseConnect: () => `/sse/connect`,
