@@ -71,6 +71,7 @@ export const ENDPOINTS = {
   organizerCreatePolicy: (concertId) => `/concerts/organizer/${concertId}/policies`,
   organizerUpdatePolicy: (policyId) => `/concerts/organizer/policies/${policyId}`,
   organizerDeletePolicy: (policyId) => `/concerts/organizer/policies/${policyId}`,
+  organizerSeatMapGrades: (seatMapId) => `/seat-maps/${seatMapId}/grades`,
   organizerConcertOrders: (concertId) => `/concerts/organizer/${concertId}/orders`,
   organizerOrder: (orderId) => `/concerts/organizer/orders/${orderId}`,
   organizerPriceHistory: (concertId) => `/concerts/organizer/${concertId}/prices/history`,
