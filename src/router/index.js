@@ -55,6 +55,8 @@ import OrganizerOrderDetailView from '../views/organizer/OrganizerOrderDetailVie
 import OrganizerPriceHistoryView from '../views/organizer/OrganizerPriceHistoryView.vue'
 import OrganizerPolicyHistoryView from '../views/organizer/OrganizerPolicyHistoryView.vue'
 import OrganizerSchedulePerformersView from '../views/organizer/OrganizerSchedulePerformersView.vue'
+import OrganizerReportsView from '../views/organizer/OrganizerReportsView.vue'
+import OrganizerSeatInsightsView from '../views/organizer/OrganizerSeatInsightsView.vue'
 
 // management (organizer / admin hub)
 import ManagementView from '../views/management/ManagementView.vue'
@@ -153,6 +155,8 @@ const routes = [
     children: [
       { path: '', redirect: '/organizer/dashboard' },
       childRoute('dashboard', OrganizerDashboardView),
+      childRoute('reports', OrganizerReportsView),
+      childRoute('seat-insights', OrganizerSeatInsightsView),
       childRoute('concerts', OrganizerConcertsView),
       childRoute('concerts/new', OrganizerNewConcertView),
       childRoute('concerts/:concertId', OrganizerConcertDetailView),
