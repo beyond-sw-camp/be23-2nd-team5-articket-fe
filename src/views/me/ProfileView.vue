@@ -257,9 +257,9 @@
             <Clock class="h-5 w-5 text-slate-500" />
             최근 활동 내역
           </h2>
-          <ul v-if="recentActivities.length > 0" class="mt-4 space-y-4">
+          <ul v-if="formattedActivities.length > 0" class="mt-4 space-y-4">
             <li
-              v-for="(act, i) in recentActivities"
+              v-for="(act, i) in formattedActivities"
               :key="i"
               class="flex flex-col gap-0.5 border-b border-slate-100 pb-4 last:border-0 last:pb-0"
             >
@@ -287,8 +287,9 @@
 
 <script>
 import { Icon } from '@iconify/vue'
-import { Mail, Phone, BarChart2, Clock, Heart, Star, ChevronRight } from 'lucide-vue-next'
+import { Mail, BarChart2, Clock, Heart, Star, ChevronRight } from 'lucide-vue-next'
 import { useApi } from '../../composables/useApi'
+import { useMe } from '../../composables/useMe'
 import { ENDPOINTS } from '../../lib/api/endpoints'
 import { getCategoryLabel } from '../../lib/constants/concertCategory'
 
@@ -308,13 +309,15 @@ function timeAgo(isoStr) {
 
 export default {
   name: 'ProfileView',
-  components: { Icon, Mail, Phone, BarChart2, Clock, Heart, Star, ChevronRight },
+  components: { Icon, Mail, BarChart2, Clock, Heart, Star, ChevronRight },
   data() {
     return {
       profile: null,
-      orders: [],
+      genreStats: [],
+      recentActivities: [],
       loading: false,
       api: null,
+      me: null,
     }
   },
   computed: {
@@ -337,14 +340,14 @@ export default {
       return d.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })
     },
     joinDateFormatted() {
-      const raw = this.profile?.createdAt ?? this.profile?.created_at ?? null
+      const raw = this.profile?.createdTime ?? this.profile?.createdAt ?? null
       if (!raw) return '-'
       const d = new Date(raw)
       if (isNaN(d.getTime())) return '-'
-      return d.toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\. /g, '.').replace(/\.$/, '')
+      return d.toLocaleDateString('ko-KR', { year: '2-digit', month: '2-digit', day: '2-digit' }).replace(/\. /g, '.').replace(/\.$/, '')
     },
     viewingCount() {
-      return this.orders.length
+      return this.profile?.viewingCount ?? 0
     },
     hasAppliedForOrganizer() {
       const s = this.profile?.organizerStatus
@@ -364,60 +367,40 @@ export default {
       if (s === 'REJECTED') return 'border-red-200 bg-red-50'
       return 'border-slate-200 bg-slate-50'
     },
-    genreStats() {
-      const list = this.orders
-      if (!list.length) return []
-      const byCat = {}
-      list.forEach((o) => {
-        const cat = o.category ?? 'OTHER'
-        byCat[cat] = (byCat[cat] || 0) + 1
-      })
-      const total = list.length
-      return Object.entries(byCat)
-        .map(([category, count]) => ({
-          category,
-          count,
-          percentage: Math.round((count / total) * 100),
-        }))
-        .sort((a, b) => b.percentage - a.percentage)
-    },
     experienceQuote() {
-      const count = this.orders.length
+      const count = this.viewingCount
       if (count >= 20) return '공연을 사랑하는 열정가'
       if (count >= 10) return '꾸준한 관람러'
       if (count >= 1) return '공연과 함께하는 일상'
       return '첫 관람을 기다리고 있어요'
     },
     experienceSubtext() {
-      const count = this.orders.length
+      const count = this.viewingCount
       if (count >= 20) return '상위 12%의 관람 기록을 보유 중입니다.'
       if (count >= 10) return '꾸준히 공연을 즐기고 있어요.'
       if (count >= 1) return '관람 이력을 쌓아가고 있어요.'
       return '예매한 공연을 관람하면 여기에 표시됩니다.'
     },
     experienceBadges() {
-      const count = this.orders.length
+      const count = this.viewingCount
       const badges = []
       if (count >= 20) badges.push('프로관빨러', '뮤지컬매니아')
       else if (count >= 10) badges.push('관람러')
       else if (count >= 1) badges.push('시작한 지 얼마 안 됐어요')
       return badges
     },
-    recentActivities() {
-      const sorted = [...this.orders].sort((a, b) => {
-        const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0
-        const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0
-        return tb - ta
-      })
-      return sorted.slice(0, 5).map((o) => ({
-        typeLabel: '예매 완료',
-        title: o.title || '공연',
-        timeAgo: timeAgo(o.createdAt),
+    formattedActivities() {
+      return this.recentActivities.map((act) => ({
+        ...act,
+        title: act.concertTitle || '공연',
+        timeAgo: timeAgo(act.createdAt),
       }))
     },
   },
   created() {
     this.api = useApi()
+    const { refetch, fetchGenrePreferences, fetchRecentActivities } = useMe()
+    this.me = { refetch, fetchGenrePreferences, fetchRecentActivities }
   },
   mounted() {
     this.load()
@@ -427,30 +410,14 @@ export default {
     async load() {
       this.loading = true
       try {
-        const data = await this.api.get(ENDPOINTS.me())
-        this.profile = data?.data != null ? data.data : data
+        this.profile = await this.me.refetch()
+        this.genreStats = await this.me.fetchGenrePreferences()
+        const activitiesRes = await this.me.fetchRecentActivities({ page: 0, size: 5 })
+        this.recentActivities = activitiesRes?.content || []
       } catch (e) {
-        this.profile = null
+        console.error('Failed to load profile data:', e)
       } finally {
         this.loading = false
-      }
-      await this.loadOrders()
-    },
-    async loadOrders() {
-      try {
-        const res = await this.api.get(ENDPOINTS.myOrders(0))
-        const raw = res?.data ?? res
-        const list = Array.isArray(raw)
-          ? raw
-          : raw?.content ?? raw?.items ?? raw?.data ?? []
-        this.orders = (list || []).map((o) => ({
-          ...o,
-          title: o.concertName ?? o.concert_name ?? o.title ?? '-',
-          category: o.category ?? null,
-          createdAt: o.createdAt ?? o.created_at ?? o.bookingDate ?? o.booking_date ?? null,
-        }))
-      } catch (_) {
-        this.orders = []
       }
     },
   },
