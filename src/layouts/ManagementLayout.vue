@@ -74,7 +74,6 @@
 
 <script>
 import { Ticket, LayoutGrid, CirclePlus, Users2, User, LineChart, ReceiptText, Megaphone } from 'lucide-vue-next'
-import { Ticket, LayoutGrid, CirclePlus, Users2, User, Megaphone } from 'lucide-vue-next'
 import { getRole } from '../composables/useRole'
 import { useMe } from '../composables/useMe'
 import { useSSE } from '../composables/useSSE'
