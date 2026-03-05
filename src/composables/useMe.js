@@ -29,6 +29,42 @@ export function useMe() {
     }
   }
 
+  async function updateProfile(payload) {
+    loading.value = true
+    error.value = ''
+    try {
+      const res = await api.patch(ENDPOINTS.meUpdate(), payload)
+      // 성공 후 내 정보 다시 불러오기
+      await refetch()
+      return res?.data != null ? res.data : res
+    } catch (e) {
+      error.value = e.message || '프로필 수정에 실패했습니다.'
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function fetchGenrePreferences() {
+    try {
+      const res = await api.get(ENDPOINTS.myGenrePreferences())
+      return res?.data != null ? res.data : res
+    } catch (e) {
+      console.error('Failed to fetch genre preferences:', e)
+      return []
+    }
+  }
+
+  async function fetchRecentActivities(params = { page: 0, size: 10 }) {
+    try {
+      const res = await api.get(ENDPOINTS.myRecentActivities(params))
+      return res?.data != null ? res.data : res
+    } catch (e) {
+      console.error('Failed to fetch recent activities:', e)
+      return { content: [], totalPages: 0, totalElements: 0 }
+    }
+  }
+
   function clear() {
     profile.value = null
     error.value = ''
@@ -41,6 +77,9 @@ export function useMe() {
     organizerStatus,
     isOrganizerPending,
     refetch,
+    updateProfile,
+    fetchGenrePreferences,
+    fetchRecentActivities,
     clear
   }
 }

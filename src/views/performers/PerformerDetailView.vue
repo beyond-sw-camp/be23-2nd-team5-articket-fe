@@ -1,5 +1,5 @@
 <template>
-  <div class="mx-auto max-w-4xl grid gap-6">
+  <div class="mx-auto grid gap-6">
     <!-- 로딩 -->
     <div v-if="loading" class="rounded-2xl border border-slate-200 bg-white p-6 text-sm text-slate-500">
       불러오는 중…
