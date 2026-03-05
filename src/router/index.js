@@ -75,7 +75,10 @@ import AdminAuditLogsView from '../views/admin/AdminAuditLogsView.vue'
 import AdminPendingOrganizersView from '../views/admin/AdminPendingOrganizersView.vue'
 import AdminStubTableView from '../views/admin/AdminStubTableView.vue'
 import AdminPromotionsView from '../views/admin/AdminPromotionsView.vue'
-
+import AdminUsersView from '../views/admin/AdminUsersView.vue'
+import AdminUserOrdersView from '../views/admin/AdminUserOrdersView.vue'
+import AdminUserConcertsView from '../views/admin/AdminUserConcertsView.vue'
+import AdminSeatMapDetailView from '../views/admin/AdminSeatMapDetailView.vue'
 // errors
 import ForbiddenView from '../views/system/ForbiddenView.vue'
 import NotFoundView from '../views/system/NotFoundView.vue'
@@ -190,12 +193,15 @@ const routes = [
       childRoute('venues/:venueId/edit', AdminVenueEditView),
       childRoute('venues/:venueId/seat-maps', AdminVenueSeatMapsView),
       childRoute('seat-maps/:seatMapId', AdminSeatMapPreviewView),
+      childRoute('dashboard/seat-maps/:seatMapId', AdminSeatMapDetailView),
       childRoute('seat-maps/:seatMapId/publish', AdminSeatMapPublishView),
       childRoute('seat-maps/:seatMapId/layout', SeatMapLayoutEditorView),
       childRoute('blocklist', AdminBlocklistView),
       childRoute('audit-logs', AdminAuditLogsView),
       childRoute('pending-organizers', AdminPendingOrganizersView),
-      childRoute('users', AdminStubTableView, { stubKey: 'users' }),
+      childRoute('users', AdminUsersView),
+      childRoute('users/:userId/orders', AdminUserOrdersView),
+      childRoute('users/:userId/concerts', AdminUserConcertsView),
       childRoute('concerts', AdminStubTableView, { stubKey: 'concerts' }),
       childRoute('schedules', AdminStubTableView, { stubKey: 'schedules' }),
       childRoute('orders', AdminStubTableView, { stubKey: 'orders' }),

@@ -155,10 +155,22 @@ export const ENDPOINTS = {
     const p = new URLSearchParams()
     if (params.page != null) p.set('page', params.page)
     if (params.size != null) p.set('size', params.size)
+    if (params.role != null && params.role !== '') p.set('role', params.role)
+    if (params.email != null && params.email !== '') p.set('email', params.email)
     const q = p.toString()
     return `/admin/users${q ? `?${q}` : ''}`
   },
   adminMemberDetail: (memberId) => `/member/${memberId}`,
+  adminUserOrders: (userId, period) => period != null
+    ? `/admin/users/${userId}/orders?period=${period}`
+    : `/admin/users/${userId}/orders`,
+  adminUserConcerts: (userId, params = {}) => {
+    const p = new URLSearchParams()
+    if (params.page != null) p.set('page', String(params.page))
+    if (params.size != null) p.set('size', String(params.size))
+    const q = p.toString()
+    return `/admin/users/${userId}/concerts${q ? `?${q}` : ''}`
+  },
 
   // PROMOTIONS (히어로 배너 관리용 / Admin CRUD)
   promotions: (params = {}) => {

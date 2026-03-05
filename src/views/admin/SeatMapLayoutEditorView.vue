@@ -1058,7 +1058,9 @@ const handleSave = async () => {
     const stageObjs = objects.value.filter(o => o.type === 'stage')
     const grids = objects.value.filter(o => o.type === 'seatGrid')
 
-    // 저장 전 현재 배치도를 JPEG Base64로 캡처 → DB thumbnailUrl 필드에 저장
+    // 저장 전 화면맞춤(fitToView) → 레이어 재렌더링 대기 → 캡처
+    fitToView()
+    await new Promise(resolve => setTimeout(resolve, 300))
     const thumbnailDataUrl = captureLayoutDataUrl()
 
     const payload = {
@@ -1274,15 +1276,42 @@ onBeforeUnmount(() => {
 const captureLayoutDataUrl = () => {
   if (!konvaStage || !mainLayer || objects.value.length === 0) return null
 
-  // 트랜스포머, 선택 박스 임시 숨김 (캡처 이미지에 포함되지 않도록)
+  // 트랜스포머, 선택 박스 임시 숨김
   const prevNodes = transformer.nodes()
   transformer.nodes([])
   selectionRect.visible(false)
   mainLayer.draw()
 
-  // 현재 화면을 그대로 캡처 (stage 이동 없음 → 저장 중 화면 깜빡임 방지)
-  // pixelRatio: 2 → 구역이 많아 축소 뷰일 때도 글씨/선이 선명하게 저장됨
-  const dataUrl = konvaStage.toDataURL({ mimeType: 'image/jpeg', quality: 0.9, pixelRatio: 2 })
+  // 오브젝트 전체의 스크린 좌표 바운딩박스 계산 → 콘텐츠에 딱 맞게 크롭
+  const scale = konvaStage.scaleX()
+  const stagePos = konvaStage.position()
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
+  objects.value.forEach(obj => {
+    const w = obj.width || (obj.cols * (SEAT_W + SEAT_GAP))
+    const h = obj.height || (obj.rows * (SEAT_H + SEAT_GAP))
+    const sx = obj.x * scale + stagePos.x
+    const sy = obj.y * scale + stagePos.y
+    minX = Math.min(minX, sx)
+    minY = Math.min(minY, sy)
+    maxX = Math.max(maxX, sx + w * scale)
+    maxY = Math.max(maxY, sy + h * scale)
+  })
+
+  const PAD = 24
+  const cropX = Math.max(0, minX - PAD)
+  const cropY = Math.max(0, minY - PAD)
+  const cropW = Math.min(konvaStage.width(), maxX + PAD) - cropX
+  const cropH = Math.min(konvaStage.height(), maxY + PAD) - cropY
+
+  const dataUrl = konvaStage.toDataURL({
+    mimeType: 'image/jpeg',
+    quality: 0.9,
+    pixelRatio: 2,
+    x: cropX,
+    y: cropY,
+    width: cropW,
+    height: cropH
+  })
 
   // 복원
   transformer.nodes(prevNodes)
