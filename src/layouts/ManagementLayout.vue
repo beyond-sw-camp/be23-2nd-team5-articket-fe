@@ -73,7 +73,7 @@
 </template>
 
 <script>
-import { Ticket, LayoutGrid, CirclePlus, Users2, User } from 'lucide-vue-next'
+import { Ticket, LayoutGrid, CirclePlus, Users2, User, LineChart, ReceiptText } from 'lucide-vue-next'
 import { getRole } from '../composables/useRole'
 import { useMe } from '../composables/useMe'
 import { useSSE } from '../composables/useSSE'
@@ -83,6 +83,8 @@ import ToastNotification from '../components/common/ToastNotification.vue'
 
 const ORGANIZER_NAV = [
   { to: '/organizer/dashboard', label: '대시보드', icon: LayoutGrid },
+  { to: '/organizer/reports', label: '정산/리포트', icon: ReceiptText },
+  { to: '/organizer/seat-insights', label: '좌석 인사이트', icon: LineChart },
   { to: '/organizer/concerts', label: '공연 관리', icon: Ticket },
   { to: '/organizer/performers', label: '아티스트 관리', icon: Users2 },
 ]
@@ -102,6 +104,8 @@ export default {
     CirclePlus,
     Users2,
     User,
+    LineChart,
+    ReceiptText,
     NotificationPanel,
     ProfileDropdown,
     ToastNotification,
@@ -160,3 +164,4 @@ export default {
   },
 }
 </script>
+
