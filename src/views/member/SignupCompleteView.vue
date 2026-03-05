@@ -1,56 +1,57 @@
 <template>
-  <div class="mx-auto flex min-h-[60vh] max-w-lg flex-col items-center justify-center px-4 py-12">
-    <div class="w-full rounded-3xl border border-slate-200 p-8 shadow-lg sm:p-10">
-      <!-- 아이콘 -->
-      <div class="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-emerald-100">
-        <CheckCircle class="h-12 w-12 text-emerald-600" />
+  <div class="min-h-[60vh] px-4 py-10 sm:py-14">
+    <div class="mx-auto max-w-md">
+      <!-- 완료 카드 -->
+      <div
+        class="rounded-3xl border border-slate-200/80 bg-white px-6 py-8 shadow-sm sm:px-8 sm:py-10"
+      >
+        <div class="flex flex-col items-center text-center">
+          <div
+            class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-red-100 text-red-600"
+            aria-hidden="true"
+          >
+            <Ticket class="h-7 w-7" />
+          </div>
+          <h1 class="text-xl font-bold text-slate-900 sm:text-2xl">
+            회원가입 완료
+          </h1>
+          <p class="text-base font-semibold leading-relaxed text-slate-900">
+            ARTICKET 회원이 되신 것을 환영해요.
+          </p>
+          <p class="mt-2 text-sm text-slate-500">
+            로그인 후 공연 예매와 맞춤 서비스를 이용하실 수 있어요.
+          </p>
+        </div>
+
+        <div class="mt-8 flex flex-col gap-3">
+          <RouterLink
+            to="/member/doLogin"
+            class="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-slate-900 font-semibold text-white shadow-sm transition hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2"
+          >
+            로그인하러 가기
+            <ArrowRight class="h-5 w-5 shrink-0" />
+          </RouterLink>
+          <RouterLink
+            to="/"
+            class="flex h-12 w-full items-center justify-center rounded-xl border border-slate-200 bg-white font-semibold text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-200"
+          >
+            홈으로
+          </RouterLink>
+        </div>
+
+        <p class="mt-6 text-center text-xs text-slate-400">
+          이미 로그인되어 있다면 홈에서 서비스를 이용해 주세요.
+        </p>
       </div>
-
-      <h1 class="text-center text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">
-        회원가입 완료
-      </h1>
-      <p class="mt-3 text-center text-sm font-medium leading-relaxed text-slate-500 sm:text-base">
-        NexTicket 회원이 되신 것을 환영해요.<br />
-        로그인 후 공연 예매와 맞춤 서비스를 이용하실 수 있어요.
-      </p>
-
-      <div class="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
-        <UiButton
-          class="h-12 flex-1 px-6 font-semibold sm:flex-initial sm:min-w-[180px]"
-          @click="goToLogin"
-        >
-          로그인하러 가기
-        </UiButton>
-        <UiButton
-          variant="ghost"
-          class="h-12 flex-1 border border-slate-200 font-semibold sm:flex-initial sm:min-w-[140px]"
-          @click="goToHome"
-        >
-          홈으로
-        </UiButton>
-      </div>
-
-      <p class="mt-6 text-center text-xs text-slate-400">
-        이미 로그인되어 있다면 홈에서 서비스를 이용해 주세요.
-      </p>
     </div>
   </div>
 </template>
 
 <script>
-import { CheckCircle } from 'lucide-vue-next'
-import UiButton from '../../components/common/UiButton.vue'
+import { Ticket, CheckCircle, ArrowRight } from 'lucide-vue-next'
 
 export default {
   name: 'SignupCompleteView',
-  components: { CheckCircle, UiButton },
-  methods: {
-    goToLogin() {
-      this.$router.replace({ path: '/member/doLogin', query: { from: 'signup' } })
-    },
-    goToHome() {
-      this.$router.replace('/')
-    }
-  }
+  components: { Ticket, CheckCircle, ArrowRight },
 }
 </script>

@@ -10,7 +10,7 @@
           <Ticket class="h-5 w-5 text-white" />
         </div>
         <div>
-          <div class="text-base font-bold uppercase tracking-tight text-slate-900">NEXTICKET</div>
+          <div class="text-base font-bold uppercase tracking-tight text-slate-900">ARTICKET</div>
           <div class="text-xs text-slate-500">관리자 페이지</div>
         </div>
       </RouterLink>
@@ -45,7 +45,7 @@
           to="/"
           class="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
         >
-          NEXTICKET 둘러보기
+          ARTICKET 둘러보기
         </RouterLink>
       </div>
     </aside>

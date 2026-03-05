@@ -35,20 +35,12 @@
         내 주문 목록
       </RouterLink>
       <RouterLink
-        to="/me/performers/likes"
-        class="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900"
-        @click="menuOpen = false"
-      >
-        <Heart class="h-4 w-4 shrink-0 text-slate-400" />
-        좋아요한 아티스트
-      </RouterLink>
-      <RouterLink
         to="/me/foru"
         class="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900"
         @click="menuOpen = false"
       >
-        <CalendarHeart class="h-4 w-4 shrink-0 text-slate-400" />
-        좋아요한 공연
+        <Star class="h-4 w-4 shrink-0 text-slate-400" />
+        FOR U
       </RouterLink>
       <div class="my-1 border-t border-slate-100" />
       </template>
@@ -65,7 +57,7 @@
 </template>
 
 <script>
-import { User, Package, Heart, CalendarHeart, LogOut } from 'lucide-vue-next'
+import { User, Package, Star, LogOut } from 'lucide-vue-next'
 import { getRole, useRole } from '../../composables/useRole'
 import { useMe } from '../../composables/useMe'
 import { useSSE } from '../../composables/useSSE'
@@ -79,8 +71,7 @@ export default {
   components: {
     User,
     Package,
-    Heart,
-    CalendarHeart,
+    Star,
     LogOut,
   },
   data() {

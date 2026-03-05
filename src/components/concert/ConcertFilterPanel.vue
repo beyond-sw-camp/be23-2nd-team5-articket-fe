@@ -34,7 +34,7 @@
           :class="[
             'rounded-full px-3 py-1.5 text-xs font-medium transition',
             localFilters.salesStatus === opt.value
-              ? 'border-2 border-blue-400 bg-blue-50 text-blue-700'
+              ? 'border-2 border-red-300 bg-red-50 text-red-700'
               : 'border border-slate-200 bg-slate-50 text-slate-600 hover:border-slate-300'
           ]"
           @click="localFilters.salesStatus = opt.value"
@@ -76,9 +76,9 @@
             type="button"
             :class="[
               'flex h-8 items-center justify-center rounded-lg transition',
-              cell.isToday ? 'bg-slate-900 text-white font-semibold' : '',
-              (cell.isRangeStart || cell.isRangeEnd) && !cell.isToday ? 'border-2 border-blue-400 bg-blue-50 text-blue-700' : '',
-              cell.isInRange && !cell.isToday ? 'bg-blue-100 text-blue-700' : '',
+              cell.isToday ? 'bg-red-600 text-white font-semibold' : '',
+              (cell.isRangeStart || cell.isRangeEnd) && !cell.isToday ? 'border-2 border-red-300 bg-red-50 text-red-700' : '',
+              cell.isInRange && !cell.isToday ? 'bg-red-100 text-red-700' : '',
               !cell.isToday && !cell.isRangeStart && !cell.isRangeEnd && !cell.isInRange ? 'text-slate-700 hover:bg-slate-100' : '',
               cell.isSunday && !cell.isToday && !cell.isInRange ? 'text-red-500' : ''
             ]"
@@ -92,7 +92,7 @@
         <input
           v-model="localFilters.weekendsOnly"
           type="checkbox"
-          class="h-4 w-4 rounded border-slate-300 text-blue-500 focus:ring-blue-300"
+          class="h-4 w-4 rounded border-slate-300 text-red-600 focus:ring-red-300"
         />
         <span class="text-xs text-slate-600">한달 이내 주말</span>
       </label>
@@ -130,7 +130,7 @@
       </button>
       <button
         type="button"
-        class="flex-1 rounded-full bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
+        class="flex-1 rounded-full bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700"
         @click="apply"
       >
         {{ totalCount.toLocaleString() }}개 검색

@@ -1,30 +1,31 @@
 <template>
-  <div class="flex flex-col gap-6">
-
-    <!-- ── 헤더 ──────────────────────────────────────────────────── -->
+  <div class="mx-auto max-w-5xl space-y-6 pb-12">
+    <!-- 헤더 -->
     <div class="flex flex-col gap-1">
-      <div class="flex items-center gap-2">
-        <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-red-600 text-white shadow-sm">
-          <MapPin class="h-4 w-4" />
+      <div class="flex items-center gap-3">
+        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-900 text-white shadow-sm">
+          <MapPin class="h-5 w-5" />
         </span>
-        <h2 class="text-lg font-bold tracking-tight text-slate-900">내 주변 공연장</h2>
+        <div>
+          <h1 class="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">내 주변 공연장</h1>
+          <p class="mt-0.5 text-sm text-slate-500">현재 위치 기준 거리순 · 공연장을 선택하면 공연 목록을 볼 수 있어요</p>
+        </div>
       </div>
-      <p class="pl-10 text-xs text-slate-400">현재 위치 기준 거리순 · 공연장을 선택하면 공연 목록을 볼 수 있어요</p>
     </div>
 
-    <!-- ── 지역 검색 ──────────────────────────────────────────────── -->
+    <!-- 지역 검색 -->
     <div class="relative">
       <div class="flex gap-2">
         <input
           v-model="regionSearchQuery"
           type="text"
-          class="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+          class="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 shadow-sm transition placeholder:text-slate-400 focus:border-slate-400 focus:outline-none focus:ring-1 focus:ring-slate-400"
           placeholder="동명, 역명, 주소 등으로 검색"
           @keydown.enter.prevent="searchRegion"
         />
         <button
           type="button"
-          class="shrink-0 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700"
+          class="shrink-0 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:opacity-50"
           :disabled="regionSearchLoading || !regionSearchQuery.trim()"
           @click="searchRegion"
         >
@@ -49,9 +50,8 @@
       </div>
     </div>
 
-    <!-- ── 컨트롤 바 ─────────────────────────────────────────────── -->
-    <div class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-100 bg-white px-4 py-3 shadow-sm">
-      <!-- 위치 상태 + 내 위치로 버튼 -->
+    <!-- 컨트롤 바 -->
+    <div class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
       <div class="flex min-w-0 flex-1 flex-wrap items-center gap-2">
         <span
           class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full"
@@ -67,16 +67,14 @@
         <button
           v-if="coords && mapLoaded"
           type="button"
-          class="shrink-0 rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-red-50 hover:text-red-600"
+          class="shrink-0 rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-200 hover:text-slate-800"
           @click="focusOnMyLocation"
         >
           내 위치로
         </button>
       </div>
-
-      <!-- 반경 선택 -->
       <div class="flex items-center gap-2">
-        <span class="text-xs font-semibold text-slate-400">반경</span>
+        <span class="text-xs font-semibold text-slate-500">반경</span>
         <div class="flex rounded-xl border border-slate-200 bg-slate-50 p-0.5">
           <button
             v-for="km in [2, 5, 10]"
@@ -84,7 +82,7 @@
             type="button"
             class="rounded-lg px-3 py-1.5 text-xs font-semibold transition-all"
             :class="radiusKm === km
-              ? 'bg-red-600 text-white shadow-sm'
+              ? 'bg-slate-900 text-white shadow-sm'
               : 'text-slate-500 hover:text-slate-800'"
             @click="radiusKm = km"
           >
@@ -104,8 +102,8 @@
       <p class="text-xs text-amber-800">{{ geoError }}</p>
     </div>
 
-    <!-- ── 지도 ──────────────────────────────────────────────────── -->
-    <div class="relative overflow-hidden rounded-2xl border border-slate-100 shadow-sm">
+    <!-- 지도 -->
+    <div class="relative overflow-hidden rounded-2xl border border-slate-200 shadow-sm">
       <div ref="mapContainer" class="relative z-0 h-56 w-full min-h-[14rem] bg-slate-100 sm:h-72 lg:h-80" />
       <!-- 지도 로딩 스켈레톤 -->
       <div
@@ -119,7 +117,7 @@
       </div>
     </div>
 
-    <!-- ── 로딩 스켈레톤 ─────────────────────────────────────────── -->
+    <!-- 로딩 스켈레톤 -->
     <div v-if="geoLoading || loading" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
       <div
         v-for="i in 4"
@@ -128,50 +126,46 @@
       />
     </div>
 
-    <!-- ── 결과 없음 ──────────────────────────────────────────────── -->
+    <!-- 결과 없음 -->
     <div
       v-else-if="canLoad && venues.length === 0 && !loading"
-      class="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-slate-200 py-12 text-center"
+      class="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-slate-200 bg-white py-12 text-center"
     >
       <span class="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100">
         <MapPin class="h-6 w-6 text-slate-300" />
       </span>
-      <div>
-        <p class="text-sm font-semibold text-slate-600">근처 공연장이 없어요</p>
-        <p class="mt-0.5 text-xs text-slate-400">반경을 늘려서 다시 시도해보세요</p>
-      </div>
+      <p class="text-sm font-semibold text-slate-600">근처 공연장이 없어요</p>
+      <p class="mt-0.5 text-xs text-slate-400">반경을 늘려서 다시 시도해보세요</p>
     </div>
 
-    <!-- ── 공연장 목록 ────────────────────────────────────────────── -->
+    <!-- 공연장 목록 -->
     <div v-else-if="venues.length > 0" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
       <div
         v-for="v in venues"
         :key="v.id"
         class="group relative flex w-full flex-col overflow-hidden rounded-2xl border bg-white text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
         :class="selectedVenueId === v.id
-          ? 'border-red-500 ring-2 ring-red-100'
-          : 'border-slate-100 hover:border-slate-200'"
+          ? 'border-slate-900 ring-2 ring-slate-200'
+          : 'border-slate-200 hover:border-slate-300'"
       >
         <button
           type="button"
           class="flex flex-1 flex-col gap-2 px-4 py-4 text-left"
           @click="selectVenue(v)"
         >
-          <!-- 선택 인디케이터 -->
           <span
             v-if="selectedVenueId === v.id"
-            class="absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full bg-red-600"
+            class="absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full bg-slate-900"
           >
             <svg class="h-3 w-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
               <polyline points="20 6 9 17 4 12"/>
             </svg>
           </span>
-
           <div class="flex items-start justify-between gap-2 pr-6">
             <div class="flex items-start gap-2.5">
               <span
                 class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-xl transition-colors"
-                :class="selectedVenueId === v.id ? 'bg-red-600 text-white' : 'bg-slate-100 text-slate-500 group-hover:bg-red-50 group-hover:text-red-600'"
+                :class="selectedVenueId === v.id ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-500 group-hover:bg-slate-200 group-hover:text-slate-700'"
               >
                 <MapPin class="h-3.5 w-3.5" />
               </span>
@@ -181,12 +175,10 @@
               </div>
             </div>
           </div>
-
-          <!-- 거리 배지 -->
           <div class="flex items-center gap-1.5">
             <span
               class="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold"
-              :class="selectedVenueId === v.id ? 'bg-red-50 text-red-600' : 'bg-slate-100 text-slate-500'"
+              :class="selectedVenueId === v.id ? 'bg-slate-100 text-slate-700' : 'bg-slate-100 text-slate-500'"
             >
               <svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M3 12h18M12 3l9 9-9 9"/>
@@ -195,12 +187,10 @@
             </span>
           </div>
         </button>
-
-        <!-- 길찾기 -->
         <div class="border-t border-slate-100 px-4 py-2">
           <button
             type="button"
-            class="flex w-full items-center justify-center gap-1.5 rounded-xl py-2 text-xs font-semibold text-slate-500 transition hover:bg-slate-50 hover:text-red-600"
+            class="flex w-full items-center justify-center gap-1.5 rounded-xl py-2 text-xs font-semibold text-slate-500 transition hover:bg-slate-50 hover:text-slate-700"
             @click="openDirectionsModal(v)"
           >
             <Navigation class="h-3.5 w-3.5" />
@@ -210,92 +200,107 @@
       </div>
     </div>
 
-    <!-- ── 길찾기 모달 ────────────────────────────────────────────── -->
-    <UiModal :open="directionsModalOpen" title="길찾기" @close="closeDirectionsModal">
-      <div v-if="directionsVenue" class="flex flex-col gap-4">
-        <div>
-          <p class="text-sm font-semibold text-slate-900">{{ directionsVenue.name }}</p>
-          <p class="mt-0.5 text-xs text-slate-500">{{ directionsVenue.formattedAddress }}</p>
-        </div>
-
-        <!-- 모달 내 지도 미리보기 (목적지 + 내 위치) -->
-        <div v-if="directionsVenue.latitude != null && directionsVenue.longitude != null" class="relative overflow-hidden rounded-xl border border-slate-200 bg-slate-100">
-          <div ref="directionsMapContainer" class="h-44 w-full min-h-[11rem]" />
-          <div v-if="!directionsMapLoaded" class="absolute inset-0 flex items-center justify-center bg-slate-100">
-            <span class="text-xs text-slate-400">지도 불러오는 중…</span>
+    <!-- 길찾기 모달 -->
+    <Teleport to="body">
+      <div
+        v-if="directionsModalOpen"
+        class="fixed inset-0 z-[80] flex items-end justify-center p-4 sm:items-center"
+      >
+        <div
+          class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+          aria-hidden="true"
+          @click="closeDirectionsModal"
+        />
+        <div class="relative flex max-h-[90vh] w-full max-w-md flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg">
+          <div class="flex shrink-0 items-center justify-between border-b border-slate-200 px-4 py-3">
+            <h2 class="text-sm font-semibold text-slate-900">길찾기</h2>
+            <button
+              type="button"
+              class="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
+              @click="closeDirectionsModal"
+            >
+              <X class="h-4 w-4" />
+            </button>
+          </div>
+          <div v-if="directionsVenue" class="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-4">
+            <div>
+              <p class="text-sm font-semibold text-slate-900">{{ directionsVenue.name }}</p>
+              <p class="mt-0.5 text-xs text-slate-500">{{ directionsVenue.formattedAddress }}</p>
+            </div>
+            <div v-if="directionsVenue.latitude != null && directionsVenue.longitude != null" class="relative mt-4 overflow-hidden rounded-xl border border-slate-200 bg-slate-100">
+              <div ref="directionsMapContainer" class="h-44 w-full min-h-[11rem]" />
+              <div v-if="!directionsMapLoaded" class="absolute inset-0 flex items-center justify-center bg-slate-100">
+                <span class="text-xs text-slate-400">지도 불러오는 중…</span>
+              </div>
+            </div>
+            <p class="mt-4 text-xs text-slate-400">선택한 앱으로 열어 목적지까지 길찾기를 할 수 있어요.</p>
+            <div class="mt-4 flex flex-col gap-2">
+              <a
+                :href="directionsKakaoUrl"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="flex items-center gap-3 rounded-xl border border-slate-200 bg-[#FEE500] px-4 py-3 text-sm font-semibold text-slate-900 transition hover:opacity-90"
+                @click="closeDirectionsModal"
+              >
+                <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-lg">K</span>
+                카카오맵으로 열기
+              </a>
+              <a
+                :href="directionsNaverUrl"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="flex items-center gap-3 rounded-xl border border-slate-200 bg-[#03C75A] px-4 py-3 text-sm font-semibold text-white transition hover:opacity-90"
+                @click="closeDirectionsModal"
+              >
+                <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-sm font-bold text-[#03C75A]">N</span>
+                네이버 지도로 열기
+              </a>
+              <a
+                :href="directionsGoogleUrl"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                @click="closeDirectionsModal"
+              >
+                <svg class="h-5 w-5" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                Google 지도로 열기
+              </a>
+            </div>
           </div>
         </div>
-
-        <p class="text-xs text-slate-400">선택한 앱으로 열어 목적지까지 길찾기를 할 수 있어요.</p>
-        <div class="flex flex-col gap-2">
-          <a
-            :href="directionsKakaoUrl"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="flex items-center gap-3 rounded-xl border border-slate-200 bg-[#FEE500] px-4 py-3 text-sm font-semibold text-slate-900 transition hover:opacity-90"
-            @click="closeDirectionsModal"
-          >
-            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-lg">K</span>
-            카카오맵으로 열기
-          </a>
-          <a
-            :href="directionsNaverUrl"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="flex items-center gap-3 rounded-xl border border-slate-200 bg-[#03C75A] px-4 py-3 text-sm font-semibold text-white transition hover:opacity-90"
-            @click="closeDirectionsModal"
-          >
-            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-sm font-bold text-[#03C75A]">N</span>
-            네이버 지도로 열기
-          </a>
-          <a
-            :href="directionsGoogleUrl"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-            @click="closeDirectionsModal"
-          >
-            <svg class="h-5 w-5" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-            Google 지도로 열기
-          </a>
-        </div>
       </div>
-    </UiModal>
+    </Teleport>
 
-    <!-- ── 공연 패널 (슬라이드 인) ────────────────────────────────── -->
+    <!-- 공연 패널 -->
     <transition name="panel-slide">
-      <div v-if="selectedVenue" class="flex flex-col gap-4">
-
-        <!-- 패널 헤더 -->
-        <div class="flex items-center justify-between border-t border-slate-100 pt-4">
+      <div v-if="selectedVenue" class="flex flex-col gap-4 border-t border-slate-200 pt-6">
+        <div class="flex items-center justify-between">
           <div class="flex items-center gap-2">
-            <span class="h-4 w-1 rounded-full bg-red-600" />
+            <span class="h-4 w-1 rounded-full bg-slate-900" />
             <h3 class="text-sm font-bold text-slate-900">{{ selectedVenue.name }}</h3>
             <span
               v-if="!concertsLoading"
-              class="rounded-full bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-600"
+              class="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-700"
             >
               {{ concerts.length }}개
             </span>
           </div>
           <button
             type="button"
-            class="flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 text-slate-400 transition hover:border-slate-300 hover:text-slate-600"
+            class="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-400 transition hover:bg-slate-50 hover:text-slate-600"
             @click="clearSelectedVenue"
           >
-            <X class="h-3.5 w-3.5" />
+            <X class="h-4 w-4" />
           </button>
         </div>
 
-        <!-- 공연 로딩 스켈레톤 -->
         <div v-if="concertsLoading" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <div v-for="i in 3" :key="i" class="h-24 animate-pulse rounded-2xl bg-slate-100" />
         </div>
 
-        <!-- 공연 없음 -->
         <div
           v-else-if="concerts.length === 0"
-          class="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-slate-200 py-10 text-center"
+          class="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-slate-200 bg-white py-10 text-center"
         >
           <span class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100">
             <svg class="h-5 w-5 text-slate-300" viewBox="0 0 24 24" fill="currentColor">
@@ -305,26 +310,22 @@
           <p class="text-xs font-medium text-slate-500">현재 예정된 공연이 없어요</p>
         </div>
 
-        <!-- 공연 카드 목록 -->
         <div v-else class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <button
             v-for="c in concerts"
             :key="c.id"
             type="button"
-            class="group flex flex-col gap-3 rounded-2xl border border-slate-100 bg-white px-4 py-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-red-200 hover:shadow-md"
+            class="group flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md"
             @click="$router.push(`/concerts/${c.id}`)"
           >
-            <!-- 공연명 + 상태 -->
             <div class="flex items-start justify-between gap-2">
-              <p class="line-clamp-2 text-sm font-semibold leading-snug text-slate-900 group-hover:text-red-700 transition-colors">
+              <p class="line-clamp-2 text-sm font-semibold leading-snug text-slate-900 transition-colors group-hover:text-slate-700">
                 {{ c.title }}
               </p>
               <span class="shrink-0 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700">
                 OPEN
               </span>
             </div>
-
-            <!-- 메타 -->
             <div class="flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-400">
               <span v-if="c.organizer" class="flex items-center gap-1">
                 <svg class="h-3 w-3" viewBox="0 0 24 24" fill="currentColor">
@@ -339,9 +340,7 @@
                 {{ c.ageLimit > 0 ? `${c.ageLimit}세 이상` : '전체 관람가' }}
               </span>
             </div>
-
-            <!-- 화살표 -->
-            <div class="flex items-center gap-1 text-xs font-medium text-red-500 opacity-0 transition-opacity group-hover:opacity-100">
+            <div class="flex items-center gap-1 text-xs font-medium text-slate-600 opacity-0 transition-opacity group-hover:opacity-100">
               자세히 보기
               <svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                 <path d="M5 12h14M12 5l7 7-7 7"/>
@@ -349,7 +348,6 @@
             </div>
           </button>
         </div>
-
       </div>
     </transition>
 
@@ -358,11 +356,6 @@
 
 <script>
 import { MapPin, Navigation, X } from 'lucide-vue-next'
-import UiCard from '../../components/common/UiCard.vue'
-import UiButton from '../../components/common/UiButton.vue'
-import UiBadge from '../../components/common/UiBadge.vue'
-import UiModal from '../../components/common/UiModal.vue'
-import EmptyState from '../../components/common/EmptyState.vue'
 import { useApi } from '../../composables/useApi'
 import { ENDPOINTS } from '../../lib/api/endpoints'
 
@@ -394,7 +387,7 @@ function loadKakaoSdk() {
 
 export default {
   name: 'NearbyView',
-  components: { MapPin, Navigation, X, UiCard, UiButton, UiBadge, UiModal, EmptyState },
+  components: { MapPin, Navigation, X },
 
   data() {
     return {
@@ -826,12 +819,12 @@ export default {
 </script>
 
 <style scoped>
-.slide-up-enter-active,
-.slide-up-leave-active {
+.panel-slide-enter-active,
+.panel-slide-leave-active {
   transition: all 0.3s ease;
 }
-.slide-up-enter-from,
-.slide-up-leave-to {
+.panel-slide-enter-from,
+.panel-slide-leave-to {
   opacity: 0;
   transform: translateY(12px);
 }
