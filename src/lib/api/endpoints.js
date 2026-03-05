@@ -90,6 +90,7 @@ export const ENDPOINTS = {
     return `/concerts/organizer${q ? `?${q}` : ''}`
   },
   organizerConcertStats: (concertId) => `/concerts/organizer/${concertId}/stats`,
+  organizerDashboardOverview: () => `/concerts/organizer/dashboard/overview`,
   organizerCreateConcert: () => `/concerts/organizer/create`,
   organizerUpdateConcert: (concertId) => `/concerts/organizer/${concertId}`,
   organizerPublishConcert: (concertId) => `/concerts/organizer/${concertId}/publish`,
@@ -100,6 +101,7 @@ export const ENDPOINTS = {
   organizerCreatePolicy: (concertId) => `/concerts/organizer/${concertId}/policies`,
   organizerUpdatePolicy: (policyId) => `/concerts/organizer/policies/${policyId}`,
   organizerDeletePolicy: (policyId) => `/concerts/organizer/policies/${policyId}`,
+  organizerSeatMapGrades: (seatMapId) => `/seat-maps/${seatMapId}/grades`,
   organizerConcertOrders: (concertId) => `/concerts/organizer/${concertId}/orders`,
   organizerOrder: (orderId) => `/concerts/organizer/orders/${orderId}`,
   organizerPriceHistory: (concertId) => `/concerts/organizer/${concertId}/prices/history`,

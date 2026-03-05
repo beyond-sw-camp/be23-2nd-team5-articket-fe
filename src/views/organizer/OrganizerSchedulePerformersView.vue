@@ -74,8 +74,12 @@
               :key="p.id"
               type="button"
               class="flex w-full items-center gap-3 rounded-xl px-2 py-1.5 text-left text-sm transition hover:bg-slate-100"
-              :class="addForm.performerId === p.id ? 'bg-red-50 border border-red-200' : ''"
-              @click="selectPerformer(p)"
+              :class="[
+                isPerformerSelected(p.id) ? 'bg-red-50 border border-red-200' : '',
+                isAlreadyRegistered(p.id) ? 'opacity-50 cursor-not-allowed bg-slate-50' : ''
+              ]"
+              :disabled="isAlreadyRegistered(p.id)"
+              @click="togglePerformer(p)"
             >
               <div class="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-slate-200 text-xs font-semibold text-slate-700">
                 <img
@@ -91,7 +95,8 @@
                 <div class="font-semibold text-slate-900 break-words">{{ p.name }}</div>
                 <div v-if="p.description" class="mt-0.5 text-xs text-slate-500 break-words">{{ p.description }}</div>
               </div>
-              <span v-if="addForm.performerId === p.id" class="text-xs font-semibold text-red-600">선택됨</span>
+              <span v-if="isAlreadyRegistered(p.id)" class="text-xs font-semibold text-slate-400">이미 등록됨</span>
+              <span v-else-if="isPerformerSelected(p.id)" class="text-xs font-semibold text-red-600">선택됨</span>
             </button>
           </div>
           <div v-else-if="addSearchName && !searchLoading" class="mt-2 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-dashed border-slate-200 bg-slate-50 px-3 py-2">
@@ -107,18 +112,29 @@
               새 아티스트 등록하기
             </UiButton>
           </div>
-          <p v-if="addForm.performerName" class="mt-2 text-xs text-green-700">
-            선택된 아티스트: <span class="font-semibold">{{ addForm.performerName }}</span> (ID: {{ addForm.performerId }})
-          </p>
         </div>
-        <div>
-          <label class="block text-xs font-semibold text-slate-500">배역 (casting) *</label>
-          <input
-            v-model="addForm.role"
-            type="text"
-            class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
-            placeholder="예: 주인공, 조연 등"
-          />
+
+        <!-- 선택된 아티스트 목록 및 배역 입력 -->
+        <div v-if="addSelectedPerformers.length > 0" class="border-t border-slate-100 pt-4">
+          <label class="block text-xs font-semibold text-slate-500 mb-2">선택된 아티스트 및 배역 ({{ addSelectedPerformers.length }}명)</label>
+          <div class="space-y-2 max-h-60 overflow-y-auto pr-1">
+            <div v-for="item in addSelectedPerformers" :key="item.id" class="flex items-center gap-2 rounded-lg border border-slate-200 p-2 bg-white">
+              <div class="h-8 w-8 shrink-0 overflow-hidden rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-xs font-semibold text-slate-600">
+                <img v-if="item.profileImgUrl" :src="item.profileImgUrl" class="h-full w-full object-cover" />
+                <span v-else>{{ (item.name || '?').charAt(0) }}</span>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="text-sm font-semibold text-slate-900 truncate">{{ item.name }}</div>
+              </div>
+              <input
+                v-model="item.role"
+                type="text"
+                class="w-32 rounded border border-slate-200 px-2 py-1 text-xs focus:border-red-500 focus:outline-none"
+                placeholder="배역 입력"
+              />
+              <button type="button" class="text-slate-400 hover:text-red-500 px-1" @click="removeSelected(item.id)">✕</button>
+            </div>
+          </div>
         </div>
       </form>
       <template #footer>
@@ -194,7 +210,7 @@ export default {
       loading: false,
       addModalOpen: false,
       editModalOpen: false,
-      addForm: { performerId: null, performerName: '', role: '' },
+      addSelectedPerformers: [], // Array of { id, name, profileImgUrl, role }
       editForm: { performerId: null, role: '' },
       addSearchName: '',
       searchResults: [],
@@ -223,8 +239,11 @@ export default {
       if (!id) return
       // 미리 addForm에 선택 적용
       this.openAddModal()
-      this.addForm.performerId = Number(id)
-      this.addForm.performerName = name || ''
+      this.addSelectedPerformers = [{
+        id: Number(id),
+        name: name || '',
+        role: ''
+      }]
       this.addSearchName = name || ''
       this.searchResults = []
       // 한 번만 적용되도록 쿼리 정리
@@ -251,7 +270,7 @@ export default {
       }
     },
     openAddModal() {
-      this.addForm = { performerId: null, performerName: '', role: '' }
+      this.addSelectedPerformers = []
       this.addSearchName = ''
       this.searchResults = []
       this.addModalOpen = true
@@ -292,9 +311,28 @@ export default {
         this.searchLoading = false
       }
     },
-    selectPerformer(p) {
-      this.addForm.performerId = p.id
-      this.addForm.performerName = p.name
+    isPerformerSelected(id) {
+      return this.addSelectedPerformers.some(p => p.id === id)
+    },
+    isAlreadyRegistered(id) {
+      return this.castingRows.some(row => row.performerId === id)
+    },
+    togglePerformer(p) {
+      if (this.isAlreadyRegistered(p.id)) return
+      const idx = this.addSelectedPerformers.findIndex(item => item.id === p.id)
+      if (idx >= 0) {
+        this.addSelectedPerformers.splice(idx, 1)
+      } else {
+        this.addSelectedPerformers.push({
+          id: p.id,
+          name: p.name,
+          profileImgUrl: p.profileImgUrl,
+          role: ''
+        })
+      }
+    },
+    removeSelected(id) {
+      this.addSelectedPerformers = this.addSelectedPerformers.filter(p => p.id !== id)
     },
     openViewConfirm(row) {
       this.selectedPerformer = row
@@ -316,19 +354,22 @@ export default {
     async submitAdd() {
       if (this.scheduleId == null || this.scheduleId === '') return
       try {
-        if (this.addForm.performerId == null || this.addForm.performerId === '') {
-          window.alert('아티스트를 선택해 주세요.')
+        if (this.addSelectedPerformers.length === 0) {
+          window.alert('추가할 아티스트를 선택해 주세요.')
           return
         }
-        const casting = (this.addForm.role || '').trim()
-        if (!casting) {
-          window.alert('배역명을 입력해 주세요.')
-          return
-        }
-        await this.api.post(ENDPOINTS.scheduleOrganizerAddPerformer(this.scheduleId), {
-          performerId: this.addForm.performerId,
-          casting
-        })
+
+        // 여러 명을 병렬로 추가 요청
+        await Promise.all(this.addSelectedPerformers.map(p => {
+          const casting = (p.role || '').trim()
+          // 배역이 비어있으면 기본값 처리하거나, 백엔드 허용 시 빈 문자열 전송
+          // 여기서는 빈 문자열도 허용한다고 가정 (또는 '출연' 등으로 기본값 설정 가능)
+          return this.api.post(ENDPOINTS.scheduleOrganizerAddPerformer(this.scheduleId), {
+            performerId: p.id,
+            casting: casting || '출연' // 배역 미입력 시 기본값
+          })
+        }))
+
         this.closeAddModal()
         await this.load()
       } catch (err) {
