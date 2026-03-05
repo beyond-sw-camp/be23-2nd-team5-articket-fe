@@ -8,15 +8,15 @@
         </div>
         <div class="flex gap-2">
           <UiBadge tone="soft">ORGANIZER</UiBadge>
-          <UiButton variant="ghost" class="h-8 px-3 text-sm" @click="goBack">← 목록</UiButton>
+          <UiButton variant="ghost" class="h-8 px-3 text-sm" @click="goBack">목록</UiButton>
         </div>
       </div>
     </UiCard>
 
-    <UiCard v-if="loading"><div class="text-sm text-slate-500">불러오는 중…</div></UiCard>
+    <UiCard v-if="loading"><div class="text-sm text-slate-500">불러오는 중...</div></UiCard>
     <UiCard v-else-if="errorMessage">
       <div class="text-sm text-red-600">{{ errorMessage }}</div>
-      <UiButton variant="ghost" class="mt-3 h-8 px-3 text-sm" @click="goBack">← 목록으로</UiButton>
+      <UiButton variant="ghost" class="mt-3 h-8 px-3 text-sm" @click="goBack">목록으로</UiButton>
     </UiCard>
 
     <template v-else-if="policy">
@@ -32,12 +32,13 @@
 
           <PolicyConfigForm
             :type="policy.type"
+            :seat-grades="seatGrades"
             :price-rows="priceRows"
             :presale="presale"
             :discount="discount"
             :purchase-limit="purchaseLimit"
             @update-price-rows="priceRows = $event"
-            @add-price-row="priceRows.push({ grade: '', price: 0 })"
+            @add-price-row="priceRows.push($event || { grade: '', price: 0 })"
             @remove-price-row="(idx) => { if (priceRows.length > 1) priceRows.splice(idx, 1) }"
             @update-presale="presale = $event"
             @update-discount="discount = $event"
@@ -47,7 +48,7 @@
           <p v-if="editError" class="text-sm text-red-600">{{ editError }}</p>
           <p v-if="editSuccess" class="text-sm text-green-600">{{ editSuccess }}</p>
           <div class="flex justify-end gap-2">
-            <UiButton variant="ghost" type="button" @click="resetForm">취소</UiButton>
+            <UiButton variant="ghost" type="button" @click="resetForm">초기화</UiButton>
             <UiButton as="button" type="submit" :disabled="saving">저장</UiButton>
           </div>
         </form>
@@ -55,7 +56,7 @@
 
       <UiCard>
         <div class="text-sm font-semibold text-slate-900">정책 삭제</div>
-        <div class="mt-1 text-sm text-slate-500">이 정책을 삭제하면 복구할 수 없습니다.</div>
+        <div class="mt-1 text-sm text-slate-500">이 작업은 되돌릴 수 없습니다.</div>
         <p v-if="deleteError" class="mt-2 text-sm text-red-600">{{ deleteError }}</p>
         <div class="mt-4 flex justify-end">
           <UiButton class="bg-red-600 text-white hover:bg-red-700" :disabled="deleting" @click="submitDelete">삭제</UiButton>
@@ -74,9 +75,9 @@ import { useApi } from '../../composables/useApi'
 import { ENDPOINTS } from '../../lib/api/endpoints'
 
 const TYPE_LABEL = {
-  BASE_PRICE:     '기본 가격 (BASE_PRICE)',
-  PRESALE:        '선예매 (PRESALE)',
-  DISCOUNT:       '할인 정책 (DISCOUNT)',
+  BASE_PRICE: '기본 가격 (BASE_PRICE)',
+  PRESALE: '선예매 (PRESALE)',
+  DISCOUNT: '할인 (DISCOUNT)',
   PURCHASE_LIMIT: '구매 제한 (PURCHASE_LIMIT)',
 }
 
@@ -90,7 +91,7 @@ export default {
       policy: null,
       errorMessage: '',
       api: null,
-      // sub-editor state
+      seatGrades: [],
       priceRows: [{ grade: '', price: 0 }],
       presale: { startAt: '', endAt: '', authRequired: false, authType: '' },
       discount: { discountName: '', discountRate: 0, targetGrades: [], validUntil: '' },
@@ -105,6 +106,21 @@ export default {
   created() { this.api = useApi() },
   mounted() { this.load() },
   methods: {
+    async loadSeatGrades(concertId) {
+      if (!concertId) return
+      try {
+        const detail = await this.api.get(ENDPOINTS.concert(concertId))
+        const seatMapId = detail?.seatMapId ?? detail?.seat_map_id ?? detail?.concertSeatMapResDto?.id ?? null
+        if (!seatMapId) {
+          this.seatGrades = []
+          return
+        }
+        const grades = await this.api.get(ENDPOINTS.organizerSeatMapGrades(seatMapId))
+        this.seatGrades = Array.isArray(grades) ? grades.filter(Boolean) : []
+      } catch {
+        this.seatGrades = []
+      }
+    },
     goBack() {
       const concertId = this.$route.query.concertId
       if (concertId) this.$router.push(`/organizer/concerts/${concertId}/policies`)
@@ -113,18 +129,24 @@ export default {
     async load() {
       const policyId = this.$route.params.policyId
       const concertId = this.$route.query.concertId
-      if (!policyId || !concertId) { this.errorMessage = '공연 ID가 필요합니다. 정책 목록에서 다시 접근해 주세요.'; return }
+      if (!policyId || !concertId) {
+        this.errorMessage = 'concertId가 필요합니다. 정책 목록에서 다시 접근해 주세요.'
+        return
+      }
       this.loading = true
       this.errorMessage = ''
       try {
+        await this.loadSeatGrades(concertId)
         const list = await this.api.get(ENDPOINTS.concertPolicies(concertId))
         const items = Array.isArray(list) ? list : (list.content ?? list.items ?? [])
         this.policy = items.find((p) => String(p.id) === String(policyId)) ?? null
-        if (!this.policy) this.errorMessage = '해당 정책을 찾을 수 없습니다.'
+        if (!this.policy) this.errorMessage = '정책을 찾을 수 없습니다.'
         else this.resetForm()
       } catch (err) {
-        this.errorMessage = err.message || '정책 정보를 불러오지 못했습니다.'
-      } finally { this.loading = false }
+        this.errorMessage = err.message || '정책 상세를 불러오지 못했습니다.'
+      } finally {
+        this.loading = false
+      }
     },
     parseConfig(config) {
       if (!config) return {}
@@ -133,13 +155,20 @@ export default {
     resetForm() {
       if (!this.policy) return
       const p = this.parseConfig(this.policy.config)
-      this.editError = ''; this.editSuccess = ''
+      this.editError = ''
+      this.editSuccess = ''
       switch (this.policy.type) {
-        case 'BASE_PRICE':
-          this.priceRows = Object.entries(p).length
-            ? Object.entries(p).map(([grade, price]) => ({ grade, price: Number(price) }))
-            : [{ grade: '', price: 0 }]
+        case 'BASE_PRICE': {
+          const map = Object.fromEntries(Object.entries(p).map(([grade, price]) => [String(grade), Number(price) || 0]))
+          if (this.seatGrades.length) {
+            this.priceRows = this.seatGrades.map((grade) => ({ grade, price: map[grade] ?? 0 }))
+          } else {
+            this.priceRows = Object.entries(map).length
+              ? Object.entries(map).map(([grade, price]) => ({ grade, price }))
+              : [{ grade: '', price: 0 }]
+          }
           break
+        }
         case 'PRESALE':
           this.presale = { startAt: p.startAt ?? '', endAt: p.endAt ?? '', authRequired: p.authRequired ?? false, authType: p.authType ?? '' }
           break
@@ -151,13 +180,30 @@ export default {
           break
       }
     },
-    addPriceRow() { this.priceRows.push({ grade: '', price: 0 }) },
-    removePriceRow(idx) { if (this.priceRows.length > 1) this.priceRows.splice(idx, 1) },
+    validateBasePriceRows() {
+      if (!this.seatGrades.length) return true
+      const configured = new Set(
+        this.priceRows
+          .map((row) => String(row.grade || '').trim())
+          .filter((grade) => grade && this.seatGrades.includes(grade))
+      )
+      const missing = this.seatGrades.filter((grade) => !configured.has(grade))
+      if (missing.length) {
+        this.editError = `가격이 누락된 좌석 등급: ${missing.join(', ')}`
+        return false
+      }
+      return true
+    },
     buildConfig() {
       switch (this.policy.type) {
         case 'BASE_PRICE': {
           const obj = {}
-          for (const row of this.priceRows) if (row.grade.trim()) obj[row.grade.trim()] = Number(row.price) || 0
+          for (const row of this.priceRows) {
+            const grade = String(row.grade || '').trim()
+            if (!grade) continue
+            if (this.seatGrades.length && !this.seatGrades.includes(grade)) continue
+            obj[grade] = Number(row.price) || 0
+          }
           return JSON.stringify(obj)
         }
         case 'PRESALE':
@@ -166,25 +212,36 @@ export default {
           return JSON.stringify({ discountName: this.discount.discountName, discountRate: this.discount.discountRate, targetGrades: this.discount.targetGrades, ...(this.discount.validUntil ? { validUntil: this.discount.validUntil } : {}) })
         case 'PURCHASE_LIMIT':
           return JSON.stringify({ limit: Number(this.purchaseLimit.limit) || 1, ...(this.purchaseLimit.message ? { message: this.purchaseLimit.message } : {}) })
-        default: return '{}'
+        default:
+          return '{}'
       }
     },
     async submitEdit() {
-      this.editError = ''; this.editSuccess = ''; this.saving = true
+      if (this.policy.type === 'BASE_PRICE' && !this.validateBasePriceRows()) return
+      this.editError = ''
+      this.editSuccess = ''
+      this.saving = true
       try {
         await this.api.put(ENDPOINTS.organizerUpdatePolicy(this.policy.id), { type: this.policy.type, config: this.buildConfig() })
         this.editSuccess = '저장되었습니다.'
         await this.load()
-      } catch (err) { this.editError = err.message || '정책 수정에 실패했습니다.' }
-      finally { this.saving = false }
+      } catch (err) {
+        this.editError = err.message || '정책 수정에 실패했습니다.'
+      } finally {
+        this.saving = false
+      }
     },
     async submitDelete() {
-      this.deleteError = ''; this.deleting = true
+      this.deleteError = ''
+      this.deleting = true
       try {
         await this.api.del(ENDPOINTS.organizerDeletePolicy(this.policy.id))
         this.goBack()
-      } catch (err) { this.deleteError = err.message || '정책 삭제에 실패했습니다.' }
-      finally { this.deleting = false }
+      } catch (err) {
+        this.deleteError = err.message || '정책 삭제에 실패했습니다.'
+      } finally {
+        this.deleting = false
+      }
     },
   },
 }
