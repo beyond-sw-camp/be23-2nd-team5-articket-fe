@@ -45,6 +45,15 @@ export const ENDPOINTS = {
 
   // USER
   me: () => `/users/me`,
+  meUpdate: () => `/users/me`,
+  myGenrePreferences: () => `/users/me/preferences/genres`,
+  myRecentActivities: (params = {}) => {
+    const p = new URLSearchParams()
+    if (params.page != null) p.set('page', String(params.page))
+    if (params.size != null) p.set('size', String(params.size))
+    const q = p.toString()
+    return `/users/me/activities/recent${q ? `?${q}` : ''}`
+  },
   requestOrganizer: () => `/users/requestOrganizer`,
   myOrders: (period) => period != null ? `/users/me/orders?period=${period}` : `/users/me/orders`,
   myOrder: (orderId) => `/users/me/orders/${orderId}`,
