@@ -1,5 +1,5 @@
 <template>
-  <div class="mx-auto max-w-5xl space-y-6 pb-12">
+  <div class="mx-auto max-w-6xl space-y-6 pb-12">
     <!-- 로딩 -->
     <div
       v-if="loading && !profile"
@@ -49,33 +49,68 @@
                 {{ roleLabel }}
               </span>
             </div>
-            <div class="mt-3 flex flex-wrap items-center gap-4 text-sm text-slate-600">
-              <span class="flex items-center gap-1.5">
-                <Mail class="h-4 w-4 shrink-0 text-slate-400" />
-                {{ profile.email || '-' }}
-                <Icon
-                  v-if="profile.socialType === 'GOOGLE'"
-                  icon="logos:google-icon"
-                  class="h-5 w-5 shrink-0"
-                  title="Google"
-                />
-                <Icon
-                  v-else-if="profile.socialType === 'KAKAO'"
-                  icon="simple-icons:kakaotalk"
-                  class="h-5 w-5 shrink-0"
-                  :style="{ color: '#191919' }"
-                  title="카카오"
-                />
-              </span>
-            </div>
-            <dl class="mt-4 grid gap-2 sm:grid-cols-2">
-              <div>
-                <dt class="text-xs font-medium text-slate-500">연락처</dt>
-                <dd class="mt-0.5 text-sm font-medium text-slate-900">{{ profile.phoneNumber || '-' }}</dd>
+            <dl class="mt-4 space-y-3 text-sm">
+              <div class="flex items-start gap-3">
+                <dt class="flex items-center gap-1.5 text-xs font-medium text-slate-500">
+                  <Mail class="h-4 w-4 shrink-0 text-slate-400" />
+                  <span>이메일</span>
+                </dt>
+                <dd class="flex flex-1 items-center gap-2 text-sm font-medium text-slate-900 min-w-0">
+                  <span class="truncate">{{ profile.email || '-' }}</span>
+                  <Icon
+                    v-if="profile.socialType === 'GOOGLE'"
+                    icon="logos:google-icon"
+                    class="h-4 w-4 shrink-0"
+                    title="Google"
+                  />
+                  <Icon
+                    v-else-if="profile.socialType === 'KAKAO'"
+                    icon="simple-icons:kakaotalk"
+                    class="h-4 w-4 shrink-0"
+                    :style="{ color: '#191919' }"
+                    title="카카오"
+                  />
+                </dd>
               </div>
-              <div>
-                <dt class="text-xs font-medium text-slate-500">생년월일</dt>
-                <dd class="mt-0.5 text-sm font-medium text-slate-900">{{ verifiedBirthDateFormatted }}</dd>
+              <div class="flex items-start gap-3">
+                <dt class="flex items-center gap-1.5 text-xs font-medium text-slate-500">
+                  <Phone class="h-4 w-4 shrink-0 text-slate-400" />
+                  <span>연락처</span>
+                </dt>
+                <dd class="mt-0.5 flex-1 text-sm font-medium text-slate-900 min-w-0 break-words">
+                  {{ profile.phoneNumber || '-' }}
+                </dd>
+              </div>
+              <div class="flex items-start gap-3">
+                <dt class="flex items-center gap-1.5 text-xs font-medium text-slate-500">
+                  <Calendar class="h-4 w-4 shrink-0 text-slate-400" />
+                  <span>생년월일</span>
+                </dt>
+                <dd class="mt-0.5 flex-1 text-sm font-medium text-slate-900 min-w-0 break-words">
+                  {{ verifiedBirthDateFormatted }}
+                </dd>
+              </div>
+              <div class="flex items-start gap-3">
+                <dt class="flex items-center gap-1.5 text-xs font-medium text-slate-500">
+                  <ShieldCheck class="h-4 w-4 shrink-0 text-slate-400" />
+                  <span>본인인증</span>
+                </dt>
+                <dd class="flex flex-1 items-center gap-2 min-w-0">
+                  <span
+                    :class="ageVerifiedAt
+                      ? 'rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800'
+                      : 'rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600'"
+                  >
+                    {{ ageVerifiedAt ? '완료' : '미완료' }}
+                  </span>
+                  <RouterLink
+                    v-if="!ageVerifiedAt"
+                    to="/me/verify-identity"
+                    class="text-xs font-semibold text-slate-600 underline-offset-2 hover:text-slate-900 hover:underline"
+                  >
+                    인증하기 →
+                  </RouterLink>
+                </dd>
               </div>
             </dl>
             <div class="mt-4 flex flex-wrap gap-3">
@@ -91,24 +126,6 @@
               >
                 알림 설정
               </button>
-            </div>
-            <!-- 본인인증: 상태 표시 + 미완료 시 인증하기 링크 -->
-            <div class="mt-4 flex flex-wrap items-center gap-2">
-              <span class="text-xs font-medium text-slate-500">본인인증</span>
-              <span
-                :class="ageVerifiedAt
-                  ? 'rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800'
-                  : 'rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600'"
-              >
-                {{ ageVerifiedAt ? '완료' : '미완료' }}
-              </span>
-              <RouterLink
-                v-if="!ageVerifiedAt"
-                to="/me/verify-identity"
-                class="text-xs font-semibold text-slate-600 underline-offset-2 hover:text-slate-900 hover:underline"
-              >
-                인증하기 →
-              </RouterLink>
             </div>
           </div>
           <div class="flex shrink-0 gap-6 rounded-xl border border-slate-100 bg-slate-50/50 px-6 py-4 sm:gap-10">
@@ -287,7 +304,7 @@
 
 <script>
 import { Icon } from '@iconify/vue'
-import { Mail, BarChart2, Clock, Heart, Star, ChevronRight } from 'lucide-vue-next'
+import { Mail, BarChart2, Clock, Heart, Star, ChevronRight, Phone, Calendar, ShieldCheck } from 'lucide-vue-next'
 import { useApi } from '../../composables/useApi'
 import { useMe } from '../../composables/useMe'
 import { ENDPOINTS } from '../../lib/api/endpoints'
@@ -309,7 +326,7 @@ function timeAgo(isoStr) {
 
 export default {
   name: 'ProfileView',
-  components: { Icon, Mail, BarChart2, Clock, Heart, Star, ChevronRight },
+  components: { Icon, Mail, BarChart2, Clock, Heart, Star, ChevronRight, Phone, Calendar, ShieldCheck },
   data() {
     return {
       profile: null,

@@ -1,5 +1,5 @@
 <template>
-  <div class="mx-auto max-w-4xl space-y-6 p-4 pb-12 pt-10 md:p-8">
+  <div class="mx-auto space-y-6 p-4 pb-12 pt-10 md:p-8">
     <div>
       <h1 class="text-xl font-bold text-slate-900 sm:text-2xl">좌석 선점</h1>
       <p class="mt-1 text-sm text-slate-500">선점한 좌석을 확인하고 결제를 진행하세요.</p>
