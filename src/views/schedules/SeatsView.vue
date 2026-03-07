@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="flex flex-col gap-3">
 
     <!-- 등급 범례 -->
@@ -215,6 +215,7 @@ export default {
       api:          null,
       konvaStageInstance: null,
       mainLayerInstance:  null,
+      seatNodeMap:        new Map(),
       seatToggling:        false,  // 좌석 선점/해제 API 호출 중 (중복 클릭 방지)
       proceedingToCheckout: false, // 결제 페이지로 이동 중이면 true (이탈 시 해제 스킵)
       MAX_SEATS:    2,             // 1인 최대 선택 가능 좌석 수
@@ -480,10 +481,56 @@ export default {
       }
     },
     // 전체 렌더링 (좌석 + 스테이지)
+    refreshSeatVisual(seatId) {
+      const node = this.seatNodeMap?.get(seatId)
+      if (!node) {
+        this.renderAll()
+        return
+      }
+      const seat = this.seats.find(s => s.seatId === seatId)
+      if (!seat) return
+
+      const isSelected = this.selectedSet.has(seatId)
+      const isSold = seat.status === 'SOLD'
+      const isClickable = seat.status === 'AVAILABLE' || isSelected
+
+      node.fill(this.seatFill(seat))
+      node.stroke(isSelected ? '#1d4ed8' : 'transparent')
+      node.opacity(isSold ? 0.3 : 1)
+      node.listening(isClickable)
+      this.mainLayerInstance?.batchDraw()
+    },
+
+    refreshSeatsVisual(seatIds) {
+      if (!Array.isArray(seatIds) || seatIds.length === 0) return
+      let fallback = false
+      for (const seatId of seatIds) {
+        const node = this.seatNodeMap?.get(seatId)
+        const seat = this.seats.find(s => s.seatId === seatId)
+        if (!node || !seat) {
+          fallback = true
+          break
+        }
+        const isSelected = this.selectedSet.has(seatId)
+        const isSold = seat.status === 'SOLD'
+        const isClickable = seat.status === 'AVAILABLE' || isSelected
+
+        node.fill(this.seatFill(seat))
+        node.stroke(isSelected ? '#1d4ed8' : 'transparent')
+        node.opacity(isSold ? 0.3 : 1)
+        node.listening(isClickable)
+      }
+      if (fallback) {
+        this.renderAll()
+        return
+      }
+      this.mainLayerInstance?.batchDraw()
+    },
     renderAll() {
       const layer = this.mainLayerInstance
       if (!layer) return
       layer.destroyChildren()
+      this.seatNodeMap = new Map()
 
       // ── 스테이지(무대) - 여러 stage 지원 ──
       console.log('[SeatsView] renderAll - stageList:', JSON.stringify(this.stageList))
@@ -586,6 +633,7 @@ export default {
           }
 
           grp.add(circle)
+          this.seatNodeMap.set(seat.seatId, circle)
         }
 
         layer.add(grp)
@@ -707,7 +755,7 @@ export default {
         this.holdError = e?.message || '좌석 선점에 실패했습니다.'
       } finally {
         this.seatToggling = false
-        this.renderAll()
+        this.refreshSeatVisual(seat.seatId)
       }
     },
 
@@ -721,7 +769,7 @@ export default {
         if (seat) seat.status = 'AVAILABLE'
         this.api.del(ENDPOINTS.seatHold(seatId)).catch(() => {})
       })
-      this.renderAll()
+      this.refreshSeatsVisual(toRelease)
     },
 
     // "선택 완료": 주문 생성 후 결제(Order) 페이지로 이동 (Checkout 단계 없음)
@@ -793,7 +841,7 @@ export default {
         const seat = this.seats.find(s => s.seatId === seatId)
         if (seat) seat.status = 'AVAILABLE'
       })
-      this.renderAll()
+      this.refreshSeatsVisual(toRelease)
       await Promise.all(toRelease.map(seatId =>
         this.api.del(ENDPOINTS.seatHold(seatId)).catch(() => {})
       ))
@@ -849,13 +897,13 @@ export default {
           // 내가 선점 중인 좌석이면 색상 변경 불필요 (blue 유지)
           if (!this.selectedSet.has(seatId)) {
             seat.status = 'HOLD'
-            this.renderAll()
+            this.refreshSeatVisual(seat.seatId)
           }
         } else if (status === 'RELEASE') {
           // 내가 선점 중인 좌석이면 무시 (내가 직접 selected에서 제거할 것)
           if (!this.selectedSet.has(seatId)) {
             seat.status = 'AVAILABLE'
-            this.renderAll()
+            this.refreshSeatVisual(seat.seatId)
           }
         } else if (status === 'BOOKED') {
           seat.status = 'SOLD'
@@ -865,7 +913,7 @@ export default {
             this.selected.splice(idx, 1)
             if (this.selected.length === 0) this.clearHoldTimer()
           }
-          this.renderAll()
+          this.refreshSeatVisual(seat.seatId)
         }
       } catch (e) {
         console.warn('[WS] 좌석 상태 메시지 파싱 실패:', e)
