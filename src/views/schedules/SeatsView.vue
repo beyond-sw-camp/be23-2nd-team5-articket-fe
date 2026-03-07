@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="flex flex-col gap-3">
 
     <!-- 등급 범례 -->
@@ -15,12 +15,18 @@
         <span class="text-xs text-slate-600">선택됨</span>
       </div>
       <div class="flex items-center gap-1.5">
-        <span class="h-3 w-3 rounded-full" style="background:#f59e0b"></span>
+        <span class="h-3 w-3 rounded-full" style="background:#334155"></span>
         <span class="text-xs text-slate-600">선점 중</span>
       </div>
       <div class="flex items-center gap-1.5">
         <span class="h-3 w-3 rounded-full" style="background:#cbd5e1; opacity:.5"></span>
         <span class="text-xs text-slate-600">판매 완료</span>
+      </div>
+        <!-- 추가: 선택한 공연/회차 -->
+      <div class="ml-auto shrink-0 text-xs md:text-sm text-slate-600">
+        <span class="font-semibold text-slate-800">{{ scheduleTitle }}</span>
+        <span class="mx-2 text-slate-300">|</span>
+        <span>{{ formattedScheduleDate }}</span>
       </div>
     </div>
 
@@ -215,6 +221,7 @@ export default {
       api:          null,
       konvaStageInstance: null,
       mainLayerInstance:  null,
+      seatNodeMap:        new Map(),
       seatToggling:        false,  // 좌석 선점/해제 API 호출 중 (중복 클릭 방지)
       proceedingToCheckout: false, // 결제 페이지로 이동 중이면 true (이탈 시 해제 스킵)
       MAX_SEATS:    2,             // 1인 최대 선택 가능 좌석 수
@@ -224,6 +231,8 @@ export default {
       stompClient:      null,      // WebSocket STOMP 클라이언트
       stageListJson:    null,      // 여러 무대(stage) JSON
       seatMapData:      null,      // seatMap API 응답 전체 (stage 폴백용)
+      scheduleTitle:    '',        // 추가: 공연명
+      scheduleDate:     null,      // 추가: 회차 일시
     }
   },
 
@@ -252,7 +261,6 @@ export default {
           map[id] = {
             sectionId:    id,
             name:         seat.sectionName,
-            color:        seat.sectionColor,
             x:            seat.sectionX,
             y:            seat.sectionY,
             rotation:     seat.sectionRotation,
@@ -300,6 +308,18 @@ export default {
         }
       }
       return result
+    },
+    formattedScheduleDate() {
+      if (!this.scheduleDate) return '-'
+      const d = new Date(this.scheduleDate)
+      if (Number.isNaN(d.getTime())) return this.scheduleDate
+      const day = ['일', '월', '화', '수', '목', '금', '토'][d.getDay()]
+      const yyyy = d.getFullYear()
+      const mm = String(d.getMonth() + 1).padStart(2, '0')
+      const dd = String(d.getDate()).padStart(2, '0')
+      const hh = String(d.getHours()).padStart(2, '0')
+      const mi = String(d.getMinutes()).padStart(2, '0')
+      return `${yyyy}.${mm}.${dd}(${day}) ${hh}:${mi}`
     }
   },
 
@@ -366,7 +386,10 @@ export default {
     gradeColorOf(grade) {
       return gradeColor(grade)
     },
-
+    applyScheduleMeta(meta) {
+      this.scheduleTitle = meta?.concertTitle ?? meta?.concertName ?? meta?.title ?? ''
+      this.scheduleDate = meta?.scheduleDate ?? meta?.playTime ?? meta?.startAt ?? null
+    },
     async load() {
       const scheduleId = this.$route.params.scheduleId
       if (!scheduleId) return
@@ -379,14 +402,18 @@ export default {
         this.konvaStageInstance = null
       }
       try {
-        const [res, seatMapRes] = await Promise.allSettled([
+        const [res, seatMapRes, scheduleRes] = await Promise.allSettled([
           this.api.get(ENDPOINTS.seats(scheduleId)),
-          this.api.get(ENDPOINTS.seatMap(scheduleId))
+          this.api.get(ENDPOINTS.seatMap(scheduleId)),
+          this.api.get(ENDPOINTS.schedule(scheduleId))
         ])
         // seatMap API 응답 저장 (stage 정보 추출용)
         if (seatMapRes.status === 'fulfilled' && seatMapRes.value) {
           this.seatMapData = seatMapRes.value
           this.stageListJson = seatMapRes.value.stageListJson ?? null
+        }
+        if (scheduleRes.status === 'fulfilled' && scheduleRes.value) {
+          this.applyScheduleMeta(scheduleRes.value)
         }
         const seatsData = res.status === 'fulfilled' ? res.value : []
         const raw = Array.isArray(seatsData) ? seatsData : seatsData?.content ?? seatsData?.items ?? []
@@ -473,18 +500,64 @@ export default {
     seatFill(seat) {
       if (this.selectedSet.has(seat.seatId)) return '#3b82f6'
       switch (seat.status) {
-        case 'AVAILABLE': return seat.sectionColor || gradeColor(seat.grade)
+        case 'AVAILABLE': return gradeColor(seat.grade)
         case 'HOLD':      // WebSocket 메시지 값
-        case 'HELD':      return '#f59e0b'  // DB enum 값
+        case 'HELD':      return '#334155'  // DB enum 값
         case 'SOLD':      return '#cbd5e1'
         default:          return '#e2e8f0'
       }
     },
     // 전체 렌더링 (좌석 + 스테이지)
+    refreshSeatVisual(seatId) {
+      const node = this.seatNodeMap?.get(seatId)
+      if (!node) {
+        this.renderAll()
+        return
+      }
+      const seat = this.seats.find(s => s.seatId === seatId)
+      if (!seat) return
+
+      const isSelected = this.selectedSet.has(seatId)
+      const isSold = seat.status === 'SOLD'
+      const isClickable = seat.status === 'AVAILABLE' || isSelected
+
+      node.fill(this.seatFill(seat))
+      node.stroke(isSelected ? '#1d4ed8' : 'transparent')
+      node.opacity(isSold ? 0.3 : 1)
+      node.listening(isClickable)
+      this.mainLayerInstance?.batchDraw()
+    },
+
+    refreshSeatsVisual(seatIds) {
+      if (!Array.isArray(seatIds) || seatIds.length === 0) return
+      let fallback = false
+      for (const seatId of seatIds) {
+        const node = this.seatNodeMap?.get(seatId)
+        const seat = this.seats.find(s => s.seatId === seatId)
+        if (!node || !seat) {
+          fallback = true
+          break
+        }
+        const isSelected = this.selectedSet.has(seatId)
+        const isSold = seat.status === 'SOLD'
+        const isClickable = seat.status === 'AVAILABLE' || isSelected
+
+        node.fill(this.seatFill(seat))
+        node.stroke(isSelected ? '#1d4ed8' : 'transparent')
+        node.opacity(isSold ? 0.3 : 1)
+        node.listening(isClickable)
+      }
+      if (fallback) {
+        this.renderAll()
+        return
+      }
+      this.mainLayerInstance?.batchDraw()
+    },
     renderAll() {
       const layer = this.mainLayerInstance
       if (!layer) return
       layer.destroyChildren()
+      this.seatNodeMap = new Map()
 
       // ── 스테이지(무대) - 여러 stage 지원 ──
       console.log('[SeatsView] renderAll - stageList:', JSON.stringify(this.stageList))
@@ -587,6 +660,7 @@ export default {
           }
 
           grp.add(circle)
+          this.seatNodeMap.set(seat.seatId, circle)
         }
 
         layer.add(grp)
@@ -708,7 +782,7 @@ export default {
         this.holdError = e?.message || '좌석 선점에 실패했습니다.'
       } finally {
         this.seatToggling = false
-        this.renderAll()
+        this.refreshSeatVisual(seat.seatId)
       }
     },
 
@@ -722,7 +796,7 @@ export default {
         if (seat) seat.status = 'AVAILABLE'
         this.api.del(ENDPOINTS.seatHold(seatId)).catch(() => {})
       })
-      this.renderAll()
+      this.refreshSeatsVisual(toRelease)
     },
 
     // "선택 완료": 주문 생성 후 결제(Order) 페이지로 이동 (Checkout 단계 없음)
@@ -794,7 +868,7 @@ export default {
         const seat = this.seats.find(s => s.seatId === seatId)
         if (seat) seat.status = 'AVAILABLE'
       })
-      this.renderAll()
+      this.refreshSeatsVisual(toRelease)
       await Promise.all(toRelease.map(seatId =>
         this.api.del(ENDPOINTS.seatHold(seatId)).catch(() => {})
       ))
@@ -850,13 +924,13 @@ export default {
           // 내가 선점 중인 좌석이면 색상 변경 불필요 (blue 유지)
           if (!this.selectedSet.has(seatId)) {
             seat.status = 'HOLD'
-            this.renderAll()
+            this.refreshSeatVisual(seat.seatId)
           }
         } else if (status === 'RELEASE') {
           // 내가 선점 중인 좌석이면 무시 (내가 직접 selected에서 제거할 것)
           if (!this.selectedSet.has(seatId)) {
             seat.status = 'AVAILABLE'
-            this.renderAll()
+            this.refreshSeatVisual(seat.seatId)
           }
         } else if (status === 'BOOKED') {
           seat.status = 'SOLD'
@@ -866,7 +940,7 @@ export default {
             this.selected.splice(idx, 1)
             if (this.selected.length === 0) this.clearHoldTimer()
           }
-          this.renderAll()
+          this.refreshSeatVisual(seat.seatId)
         }
       } catch (e) {
         console.warn('[WS] 좌석 상태 메시지 파싱 실패:', e)

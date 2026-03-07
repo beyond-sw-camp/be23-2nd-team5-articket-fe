@@ -229,16 +229,22 @@ export default {
       };
     },
     getSeatColorClass(seat) {
-      if (seat.status !== 'AVAILABLE') return 'bg-slate-300 text-slate-400 cursor-not-allowed border border-slate-300';
-      
-      const isSelected = this.selectedSeats.some(s => s.seatId === seat.seatId);
-      if (isSelected) return 'bg-purple-600 text-white border border-purple-600 z-10 ring-2 ring-purple-200';
+  const isSelected = this.selectedSeats.some(s => s.seatId === seat.seatId);
+    if (isSelected) return 'bg-purple-600 text-white border border-purple-600 z-10 ring-2 ring-purple-200';
 
-      // 등급별 색상
-      if (seat.grade === 'VIP') return 'bg-pink-100 text-pink-700 border border-pink-200 hover:bg-pink-200';
-      if (seat.grade === 'R') return 'bg-green-100 text-green-700 border border-green-200 hover:bg-green-200';
-      return 'bg-blue-100 text-blue-700 border border-blue-200 hover:bg-blue-200';
-    },
+    // 선점중(HELD) 전용 색상: VIP와 겹치지 않게 slate 계열
+    if (seat.status === 'HELD') return 'bg-slate-700 text-white border border-slate-900';
+
+    // 그 외 비가용 좌석
+    if (seat.status !== 'AVAILABLE') return 'bg-slate-300 text-slate-400 cursor-not-allowed border border-slate-300';
+
+    if (seat.grade === 'VIP') return 'bg-amber-100 text-amber-700 border border-amber-300 hover:bg-amber-200';
+    if (seat.grade === 'R') return 'bg-red-100 text-red-700 border border-red-300 hover:bg-red-200';
+    if (seat.grade === 'S') return 'bg-sky-100 text-sky-700 border border-sky-300 hover:bg-sky-200';
+    if (seat.grade === 'A') return 'bg-green-100 text-green-700 border border-green-300 hover:bg-green-200';
+    if (seat.grade === 'B') return 'bg-purple-100 text-purple-700 border border-purple-300 hover:bg-purple-200';
+    return 'bg-slate-200 text-slate-700 border border-slate-400 hover:bg-slate-300'; // C, 기타
+  },
     toggleSeat(seat) {
       const index = this.selectedSeats.findIndex(s => s.seatId === seat.seatId);
       if (index === -1) {

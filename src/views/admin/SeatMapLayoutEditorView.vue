@@ -1071,7 +1071,7 @@ const loadLayout = async () => {
         x, y,
         rows, cols,
         grade: defs?.[0]?.gradeDefault ?? defs?.[0]?.grade ?? 'R',
-        color: sec.displayColor ?? sec.display_color ?? '#ef6b6b',
+        color: gradeColor(defs?.[0]?.gradeDefault ?? defs?.[0]?.grade ?? 'R'),
         rotation: sec.rotation ?? 0,
         shape: sec.shape ?? 'RECTANGLE',
         rowLabelType: sec.rowLabelType ?? sec.row_label_type ?? 'left',
@@ -1135,7 +1135,7 @@ const handleSave = async () => {
           xPos: g.x, yPos: g.y, rotation: g.rotation,
           shape: g.shape,
           totalRow: g.rows, seatsPerRow: g.cols,
-          initialGrade: g.grade, displayColor: g.color,
+          initialGrade: g.grade,
           rowLabelType: g.rowLabelType ?? 'left',
         }
 
