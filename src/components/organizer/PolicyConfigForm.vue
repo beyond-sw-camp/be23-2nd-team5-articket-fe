@@ -4,13 +4,23 @@
     <template v-if="type === 'BASE_PRICE'">
       <div>
         <label class="block text-xs font-semibold text-slate-500">좌석 등급별 기본 가격</label>
-        <div class="mt-1 text-xs text-slate-400">결과 예시: {"VIP석": 150000, "R석": 120000}</div>
+        <div class="mt-1 text-xs text-slate-400">예시: {"VIP": 150000, "R": 120000}</div>
         <div class="mt-2 grid gap-2">
           <div v-for="(row, idx) in priceRows" :key="idx" class="flex gap-2 items-center">
+            <select
+              v-if="seatGrades.length"
+              :value="row.grade"
+              @change="updatePriceRow(idx, 'grade', $event.target.value)"
+              class="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+            >
+              <option value="">등급 선택</option>
+              <option v-for="grade in availableGradesForRow(idx)" :key="grade" :value="grade">{{ grade }}</option>
+            </select>
             <input
+              v-else
               :value="row.grade"
               @input="updatePriceRow(idx, 'grade', $event.target.value)"
-              placeholder="등급명 (예: VIP석)"
+              placeholder="등급명 (예: VIP)"
               class="flex-1 rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
             />
             <input
@@ -25,13 +35,17 @@
               type="button"
               class="h-9 w-9 flex items-center justify-center rounded-xl text-slate-400 hover:text-red-500 hover:bg-slate-100 text-lg"
               @click="$emit('remove-price-row', idx)"
-            >×</button>
+            >x</button>
           </div>
         </div>
         <button
           type="button"
-          class="mt-2 h-8 px-3 text-sm text-slate-600 hover:text-slate-900 rounded-xl hover:bg-slate-100"
-          @click="$emit('add-price-row')"
+          class="mt-2 h-8 px-3 text-sm rounded-xl"
+          :class="!seatGrades.length || canAddPriceRow
+            ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+            : 'text-slate-300 cursor-not-allowed'"
+          :disabled="seatGrades.length && !canAddPriceRow"
+          @click="handleAddPriceRow"
         >+ 등급 추가</button>
       </div>
     </template>
@@ -67,10 +81,10 @@
           @change="updatePresale('authRequired', $event.target.checked)"
           class="h-4 w-4 rounded border-slate-300 text-red-500 focus:ring-red-400"
         />
-        인증 필요 (authRequired)
+        인증 필요
       </label>
       <div v-if="presale.authRequired">
-        <label class="block text-xs font-semibold text-slate-500">인증 유형 (authType)</label>
+        <label class="block text-xs font-semibold text-slate-500">인증 유형</label>
         <input
           :value="presale.authType"
           @input="updatePresale('authType', $event.target.value)"
@@ -84,7 +98,7 @@
     <!-- DISCOUNT -->
     <template v-else-if="type === 'DISCOUNT'">
       <div>
-        <label class="block text-xs font-semibold text-slate-500">할인 명칭 *</label>
+        <label class="block text-xs font-semibold text-slate-500">할인명 *</label>
         <input
           :value="discount.discountName"
           @input="updateDiscount('discountName', $event.target.value)"
@@ -96,7 +110,7 @@
       </div>
       <div class="grid grid-cols-2 gap-3">
         <div>
-          <label class="block text-xs font-semibold text-slate-500">할인율 (%) *</label>
+          <label class="block text-xs font-semibold text-slate-500">할인율(%) *</label>
           <input
             :value="discountRateDisplay"
             @input="updateDiscount('discountRate', Number($event.target.value) / 100)"
@@ -108,7 +122,7 @@
             placeholder="예: 15"
             class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
           />
-          <div class="mt-0.5 text-xs text-slate-400">입력값 ÷ 100 으로 저장 (15 → 0.15)</div>
+          <div class="mt-0.5 text-xs text-slate-400">입력값은 100으로 나눠 저장됩니다. (15 -> 0.15)</div>
         </div>
         <div>
           <label class="block text-xs font-semibold text-slate-500">유효 기간</label>
@@ -126,7 +140,7 @@
           :value="(discount.targetGrades || []).join(', ')"
           @input="updateDiscount('targetGrades', $event.target.value.split(',').map(s => s.trim()).filter(Boolean))"
           type="text"
-          placeholder="예: R석, S석 (비우면 전체 등급 적용)"
+          placeholder="예: R, S"
           class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
         />
       </div>
@@ -151,7 +165,7 @@
           :value="purchaseLimit.message"
           @input="updatePurchaseLimit('message', $event.target.value)"
           type="text"
-          placeholder="예: 1인당 최대 4매까지만 예매 가능합니다."
+          placeholder="예: 1인당 최대 4매까지 예매 가능합니다."
           class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
         />
       </div>
@@ -164,6 +178,7 @@ export default {
   name: 'PolicyConfigForm',
   props: {
     type: { type: String, required: true },
+    seatGrades: { type: Array, default: () => [] },
     priceRows: { type: Array, default: () => [] },
     presale: { type: Object, default: () => ({}) },
     discount: { type: Object, default: () => ({}) },
@@ -181,8 +196,37 @@ export default {
     discountRateDisplay() {
       return Math.round((this.discount.discountRate || 0) * 100 * 10) / 10
     },
+    selectedSeatGrades() {
+      if (!this.seatGrades.length) return []
+      return this.priceRows
+        .map((row) => String(row.grade || '').trim())
+        .filter((grade) => grade && this.seatGrades.includes(grade))
+    },
+    canAddPriceRow() {
+      if (!this.seatGrades.length) return true
+      return this.selectedSeatGrades.length < this.seatGrades.length
+    },
   },
   methods: {
+    availableGradesForRow(idx) {
+      if (!this.seatGrades.length) return []
+      const current = String(this.priceRows[idx]?.grade || '').trim()
+      const usedByOthers = new Set(
+        this.priceRows
+          .map((row, i) => (i === idx ? '' : String(row.grade || '').trim()))
+          .filter((grade) => grade && this.seatGrades.includes(grade))
+      )
+      return this.seatGrades.filter((grade) => grade === current || !usedByOthers.has(grade))
+    },
+    firstAvailableGrade() {
+      if (!this.seatGrades.length) return ''
+      const used = new Set(this.selectedSeatGrades)
+      return this.seatGrades.find((grade) => !used.has(grade)) || ''
+    },
+    handleAddPriceRow() {
+      if (!this.canAddPriceRow) return
+      this.$emit('add-price-row', { grade: this.firstAvailableGrade(), price: 0 })
+    },
     updatePriceRow(idx, key, value) {
       const rows = this.priceRows.map((r, i) =>
         i === idx ? { ...r, [key]: key === 'price' ? Number(value) || 0 : value } : r

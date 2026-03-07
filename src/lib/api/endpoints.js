@@ -45,6 +45,15 @@ export const ENDPOINTS = {
 
   // USER
   me: () => `/users/me`,
+  meUpdate: () => `/users/me`,
+  myGenrePreferences: () => `/users/me/preferences/genres`,
+  myRecentActivities: (params = {}) => {
+    const p = new URLSearchParams()
+    if (params.page != null) p.set('page', String(params.page))
+    if (params.size != null) p.set('size', String(params.size))
+    const q = p.toString()
+    return `/users/me/activities/recent${q ? `?${q}` : ''}`
+  },
   requestOrganizer: () => `/users/requestOrganizer`,
   myOrders: (period) => period != null ? `/users/me/orders?period=${period}` : `/users/me/orders`,
   myOrder: (orderId) => `/users/me/orders/${orderId}`,
@@ -81,6 +90,7 @@ export const ENDPOINTS = {
     return `/concerts/organizer${q ? `?${q}` : ''}`
   },
   organizerConcertStats: (concertId) => `/concerts/organizer/${concertId}/stats`,
+  organizerDashboardOverview: () => `/concerts/organizer/dashboard/overview`,
   organizerCreateConcert: () => `/concerts/organizer/create`,
   organizerUpdateConcert: (concertId) => `/concerts/organizer/${concertId}`,
   organizerPublishConcert: (concertId) => `/concerts/organizer/${concertId}/publish`,
@@ -91,6 +101,7 @@ export const ENDPOINTS = {
   organizerCreatePolicy: (concertId) => `/concerts/organizer/${concertId}/policies`,
   organizerUpdatePolicy: (policyId) => `/concerts/organizer/policies/${policyId}`,
   organizerDeletePolicy: (policyId) => `/concerts/organizer/policies/${policyId}`,
+  organizerSeatMapGrades: (seatMapId) => `/seat-maps/${seatMapId}/grades`,
   organizerConcertOrders: (concertId) => `/concerts/organizer/${concertId}/orders`,
   organizerOrder: (orderId) => `/concerts/organizer/orders/${orderId}`,
   organizerPriceHistory: (concertId) => `/concerts/organizer/${concertId}/prices/history`,

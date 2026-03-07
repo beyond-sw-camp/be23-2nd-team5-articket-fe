@@ -3,7 +3,7 @@
     <div v-if="open" class="fixed inset-0 z-[80]">
       <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" @click="$emit('close')"></div>
       <div class="absolute inset-0 flex items-end justify-center p-4 sm:items-center">
-        <div class="flex max-h-[90vh] w-full max-w-xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg">
+        <div :class="['flex max-h-[90vh] w-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg', maxWidthClass]">
           <div class="flex shrink-0 items-center justify-between border-b border-slate-200 px-4 py-3">
             <div class="text-sm font-semibold text-slate-900">{{ title }}</div>
             <UiButton variant="ghost" class="h-9 px-3" @click="$emit('close')">
@@ -34,7 +34,8 @@ export default {
   },
   props: {
     open: { type: Boolean, default: false },
-    title: { type: String, default: '' }
+    title: { type: String, default: '' },
+    maxWidthClass: { type: String, default: 'max-w-xl' }
   },
   emits: ['close']
 }

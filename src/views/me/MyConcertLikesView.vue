@@ -1,5 +1,5 @@
 <template>
-  <div class="mx-auto max-w-4xl space-y-6 pb-12">
+  <div class="mx-auto space-y-6 pb-12">
     <!-- 헤더 -->
     <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <div>
