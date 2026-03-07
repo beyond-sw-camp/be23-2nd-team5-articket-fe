@@ -67,6 +67,8 @@ export const ENDPOINTS = {
   },
   requestOrganizer: () => `/users/requestOrganizer`,
   myOrders: (period) => period != null ? `/users/me/orders?period=${period}` : `/users/me/orders`,
+  /** 리뷰 작성 가능한 예매만 반환 (결제 완료 + 관람일 경과) */
+  myOrdersReviewable: () => `/users/me/orders/reviewable`,
   myOrder: (orderId) => `/users/me/orders/${orderId}`,
   seatHold: (seatId) => `/seat-holds/${seatId}`,
 

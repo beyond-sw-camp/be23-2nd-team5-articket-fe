@@ -35,6 +35,7 @@ import MyOrdersView from '../views/orders/MyOrdersView.vue'
 import MyOrderDetailView from '../views/orders/MyOrderDetailView.vue'
 import MyPerformerLikesView from '../views/me/MyPerformerLikesView.vue'
 import MyConcertLikesView from '../views/me/MyConcertLikesView.vue'
+import MyReviewableConcertsView from '../views/me/MyReviewableConcertsView.vue'
 import ForUView from '../views/me/ForUView.vue'
 import HoldCreateView from '../views/hold/HoldCreateView.vue'
 import HoldDetailView from '../views/hold/HoldDetailView.vue'
@@ -131,6 +132,7 @@ const routes = [
       childRoute('me/orders/:orderId', MyOrderDetailView, { requiresAuth: true }),
       childRoute('me/performers/likes', MyPerformerLikesView, { requiresAuth: true }),
       childRoute('me/concerts/likes', MyConcertLikesView, { requiresAuth: true }),
+      childRoute('me/reviews', MyReviewableConcertsView, { requiresAuth: true }),
       childRoute('me/foru', ForUView, { requiresAuth: true }),
       childRoute('hold', HoldCreateView, { requiresAuth: true }),
       childRoute('hold/:holdId', HoldDetailView, { requiresAuth: true }),
