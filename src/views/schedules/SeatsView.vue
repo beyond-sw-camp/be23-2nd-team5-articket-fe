@@ -15,7 +15,7 @@
         <span class="text-xs text-slate-600">선택됨</span>
       </div>
       <div class="flex items-center gap-1.5">
-        <span class="h-3 w-3 rounded-full" style="background:#f59e0b"></span>
+        <span class="h-3 w-3 rounded-full" style="background:#334155"></span>
         <span class="text-xs text-slate-600">선점 중</span>
       </div>
       <div class="flex items-center gap-1.5">
@@ -474,7 +474,7 @@ export default {
       switch (seat.status) {
         case 'AVAILABLE': return gradeColor(seat.grade)
         case 'HOLD':      // WebSocket 메시지 값
-        case 'HELD':      return '#f59e0b'  // DB enum 값
+        case 'HELD':      return '#334155'  // DB enum 값
         case 'SOLD':      return '#cbd5e1'
         default:          return '#e2e8f0'
       }
