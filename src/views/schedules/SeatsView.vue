@@ -22,6 +22,12 @@
         <span class="h-3 w-3 rounded-full" style="background:#cbd5e1; opacity:.5"></span>
         <span class="text-xs text-slate-600">판매 완료</span>
       </div>
+        <!-- 추가: 선택한 공연/회차 -->
+      <div class="ml-auto shrink-0 text-xs md:text-sm text-slate-600">
+        <span class="font-semibold text-slate-800">{{ scheduleTitle }}</span>
+        <span class="mx-2 text-slate-300">|</span>
+        <span>{{ formattedScheduleDate }}</span>
+      </div>
     </div>
 
     <!-- 메인: 캔버스 + 사이드바 -->
@@ -225,6 +231,8 @@ export default {
       stompClient:      null,      // WebSocket STOMP 클라이언트
       stageListJson:    null,      // 여러 무대(stage) JSON
       seatMapData:      null,      // seatMap API 응답 전체 (stage 폴백용)
+      scheduleTitle:    '',        // 추가: 공연명
+      scheduleDate:     null,      // 추가: 회차 일시
     }
   },
 
@@ -300,6 +308,18 @@ export default {
         }
       }
       return result
+    },
+    formattedScheduleDate() {
+      if (!this.scheduleDate) return '-'
+      const d = new Date(this.scheduleDate)
+      if (Number.isNaN(d.getTime())) return this.scheduleDate
+      const day = ['일', '월', '화', '수', '목', '금', '토'][d.getDay()]
+      const yyyy = d.getFullYear()
+      const mm = String(d.getMonth() + 1).padStart(2, '0')
+      const dd = String(d.getDate()).padStart(2, '0')
+      const hh = String(d.getHours()).padStart(2, '0')
+      const mi = String(d.getMinutes()).padStart(2, '0')
+      return `${yyyy}.${mm}.${dd}(${day}) ${hh}:${mi}`
     }
   },
 
@@ -366,7 +386,10 @@ export default {
     gradeColorOf(grade) {
       return gradeColor(grade)
     },
-
+    applyScheduleMeta(meta) {
+      this.scheduleTitle = meta?.concertTitle ?? meta?.concertName ?? meta?.title ?? ''
+      this.scheduleDate = meta?.scheduleDate ?? meta?.playTime ?? meta?.startAt ?? null
+    },
     async load() {
       const scheduleId = this.$route.params.scheduleId
       if (!scheduleId) return
@@ -379,14 +402,18 @@ export default {
         this.konvaStageInstance = null
       }
       try {
-        const [res, seatMapRes] = await Promise.allSettled([
+        const [res, seatMapRes, scheduleRes] = await Promise.allSettled([
           this.api.get(ENDPOINTS.seats(scheduleId)),
-          this.api.get(ENDPOINTS.seatMap(scheduleId))
+          this.api.get(ENDPOINTS.seatMap(scheduleId)),
+          this.api.get(ENDPOINTS.schedule(scheduleId))
         ])
         // seatMap API 응답 저장 (stage 정보 추출용)
         if (seatMapRes.status === 'fulfilled' && seatMapRes.value) {
           this.seatMapData = seatMapRes.value
           this.stageListJson = seatMapRes.value.stageListJson ?? null
+        }
+        if (scheduleRes.status === 'fulfilled' && scheduleRes.value) {
+          this.applyScheduleMeta(scheduleRes.value)
         }
         const seatsData = res.status === 'fulfilled' ? res.value : []
         const raw = Array.isArray(seatsData) ? seatsData : seatsData?.content ?? seatsData?.items ?? []
