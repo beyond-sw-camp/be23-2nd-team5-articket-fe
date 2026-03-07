@@ -252,7 +252,6 @@ export default {
           map[id] = {
             sectionId:    id,
             name:         seat.sectionName,
-            color:        seat.sectionColor,
             x:            seat.sectionX,
             y:            seat.sectionY,
             rotation:     seat.sectionRotation,
@@ -473,7 +472,7 @@ export default {
     seatFill(seat) {
       if (this.selectedSet.has(seat.seatId)) return '#3b82f6'
       switch (seat.status) {
-        case 'AVAILABLE': return seat.sectionColor || gradeColor(seat.grade)
+        case 'AVAILABLE': return gradeColor(seat.grade)
         case 'HOLD':      // WebSocket 메시지 값
         case 'HELD':      return '#f59e0b'  // DB enum 값
         case 'SOLD':      return '#cbd5e1'
