@@ -85,64 +85,33 @@
               <span class="text-sm text-slate-400">저장된 배치도가 없습니다</span>
               <span class="text-xs mt-1 text-slate-400">레이아웃 편집 후 저장해주세요</span>
             </div>
-            <div class="flex justify-center border-t border-slate-200 bg-slate-50 px-4 py-3">
-              <UiButton class="h-9 px-4" @click="$router.push(`/admin/seat-maps/${seatMap.id}/layout`)">
-                레이아웃 편집
-              </UiButton>
-            </div>
           </div>
         </div>
 
-        <!-- 정보 및 관리 (오른쪽) -->
-        <div class="lg:col-span-2 space-y-4">
+        <!-- 정보 (오른쪽) -->
+        <div class="lg:col-span-2">
           <UiCard>
-            <div class="space-y-4">
+            <dl class="space-y-4">
               <div>
-                <label class="block text-xs font-semibold text-slate-500 mb-1">좌석맵 이름</label>
-                <div class="flex gap-2">
-                  <input
-                    v-model="seatMapNameDraft"
-                    type="text"
-                    class="flex-1 min-w-0 rounded-xl border border-slate-200 px-3 py-2.5 text-sm text-slate-900 focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
-                    placeholder="좌석맵 이름"
-                  />
-                  <UiButton class="shrink-0" :disabled="savingSeatMapName" @click="updateSeatMapName">
-                    {{ savingSeatMapName ? '저장 중…' : '이름 저장' }}
-                  </UiButton>
-                </div>
+                <dt class="text-xs font-semibold text-slate-500">좌석맵 이름</dt>
+                <dd class="mt-1 text-sm font-medium text-slate-900">{{ seatMap.name || '-' }}</dd>
               </div>
-
               <div class="border-t border-slate-100 pt-4">
-                <label class="block text-xs font-semibold text-slate-500 mb-2">게시 상태</label>
-                <div class="flex flex-wrap items-center gap-2">
-                  <button
-                    v-for="s in ['DRAFT', 'PUBLISHED', 'ARCHIVED']"
-                    :key="s"
-                    type="button"
-                    class="rounded-xl px-4 py-2 text-sm font-medium transition-colors"
-                    :class="statusDraft === s
-                      ? s === 'PUBLISHED' ? 'bg-green-600 text-white ring-2 ring-green-600 ring-offset-2'
-                        : s === 'ARCHIVED' ? 'bg-amber-600 text-white ring-2 ring-amber-600 ring-offset-2'
-                        : 'bg-slate-800 text-white ring-2 ring-slate-800 ring-offset-2'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
-                    :disabled="statusUpdating"
-                    @click="statusDraft = s"
+                <dt class="text-xs font-semibold text-slate-500">게시 상태</dt>
+                <dd class="mt-1">
+                  <UiBadge
+                    :tone="seatMap.status === 'PUBLISHED' ? 'solid' : 'soft'"
+                    :color="seatMap.status === 'PUBLISHED' ? 'green' : seatMap.status === 'ARCHIVED' ? 'amber' : 'slate'"
                   >
-                    {{ s === 'DRAFT' ? '임시저장' : s === 'PUBLISHED' ? '게시' : '폐기' }}
-                  </button>
-                  <UiButton
-                    class="ml-2 shrink-0"
-                    :disabled="statusUpdating || statusDraft === seatMap.status"
-                    @click="updateStatus(statusDraft)"
-                  >
-                    {{ statusUpdating ? '저장 중…' : '저장' }}
-                  </UiButton>
-                </div>
-                <p v-if="statusDraft !== seatMap.status" class="mt-2 text-xs text-amber-600">변경된 상태를 저장해주세요</p>
+                    {{ seatMap.status === 'PUBLISHED' ? '게시' : seatMap.status === 'ARCHIVED' ? '폐기' : '임시저장' }}
+                  </UiBadge>
+                </dd>
               </div>
-
-              <p v-if="successMessage" class="text-sm text-green-600">{{ successMessage }}</p>
-            </div>
+              <div v-if="seatMap.version != null" class="border-t border-slate-100 pt-4">
+                <dt class="text-xs font-semibold text-slate-500">버전</dt>
+                <dd class="mt-1 text-sm text-slate-700">v{{ seatMap.version }}</dd>
+              </div>
+            </dl>
           </UiCard>
         </div>
       </div>
@@ -281,15 +250,33 @@ export default {
       return this.$route.query?.venueId || this.seatMap?.venue_id || this.seatMap?.venueId
     },
     availableDates() {
-      return [...new Set(this.schedules.map((s) => (s.startAt || s.date || '').slice(0, 10)).filter(Boolean))]
+      const set = new Set()
+      for (const s of this.schedules) {
+        const raw = s.play_time ?? s.playTime ?? s.startAt ?? s.date ?? ''
+        if (!raw) continue
+        const d = new Date(raw)
+        if (isNaN(d)) continue
+        set.add(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`)
+      }
+      return [...set].sort()
     },
     schedulesByDate() {
       const map = {}
       for (const s of this.schedules) {
-        const date = (s.startAt || s.date || '').slice(0, 10)
-        if (!date) continue
-        if (!map[date]) map[date] = []
-        map[date].push(s)
+        const raw = s.play_time ?? s.playTime ?? s.startAt ?? s.date ?? ''
+        if (!raw) continue
+        const d = new Date(raw)
+        if (isNaN(d)) continue
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+        if (!map[key]) map[key] = []
+        map[key].push({
+          scheduleId: s.id,
+          playTime: raw.length > 10 ? raw.slice(11, 16) : '',
+          status: s.status
+        })
+      }
+      for (const k of Object.keys(map)) {
+        map[k].sort((a, b) => a.playTime.localeCompare(b.playTime))
       }
       return map
     }
