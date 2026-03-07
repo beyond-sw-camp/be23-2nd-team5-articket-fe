@@ -151,7 +151,7 @@
         <!-- 공연 목록 (왼쪽) -->
         <div class="lg:col-span-3 overflow-hidden rounded-2xl border border-slate-200 bg-white">
           <div class="flex items-center justify-between border-b border-slate-100 bg-slate-50 px-4 py-3">
-            <span class="text-sm font-semibold text-slate-700">이 공연장의 공연</span>
+            <span class="text-sm font-semibold text-slate-700">이 좌석맵의 공연</span>
             <span v-if="concertsLoading" class="text-xs text-slate-400">불러오는 중…</span>
             <span v-else class="text-xs text-slate-400">{{ concerts.length }}건</span>
           </div>
@@ -340,14 +340,54 @@ export default {
       this.concertsLoading = true
       try {
         const res = await this.api.get(ENDPOINTS.venueConcerts(this.venueId))
-        this.concerts = res?.content ?? res?.items ?? (Array.isArray(res) ? res : [])
+        const allConcerts = res?.content ?? res?.items ?? (Array.isArray(res) ? res : [])
+
+        // 각 공연의 스케줄 목록 병렬 조회
+        const scheduleResults = await Promise.allSettled(
+          allConcerts.map((c) => this.api.get(ENDPOINTS.concertSchedules(c.id)))
+        )
+
+        // 스케줄별 seat-map 병렬 조회 (어느 스케줄이 이 좌석맵을 쓰는지 확인)
+        const concertScheduleMap = []
+        for (let i = 0; i < allConcerts.length; i++) {
+          const r = scheduleResults[i]
+          const schedules = r.status === 'fulfilled'
+            ? (r.value?.content ?? r.value?.items ?? (Array.isArray(r.value) ? r.value : []))
+            : []
+          concertScheduleMap.push({ concert: allConcerts[i], schedules })
+        }
+
+        const allSchedules = concertScheduleMap.flatMap(({ schedules }) => schedules)
+        const seatMapResults = await Promise.allSettled(
+          allSchedules.map((s) => this.api.get(ENDPOINTS.seatMap(s.id)))
+        )
+
+        // scheduleId → seatMapId 매핑
+        const seatMapById = {}
+        for (let i = 0; i < allSchedules.length; i++) {
+          const r = seatMapResults[i]
+          if (r.status === 'fulfilled') {
+            seatMapById[allSchedules[i].id] = String(r.value?.seatMapId ?? '')
+          }
+        }
+
+        const filtered = []
+        for (const { concert, schedules } of concertScheduleMap) {
+          const matchingSchedules = schedules.filter(
+            (s) => seatMapById[s.id] === String(this.seatMapId)
+          )
+          if (matchingSchedules.length > 0) {
+            filtered.push({ ...concert, _schedules: matchingSchedules })
+          }
+        }
+        this.concerts = filtered
       } catch (err) {
         this.concerts = []
       } finally {
         this.concertsLoading = false
       }
     },
-    async selectConcert(concert) {
+    selectConcert(concert) {
       if (this.selectedConcertId === concert.id) {
         this.selectedConcertId = null
         this.selectedConcertTitle = ''
@@ -356,16 +396,7 @@ export default {
       }
       this.selectedConcertId = concert.id
       this.selectedConcertTitle = concert.title || ''
-      this.schedulesLoading = true
-      this.schedules = []
-      try {
-        const res = await this.api.get(ENDPOINTS.concertSchedules(concert.id))
-        this.schedules = res?.content ?? res?.items ?? (Array.isArray(res) ? res : [])
-      } catch (err) {
-        this.schedules = []
-      } finally {
-        this.schedulesLoading = false
-      }
+      this.schedules = concert._schedules ?? []
     },
     async updateStatus(status) {
       if (!this.seatMapId || this.seatMap?.status === status) return
