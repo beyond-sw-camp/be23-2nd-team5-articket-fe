@@ -121,6 +121,11 @@
                 placeholder="6자 이상 입력"
                 class="min-w-0 flex-1 bg-transparent text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none"
               />
+              <span
+                v-if="form.password"
+                class="shrink-0 text-xs font-semibold transition-colors"
+                :class="strengthTextColor"
+              >{{ strengthLabel }}</span>
               <button
                 type="button"
                 class="shrink-0 rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 focus:outline-none focus:ring-2 focus:ring-slate-300"
@@ -231,6 +236,28 @@ export default {
       loading: false,
       authApi: null,
     }
+  },
+  computed: {
+    passwordStrengthScore() {
+      const p = this.form.password
+      if (!p) return 0
+      let score = 0
+      if (/[A-Z]/.test(p)) score++
+      if (/[a-z]/.test(p)) score++
+      if (/[0-9]/.test(p)) score++
+      if (/[^A-Za-z0-9]/.test(p)) score++
+      return score
+    },
+    strengthLabel() {
+      if (this.passwordStrengthScore === 4) return '안전'
+      if (this.passwordStrengthScore >= 2) return '보통'
+      return '약함'
+    },
+    strengthTextColor() {
+      if (this.passwordStrengthScore === 4) return 'text-green-600'
+      if (this.passwordStrengthScore >= 2) return 'text-yellow-500'
+      return 'text-red-500'
+    },
   },
   created() {
     this.authApi = useAuthApi()
