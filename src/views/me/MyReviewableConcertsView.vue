@@ -72,7 +72,7 @@
         <div class="flex shrink-0 flex-col gap-2 sm:items-end">
           <RouterLink
             :to="reviewWriteLink(item.concertId)"
-            class="inline-flex h-10 items-center justify-center rounded-xl bg-indigo-600 px-5 text-sm font-semibold text-white transition hover:bg-indigo-700"
+            class="inline-flex h-10 items-center justify-center rounded-xl bg-red-600 px-5 text-sm font-semibold text-white transition hover:bg-red-700"
           >
             리뷰 작성하기
           </RouterLink>
