@@ -340,7 +340,7 @@
       <div
         class="rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 px-8 py-5 flex items-center justify-between cursor-pointer hover:from-violet-700 hover:to-indigo-700 transition-all"
         role="button"
-        @click="$router.push('/concerts')"
+        @click="$router.push('/me/reviews')"
       >
         <div class="flex items-center gap-4">
           <span class="text-2xl" aria-hidden="true">🎫</span>
@@ -387,7 +387,7 @@
           />
           <div class="flex-1 min-w-0">
             <div class="flex items-center justify-between mb-1">
-              <span class="text-[11px] font-bold text-slate-500">{{ r.nickname }}</span>
+              <span class="text-[11px] font-bold text-slate-500">{{ maskNickname(r.nickname) }}</span>
               <div class="flex items-center gap-0.5">
                 <Star
                   v-for="s in 5"
@@ -417,6 +417,7 @@ import EmptyState from '../../components/common/EmptyState.vue'
 import { useApi } from '../../composables/useApi'
 import { ENDPOINTS } from '../../lib/api/endpoints'
 import { CONCERT_CATEGORY_OPTIONS, getCategoryLabel } from '../../lib/constants/concertCategory'
+import { maskNickname } from '../../lib/utils/maskNickname'
 
 const DEFAULT_IMG = 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?auto=format&fit=crop&w=400&q=60'
 
@@ -524,6 +525,7 @@ export default {
 
   methods: {
     getCategoryLabel,
+    maskNickname,
 
     // ─── 히어로 슬라이드 제어 ────────────────────────────────
     startHeroSlide() {
