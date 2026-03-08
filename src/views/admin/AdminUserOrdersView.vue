@@ -103,7 +103,7 @@ const STATUS_MAP = {
 }
 
 const PERIOD_MAP = {
-  '전체': 0,
+  '전체': null,
   '1개월': 1,
   '3개월': 3,
   '6개월': 6
@@ -126,7 +126,7 @@ export default {
   data() {
     return {
       filters: ['전체', '1개월', '3개월', '6개월'],
-      activeFilter: '1개월',
+      activeFilter: '전체',
       orders: [],
       loading: false,
       api: null

@@ -8,17 +8,21 @@
       <UiBadge tone="soft">ADMIN</UiBadge>
     </div>
 
+    <!-- 역할 탭 -->
+    <div class="flex gap-1 border-b border-slate-200">
+      <button
+        v-for="tab in roleTabs"
+        :key="tab.value"
+        class="px-5 py-2.5 text-sm font-medium transition-colors"
+        :class="searchRole === tab.value
+          ? 'border-b-2 border-red-500 text-red-600'
+          : 'text-slate-500 hover:text-slate-700'"
+        @click="selectRole(tab.value)"
+      >{{ tab.label }}</button>
+    </div>
+
     <!-- 검색 필터 -->
     <div class="flex flex-wrap gap-2 rounded-2xl border border-slate-200 bg-white p-4">
-      <select
-        v-model="searchRole"
-        class="h-10 rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
-      >
-        <option value="">역할 전체</option>
-        <option value="USER">USER</option>
-        <option value="ORGANIZER">ORGANIZER</option>
-        <option value="ADMIN">ADMIN</option>
-      </select>
       <input
         v-model="searchEmail"
         type="text"
@@ -81,11 +85,15 @@ export default {
         { key: 'createdTime', label: '가입일' },
         { key: 'actions', label: '작업' }
       ],
+      roleTabs: [
+        { label: 'USER', value: 'USER' },
+        { label: 'ORGANIZER', value: 'ORGANIZER' }
+      ],
       api: null,
       rows: [],
       loading: false,
       searchEmail: '',
-      searchRole: '',
+      searchRole: 'USER',
       page: 0,
       totalPages: 1,
       pageSize: 15
@@ -101,6 +109,11 @@ export default {
     }
   },
   methods: {
+    selectRole(role) {
+      this.searchRole = role
+      this.page = 0
+      this.loadUsers()
+    },
     doSearch() {
       this.page = 0
       this.loadUsers()

@@ -267,15 +267,9 @@ export default {
 
       const phone = (this.form.phoneNumber || '').trim()
       if (phone) {
-        const phoneRe = /^01[0-9]-?[0-9]{3,4}-?[0-9]{4}$/
-        const digitsOnly = phone.replace(/\D/g, '')
-        if (
-          digitsOnly.length < 10 ||
-          digitsOnly.length > 11 ||
-          !phoneRe.test(phone.replace(/\s/g, ''))
-        ) {
-          e.phoneNumber =
-            '올바른 휴대폰 번호를 입력해 주세요. (예: 010-1234-5678)'
+        const phoneRe = /^010-\d{4}-\d{4}$/
+        if (!phoneRe.test(phone)) {
+          e.phoneNumber = '전화번호는 010-xxxx-xxxx 형식이어야 합니다.'
           valid = false
         }
       }
@@ -318,7 +312,7 @@ export default {
           name: this.form.name.trim(),
           email: this.form.email.trim(),
           password: this.form.password,
-          phone_number: this.form.phoneNumber.trim(),
+          phoneNumber: this.form.phoneNumber.trim(),
         })
 
         if (success) {
@@ -341,7 +335,7 @@ export default {
       const e = { ...this.errors }
       for (const { field, reason } of data.details) {
         if (!reason) continue
-        const key = field === 'phone_number' ? 'phoneNumber' : field
+        const key = field
         if (key in e) e[key] = reason
       }
       this.errors = e

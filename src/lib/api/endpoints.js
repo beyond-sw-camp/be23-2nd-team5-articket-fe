@@ -173,8 +173,8 @@ export const ENDPOINTS = {
   },
   adminMemberDetail: (memberId) => `/member/${memberId}`,
   adminUserOrders: (userId, period) => period != null
-    ? `/admin/users/${userId}/orders?period=${period}`
-    : `/admin/users/${userId}/orders`,
+    ? `/orders?memberId=${userId}&period=${period}`
+    : `/orders?memberId=${userId}`,
   adminUserConcerts: (userId, params = {}) => {
     const p = new URLSearchParams()
     if (params.page != null) p.set('page', String(params.page))
