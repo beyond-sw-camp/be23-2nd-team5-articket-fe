@@ -76,7 +76,6 @@ import { useMe } from '../composables/useMe'
 import { useSSE } from '../composables/useSSE'
 import NotificationPanel from '../components/common/NotificationPanel.vue'
 import ProfileDropdown from '../components/common/ProfileDropdown.vue'
-import ToastNotification from '../components/common/ToastNotification.vue'
 
 const ORGANIZER_NAV = [
   { to: '/organizer/dashboard', label: '대시보드', icon: LayoutGrid },

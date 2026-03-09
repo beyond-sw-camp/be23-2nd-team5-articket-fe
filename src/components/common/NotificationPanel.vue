@@ -35,8 +35,8 @@
           <li
             v-for="n in sseState.notifications"
             :key="n.id"
-            class="flex items-start gap-3 px-4 py-3 cursor-pointer"
-            :class="notifItemClass(n)"
+            class="flex items-start gap-3 px-4 py-3"
+            :class="[notifItemClass(n), isNavigable(n) ? 'cursor-pointer' : '']"
             @click="handleClick(n)"
           >
             <span class="mt-0.5 text-base">{{ notifIcon(n.eventName) }}</span>
@@ -157,14 +157,39 @@ export default {
       return '알림'
     },
     handleClick(n) {
-      // linkUrl이 있으면 해당 경로로 이동
-      if (n.linkUrl) {
-        try {
-          this.$router.push(n.linkUrl)
-        } catch (_) {}
+      const path = this.normalizeLinkUrl(n)
+      if (!path) {
+        // 라우팅 필요 없는 알림: 단순 정보 노출만
+        return
+      }
+      try {
+        this.$router.push({ path })
+      } catch (_) {
+        // 라우팅 실패해도 알림 읽음 처리만 유지
       }
       // 클릭 시 읽음 처리
       n.read = true
+    },
+    isNavigable(n) {
+      return !!this.normalizeLinkUrl(n)
+    },
+    /**
+     * 백엔드가 내려준 linkUrl을 현재 서비스 라우트에 맞게 정규화한다.
+     * - /mypage/orders/** → /me/orders/** 로 보정
+     * - 그 외 내부 경로(/로 시작)만 그대로 허용
+     * - 나머지는 null 반환 (라우팅하지 않음)
+     */
+    normalizeLinkUrl(n) {
+      const rawUrl = typeof n.linkUrl === 'string' ? n.linkUrl : null
+      if (!rawUrl) return null
+      if (!rawUrl.startsWith('/')) return null
+      if (rawUrl.startsWith('/mypage/orders')) {
+        const rest = rawUrl.slice('/mypage/orders'.length)
+        if (rest && rest !== '/') return `/me/orders${rest}`
+        return '/me/orders'
+      }
+      // 그 외 /로 시작하는 경로는 그대로 사용 (실제 라우트에 맞게 BE가 관리)
+      return rawUrl
     },
     formatTime(time) {
       try {
