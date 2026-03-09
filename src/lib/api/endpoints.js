@@ -56,7 +56,7 @@ export const ENDPOINTS = {
   },
   requestOrganizer: () => `/users/requestOrganizer`,
   myOrders: (period) => period != null ? `/users/me/orders?period=${period}` : `/users/me/orders`,
-  myOrder: (orderId) => `/users/me/orders/${orderId}`,
+  myOrder: (orderId) => `/order/${orderId}`,
   seatHold: (seatId) => `/seat-holds/${seatId}`,
 
   orderCreate: () => `/order/create`,
@@ -230,5 +230,9 @@ export const ENDPOINTS = {
   scheduleOrganizerAddPerformer: (scheduleId) => `/schedules/organizer/${scheduleId}/performers`,
   scheduleOrganizerUpdatePerformer: (scheduleId, performerId) => `/schedules/organizer/${scheduleId}/performers/${performerId}`,
   scheduleOrganizerDeletePerformer: (scheduleId, performerId) => `/schedules/organizer/${scheduleId}/performers/${performerId}`,
+
+  // PAYMENT
+  paymentCancelPreview: () => `/payment/cancel/preview`,
+  paymentCancel: () => `/payment/cancel`,
 }
 
