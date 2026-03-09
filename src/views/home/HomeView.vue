@@ -3,8 +3,8 @@
 
     <!-- ───── ① 히어로 배너 ───── -->
     <section
-      class="relative bg-slate-950 overflow-hidden"
-      style="width:100vw;margin-left:calc(50% - 50vw)"
+      class="relative overflow-hidden"
+      :style="heroSectionStyle"
     >
       <!-- 배너 이미지 영역 + 썸네일 스트립 (하단선 일치) -->
       <div class="relative" style="height:420px">
@@ -20,7 +20,7 @@
             v-if="heroBanner"
             :key="heroBanner.id"
             class="absolute inset-0 flex items-center justify-center cursor-pointer group"
-            :style="{ background: bannerBgGradient ?? undefined }"
+            :style="heroBannerBoxStyle"
             @click="$router.push(heroBanner.linkUrl)"
           >
             <img
@@ -411,7 +411,6 @@
 </template>
 
 <script>
-import axios from 'axios'
 import { ChevronLeft, ChevronRight, Star, RefreshCw } from 'lucide-vue-next'
 import EmptyState from '../../components/common/EmptyState.vue'
 import { useApi } from '../../composables/useApi'
@@ -477,6 +476,23 @@ export default {
     heroBanner() {
       if (!this.heroItems.length) return null
       return this.heroItems[this.heroIndex % this.heroItems.length] ?? null
+    },
+    /** 배너 이미지 색상 기반 그라데이션; 없으면 기본 다크 그라데이션 (항상 값 보장) */
+    effectiveBannerGradient() {
+      if (this.bannerBgGradient) return this.bannerBgGradient
+      return 'linear-gradient(to right, rgb(30,41,59), rgb(15,23,42))'
+    },
+    heroSectionStyle() {
+      return {
+        width: '100vw',
+        marginLeft: 'calc(50% - 50vw)',
+        background: this.effectiveBannerGradient,
+      }
+    },
+    heroBannerBoxStyle() {
+      return {
+        background: this.effectiveBannerGradient,
+      }
     },
     openingSoonItems() {
       return this.openingSoon
@@ -547,35 +563,16 @@ export default {
     },
 
     // ─── 배너 좌·우 엣지 색상 추출 → 배경 그라데이션 ────────
-    /** CORS 등으로 추출 실패 시 사용할 기본 그라데이션 (slate-800 ~ slate-900) */
     getBannerFallbackGradient() {
       return 'linear-gradient(to right, rgb(30,41,59), rgb(15,23,42))'
-    },
-    /** S3 등 외부 도메인은 CORS 미허용 시 추출 불가 → 추출 시도 시 CORS 에러 발생. 해당 URL이면 추출 건너뜀 */
-    canAttemptBannerColorExtraction(imageUrl) {
-      if (!imageUrl || typeof window === 'undefined') return false
-      try {
-        const u = new URL(imageUrl, window.location.origin)
-        if (u.origin === window.location.origin) return true
-        if (u.protocol === 'data:' || u.protocol === 'blob:') return true
-        const apiBase = (import.meta.env.VITE_API_BASE || 'http://localhost:8082').replace(/\/$/, '')
-        const apiOrigin = new URL(apiBase, window.location.origin).origin
-        return u.origin === apiOrigin
-      } catch (_) {
-        return false
-      }
     },
     async extractBannerColors(imageUrl, bannerId) {
       if (!imageUrl) {
         this.applyBannerGradient(bannerId, this.getBannerFallbackGradient())
         return
       }
-      if (!this.canAttemptBannerColorExtraction(imageUrl)) {
-        this.applyBannerGradient(bannerId, this.getBannerFallbackGradient())
-        return
-      }
       try {
-        let colors = await this.sampleBannerEdgesFromUrl(imageUrl)
+        const colors = await this.sampleBannerEdges(imageUrl)
         if (colors) {
           const { left, right } = colors
           const gradient = `linear-gradient(to right, rgb(${left.r},${left.g},${left.b}), rgb(${right.r},${right.g},${right.b}))`
@@ -583,102 +580,19 @@ export default {
         } else {
           this.applyBannerGradient(bannerId, this.getBannerFallbackGradient())
         }
-        // 나머지 배너도 미리 추출 (외부 URL은 시도하지 않음 → CORS 방지)
-        this.heroItems.forEach(async (b) => {
-          if (b.id !== bannerId && !this.bannerBgCache[b.id]) {
-            if (!this.canAttemptBannerColorExtraction(b.imageUrl)) {
-              this.bannerBgCache[b.id] = this.getBannerFallbackGradient()
-              return
-            }
-            const c = await this.sampleBannerEdgesFromUrl(b.imageUrl).catch(() => null)
-            if (c) {
-              const g = `linear-gradient(to right, rgb(${c.left.r},${c.left.g},${c.left.b}), rgb(${c.right.r},${c.right.g},${c.right.b}))`
-              this.bannerBgCache[b.id] = g
-            } else {
-              this.bannerBgCache[b.id] = this.getBannerFallbackGradient()
-            }
-          }
-        })
       } catch (_) {
         this.applyBannerGradient(bannerId, this.getBannerFallbackGradient())
       }
-    },
-    /** 배너 이미지 URL을 같은 출처로 변환 (프록시 사용 시 CORS 회피) */
-    getFetchUrlForBanner(imageUrl) {
-      if (!imageUrl || typeof window === 'undefined') return imageUrl
-      const apiBase = (import.meta.env.VITE_API_BASE || 'http://localhost:8082').replace(/\/$/, '')
-      try {
-        const u = new URL(imageUrl, window.location.origin)
-        const baseUrl = new URL(apiBase, window.location.origin)
-        if (u.origin === baseUrl.origin && u.origin !== window.location.origin) {
-          return window.location.origin + '/api' + u.pathname
-        }
-      } catch (_) {}
-      return imageUrl
-    },
-    /** fetch 또는 axios(blob)로 이미지 받아서 blob URL로 샘플링 (CORS 회피) */
-    async sampleBannerEdgesFromUrl(imageUrl) {
-      const tryWithBlob = async (blob) => {
-        const blobUrl = URL.createObjectURL(blob)
-        try {
-          return await this.sampleBannerEdges(blobUrl)
-        } finally {
-          URL.revokeObjectURL(blobUrl)
-        }
-      }
-      // 1) 같은 출처로 프록시 URL로 fetch 시도 (개발 시 Vite proxy 사용)
-      const fetchUrl = this.getFetchUrlForBanner(imageUrl)
-      if (fetchUrl !== imageUrl) {
-        try {
-          const res = await fetch(fetchUrl, { mode: 'cors', credentials: 'omit' })
-          if (res.ok) {
-            const ct = (res.headers.get('content-type') || '').toLowerCase()
-            if (ct.startsWith('image/') || ct.includes('octet-stream')) {
-              const blob = await res.blob()
-              const out = await tryWithBlob(blob)
-              if (out) return out
-            }
-          }
-        } catch (_) {}
-      }
-      // 2) 이미지 URL로 직접 axios GET (백엔드 CORS 허용 시 동작)
-      try {
-        const { data } = await axios.get(imageUrl, {
-          responseType: 'blob',
-          timeout: 10000,
-          validateStatus: (s) => s === 200,
-        })
-        if (data && data.size > 0) {
-          const out = await tryWithBlob(data)
-          if (out) return out
-        }
-      } catch (_) {}
-      // 3) img 엘리먼트로 로드 후 캔버스 샘플 (crossOrigin 허용된 경우만 성공)
-      return this.sampleBannerEdges(imageUrl)
     },
     applyBannerGradient(bannerId, gradient) {
       this.bannerBgCache[bannerId] = gradient
       if (this.heroBanner?.id === bannerId) this.bannerBgGradient = gradient
     },
+    /** img 엘리먼트로 이미지를 로드한 뒤 캔버스에서 좌·우 엣지 평균 색상을 샘플링 */
     sampleBannerEdges(url) {
       return new Promise((resolve) => {
         const img = new Image()
-        try {
-          if (url.startsWith('data:') || url.startsWith('blob:')) {
-            img.crossOrigin = ''
-          } else if (typeof window !== 'undefined' && window.location?.origin) {
-            const u = new URL(url, window.location.origin)
-            if (u.origin === window.location.origin) {
-              img.crossOrigin = ''
-            } else {
-              img.crossOrigin = 'anonymous'
-            }
-          } else {
-            img.crossOrigin = 'anonymous'
-          }
-        } catch (_) {
-          img.crossOrigin = 'anonymous'
-        }
+        img.crossOrigin = 'anonymous'
         const timer = setTimeout(() => resolve(null), 8000)
 
         img.onload = () => {
@@ -688,10 +602,8 @@ export default {
             const ch = 100
             const iw = img.naturalWidth || img.width
             const ih = img.naturalHeight || img.height
-            if (!iw || !ih) {
-              resolve(null)
-              return
-            }
+            if (!iw || !ih) { resolve(null); return }
+
             const scale = Math.min(cw / iw, ch / ih)
             const destW = iw * scale
             const destH = ih * scale
@@ -702,54 +614,39 @@ export default {
             canvas.width = cw
             canvas.height = ch
             const ctx = canvas.getContext('2d')
-            if (!ctx) {
-              resolve(null)
-              return
-            }
+            if (!ctx) { resolve(null); return }
+
             ctx.drawImage(img, 0, 0, iw, ih, destX, destY, destW, destH)
 
             const sampleWidth = Math.max(8, Math.min(20, Math.floor(destW * 0.15)))
             const avg = (x0, y0, w, h) => {
-              const x = Math.max(0, Math.floor(x0))
-              const y = Math.max(0, Math.floor(y0))
-              const ww = Math.max(1, Math.floor(w))
-              const hh = Math.max(1, Math.floor(h))
-              const d = ctx.getImageData(x, y, ww, hh).data
-              let r = 0, g = 0, b = 0
-              const len = d.length
-              let n = 0
-              for (let i = 0; i < len; i += 4) {
-                const alpha = d[i + 3] / 255
-                if (alpha < 0.15) continue
-                r += d[i] * alpha
-                g += d[i + 1] * alpha
-                b += d[i + 2] * alpha
-                n += alpha
+              const d = ctx.getImageData(
+                Math.max(0, Math.floor(x0)),
+                Math.max(0, Math.floor(y0)),
+                Math.max(1, Math.floor(w)),
+                Math.max(1, Math.floor(h))
+              ).data
+              let r = 0, g = 0, b = 0, n = 0
+              for (let i = 0; i < d.length; i += 4) {
+                const a = d[i + 3] / 255
+                if (a < 0.15) continue
+                r += d[i] * a; g += d[i + 1] * a; b += d[i + 2] * a; n += a
               }
               if (n === 0) return null
-              return {
-                r: Math.round(r / n),
-                g: Math.round(g / n),
-                b: Math.round(b / n),
-              }
+              return { r: Math.round(r / n), g: Math.round(g / n), b: Math.round(b / n) }
             }
 
             const left = avg(destX, destY, sampleWidth, destH)
             const right = avg(destX + destW - sampleWidth, destY, sampleWidth, destH)
-            if (!left || !right) {
-              resolve(null)
-              return
-            }
+            if (!left || !right) { resolve(null); return }
             resolve({ left, right })
           } catch (_) {
+            // 캔버스 오염(tainted) 등 CORS 오류 → null 반환
             resolve(null)
           }
         }
 
-        img.onerror = () => {
-          clearTimeout(timer)
-          resolve(null)
-        }
+        img.onerror = () => { clearTimeout(timer); resolve(null) }
         img.src = url
       })
     },
@@ -778,8 +675,34 @@ export default {
         this.heroBanners = []
       } finally {
         this.bannersLoading = false
-        this.$nextTick(() => this.startHeroSlide())
+        this.$nextTick(() => {
+          // 모든 배너에 대해 색상 그라데이션을 미리 계산
+          this.preloadBannerGradients()
+          // 자동 슬라이드 시작
+          this.startHeroSlide()
+        })
       }
+    },
+    /** 히어로 배너 목록 전체에 대해 색상 그라데이션을 미리 계산 */
+    preloadBannerGradients() {
+      if (!this.heroItems.length) return
+      this.heroItems.forEach((b) => {
+        if (!b?.id || !b.imageUrl || this.bannerBgCache[b.id]) return
+        this.sampleBannerEdges(b.imageUrl)
+          .then((colors) => {
+            const gradient = colors
+              ? `linear-gradient(to right, rgb(${colors.left.r},${colors.left.g},${colors.left.b}), rgb(${colors.right.r},${colors.right.g},${colors.right.b}))`
+              : this.getBannerFallbackGradient()
+            this.bannerBgCache[b.id] = gradient
+            if (this.heroBanner?.id === b.id) this.bannerBgGradient = gradient
+          })
+          .catch(() => {
+            this.bannerBgCache[b.id] = this.getBannerFallbackGradient()
+            if (this.heroBanner?.id === b.id && !this.bannerBgGradient) {
+              this.bannerBgGradient = this.getBannerFallbackGradient()
+            }
+          })
+      })
     },
     // ──────────────────────────────────────────────────────────
 
