@@ -1,5 +1,5 @@
 <template>
-  <div class="bg-slate-50">
+  <div>
     <div class="mx-auto max-w-6xl px-4 py-8">
       <!-- 페이지 타이틀 -->
       <header class="mb-6 text-center">
@@ -134,7 +134,7 @@
           v-for="(item, idx) in rows"
           :key="item.id"
           type="button"
-          class="grid w-full grid-cols-[56px_minmax(0,1.8fr)_1.1fr_1.1fr_0.8fr] items-center border-b border-slate-100 px-4 py-3 text-left text-xs hover:bg-slate-50 last:border-b-0"
+          class="grid w-full grid-cols-[56px_minmax(0,1.8fr)_1.1fr_1.1fr_0.8fr] items-center border-b border-slate-100 px-4 py-3 text-left text-xs last:border-b-0"
 @click="$router.push(`/concerts/${item.id}`)"
           >
             <!-- 순위 -->
@@ -314,23 +314,40 @@ function toYyyyMmDd(date) {
 async function loadRanking() {
   loading.value = true
   try {
-    const res = await api.get(
-      ENDPOINTS.concertsRanking({
-        period: activePeriod.value,
-        baseDate: toYyyyMmDd(baseDate.value),
-        category: activeCategory.value || undefined,
-        page: 0,
-        size: 30,
-      }),
-    )
-    const list = res.items ?? res.content ?? (Array.isArray(res) ? res : [])
+    // 1차: 장르별 예매율 랭킹 전용 API 사용
+    const url = ENDPOINTS.concertsRanking({
+      period: activePeriod.value,
+      baseDate: toYyyyMmDd(baseDate.value),
+      category: activeCategory.value || undefined,
+      page: 0,
+      size: 30,
+    })
+    const res = await api.get(url)
+    const list = res?.items ?? res?.content ?? (Array.isArray(res) ? res : [])
     items.value = list.map(mapRankingItem)
-    if (res.baseDate) {
+    if (res?.baseDate) {
       const d = new Date(res.baseDate)
       if (!isNaN(d.getTime())) baseDate.value = d
     }
   } catch (_) {
-    items.value = []
+    // 백엔드에서 /concerts/ranking 미지원 시 기존 예매수 기반 목록 API로 폴백
+    try {
+      const fallbackUrl = ENDPOINTS.searchConcerts({
+        category: activeCategory.value || undefined,
+        page: 0,
+        size: 30,
+        sort: 'bookingCount,desc',
+      })
+      const res = await api.get(fallbackUrl)
+      const list = res?.items ?? res?.content ?? (Array.isArray(res) ? res : [])
+      items.value = list.map((c, i) => mapRankingItem({ ...c, rank: c.rank ?? i + 1 }))
+      if (res?.baseDate) {
+        const d = new Date(res.baseDate)
+        if (!isNaN(d.getTime())) baseDate.value = d
+      }
+    } catch (_) {
+      items.value = []
+    }
   } finally {
     loading.value = false
   }
