@@ -43,6 +43,13 @@ export function useSSE() {
       return
     }
 
+    // 일부 환경에서 connect 이벤트 외에도 onopen만 오는 경우를 대비
+    es.onopen = (e) => {
+      console.log('[SSE] onopen:', e)
+      state.connected = true
+      reconnectAttempts = 0
+    }
+
     es.addEventListener('connect', (e) => {
       console.log('[SSE] 연결 성공:', e.data)
       state.connected = true
@@ -54,12 +61,17 @@ export function useSSE() {
         console.log(`[SSE] 이벤트 수신 (${eventName}):`, e.data)
         try {
           const data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data
+          const now = new Date()
           state.notifications.unshift({
             id: Date.now() + Math.random(),
             eventName,
+            type: data.type ?? null,
             message: data.message ?? '새 알림이 있습니다.',
-            time: new Date(),
+            linkUrl: data.linkUrl ?? null,
+            receiverId: data.receiverId ?? null,
+            time: now,
             read: false,
+            raw: data,
           })
         } catch (err) {
           console.warn('[SSE] 데이터 파싱 실패:', e.data, err)

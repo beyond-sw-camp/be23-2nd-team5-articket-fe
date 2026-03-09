@@ -66,9 +66,6 @@
         <RouterView />
       </main>
     </div>
-
-    <!-- 실시간 알림 Toast -->
-    <ToastNotification v-if="sseState" :notifications="sseState.notifications" />
   </div>
 </template>
 
@@ -110,7 +107,6 @@ export default {
     Megaphone,
     NotificationPanel,
     ProfileDropdown,
-    ToastNotification,
   },
   data() {
     return {

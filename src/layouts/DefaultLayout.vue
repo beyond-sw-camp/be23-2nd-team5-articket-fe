@@ -106,9 +106,6 @@
       </div>
     </div>
 
-    <!-- 실시간 알림 Toast (로그인 시에만 표시) -->
-    <ToastNotification v-if="isLoggedIn && sseState" :notifications="sseState.notifications" />
-
     <main
       class="mx-auto max-w-6xl px-4 pb-16 transition-[padding]"
       :class="showOrganizerBanner ? 'pt-40' : 'pt-32'"
@@ -197,7 +194,6 @@ import { Search, Bell, LogIn, Ticket, Navigation } from 'lucide-vue-next'
 import UiButton from '../components/common/UiButton.vue'
 import UiBadge from '../components/common/UiBadge.vue'
 import UiModal from '../components/common/UiModal.vue'
-import ToastNotification from '../components/common/ToastNotification.vue'
 import NotificationPanel from '../components/common/NotificationPanel.vue'
 import ProfileDropdown from '../components/common/ProfileDropdown.vue'
 import { useRole } from '../composables/useRole'
@@ -217,7 +213,6 @@ export default {
     UiButton,
     UiBadge,
     UiModal,
-    ToastNotification,
     NotificationPanel,
     ProfileDropdown,
   },
@@ -345,6 +340,21 @@ export default {
       if (v && this._me?.refetch) this._me.refetch()
       if (v) this._sse?.connect()
       else this._sse?.disconnect()
+    },
+    // SSE 알림 기반 추가 UX 처리
+    'sseState.notifications'(list) {
+      if (!Array.isArray(list) || list.length === 0) return
+      const latest = list[0]
+      if (!latest) return
+      // 주최자 승인 알림 수신 시: 프로필/토큰을 즉시 갱신하여 UI에 반영
+      if (latest.eventName === 'admin' && latest.type === 'ORGANIZER_APPROVED') {
+        if (this._me?.refetch) {
+          this._me
+            .refetch()
+            .then((profile) => this.maybeRefreshTokenAfterApproval(profile))
+            .catch(() => {})
+        }
+      }
     },
     // 주최자 승인 후 프로필만 갱신된 경우: 토큰 갱신으로 role 반영
     meProfile: {
