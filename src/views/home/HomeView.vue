@@ -233,7 +233,7 @@
       <div class="flex flex-col items-center gap-2 mb-5">
         <h2 class="text-xl font-bold text-slate-900">오픈 예정</h2>
         <RouterLink
-          to="/concerts"
+          to="/concerts/upcoming"
           class="flex items-center gap-0.5 text-sm text-slate-500 hover:text-red-600 transition-colors"
         >
           오픈 예정 공연 전체보기 <ChevronRight class="h-3.5 w-3.5" />
@@ -340,7 +340,7 @@
       <div
         class="rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 px-8 py-5 flex items-center justify-between cursor-pointer hover:from-violet-700 hover:to-indigo-700 transition-all"
         role="button"
-        @click="$router.push('/concerts')"
+        @click="$router.push('/me/reviews')"
       >
         <div class="flex items-center gap-4">
           <span class="text-2xl" aria-hidden="true">🎫</span>
@@ -387,7 +387,7 @@
           />
           <div class="flex-1 min-w-0">
             <div class="flex items-center justify-between mb-1">
-              <span class="text-[11px] font-bold text-slate-500">{{ r.nickname }}</span>
+              <span class="text-[11px] font-bold text-slate-500">{{ maskNickname(r.nickname) }}</span>
               <div class="flex items-center gap-0.5">
                 <Star
                   v-for="s in 5"
@@ -411,11 +411,13 @@
 </template>
 
 <script>
+import axios from 'axios'
 import { ChevronLeft, ChevronRight, Star, RefreshCw } from 'lucide-vue-next'
 import EmptyState from '../../components/common/EmptyState.vue'
 import { useApi } from '../../composables/useApi'
 import { ENDPOINTS } from '../../lib/api/endpoints'
 import { CONCERT_CATEGORY_OPTIONS, getCategoryLabel } from '../../lib/constants/concertCategory'
+import { maskNickname } from '../../lib/utils/maskNickname'
 
 const DEFAULT_IMG = 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?auto=format&fit=crop&w=400&q=60'
 
@@ -523,6 +525,7 @@ export default {
 
   methods: {
     getCategoryLabel,
+    maskNickname,
 
     // ─── 히어로 슬라이드 제어 ────────────────────────────────
     startHeroSlide() {
@@ -544,65 +547,222 @@ export default {
     },
 
     // ─── 배너 좌·우 엣지 색상 추출 → 배경 그라데이션 ────────
-    async extractBannerColors(imageUrl, bannerId) {
-      if (!imageUrl) return
+    /** CORS 등으로 추출 실패 시 사용할 기본 그라데이션 (slate-800 ~ slate-900) */
+    getBannerFallbackGradient() {
+      return 'linear-gradient(to right, rgb(30,41,59), rgb(15,23,42))'
+    },
+    /** S3 등 외부 도메인은 CORS 미허용 시 추출 불가 → 추출 시도 시 CORS 에러 발생. 해당 URL이면 추출 건너뜀 */
+    canAttemptBannerColorExtraction(imageUrl) {
+      if (!imageUrl || typeof window === 'undefined') return false
       try {
-        const colors = await this.sampleBannerEdges(imageUrl)
-        if (!colors) return
-        const { left, right } = colors
-        const gradient = `linear-gradient(to right, rgb(${left.r},${left.g},${left.b}), rgb(${right.r},${right.g},${right.b}))`
-        this.bannerBgCache[bannerId] = gradient
-        if (this.heroBanner?.id === bannerId) this.bannerBgGradient = gradient
-        // 나머지 배너도 미리 추출
+        const u = new URL(imageUrl, window.location.origin)
+        if (u.origin === window.location.origin) return true
+        if (u.protocol === 'data:' || u.protocol === 'blob:') return true
+        const apiBase = (import.meta.env.VITE_API_BASE || 'http://localhost:8082').replace(/\/$/, '')
+        const apiOrigin = new URL(apiBase, window.location.origin).origin
+        return u.origin === apiOrigin
+      } catch (_) {
+        return false
+      }
+    },
+    async extractBannerColors(imageUrl, bannerId) {
+      if (!imageUrl) {
+        this.applyBannerGradient(bannerId, this.getBannerFallbackGradient())
+        return
+      }
+      if (!this.canAttemptBannerColorExtraction(imageUrl)) {
+        this.applyBannerGradient(bannerId, this.getBannerFallbackGradient())
+        return
+      }
+      try {
+        let colors = await this.sampleBannerEdgesFromUrl(imageUrl)
+        if (colors) {
+          const { left, right } = colors
+          const gradient = `linear-gradient(to right, rgb(${left.r},${left.g},${left.b}), rgb(${right.r},${right.g},${right.b}))`
+          this.applyBannerGradient(bannerId, gradient)
+        } else {
+          this.applyBannerGradient(bannerId, this.getBannerFallbackGradient())
+        }
+        // 나머지 배너도 미리 추출 (외부 URL은 시도하지 않음 → CORS 방지)
         this.heroItems.forEach(async (b) => {
           if (b.id !== bannerId && !this.bannerBgCache[b.id]) {
-            const c = await this.sampleBannerEdges(b.imageUrl).catch(() => null)
+            if (!this.canAttemptBannerColorExtraction(b.imageUrl)) {
+              this.bannerBgCache[b.id] = this.getBannerFallbackGradient()
+              return
+            }
+            const c = await this.sampleBannerEdgesFromUrl(b.imageUrl).catch(() => null)
             if (c) {
-              this.bannerBgCache[b.id] = `linear-gradient(to right, rgb(${c.left.r},${c.left.g},${c.left.b}), rgb(${c.right.r},${c.right.g},${c.right.b}))`
+              const g = `linear-gradient(to right, rgb(${c.left.r},${c.left.g},${c.left.b}), rgb(${c.right.r},${c.right.g},${c.right.b}))`
+              this.bannerBgCache[b.id] = g
+            } else {
+              this.bannerBgCache[b.id] = this.getBannerFallbackGradient()
             }
           }
         })
-      } catch (_) {}
+      } catch (_) {
+        this.applyBannerGradient(bannerId, this.getBannerFallbackGradient())
+      }
     },
-
+    /** 배너 이미지 URL을 같은 출처로 변환 (프록시 사용 시 CORS 회피) */
+    getFetchUrlForBanner(imageUrl) {
+      if (!imageUrl || typeof window === 'undefined') return imageUrl
+      const apiBase = (import.meta.env.VITE_API_BASE || 'http://localhost:8082').replace(/\/$/, '')
+      try {
+        const u = new URL(imageUrl, window.location.origin)
+        const baseUrl = new URL(apiBase, window.location.origin)
+        if (u.origin === baseUrl.origin && u.origin !== window.location.origin) {
+          return window.location.origin + '/api' + u.pathname
+        }
+      } catch (_) {}
+      return imageUrl
+    },
+    /** fetch 또는 axios(blob)로 이미지 받아서 blob URL로 샘플링 (CORS 회피) */
+    async sampleBannerEdgesFromUrl(imageUrl) {
+      const tryWithBlob = async (blob) => {
+        const blobUrl = URL.createObjectURL(blob)
+        try {
+          return await this.sampleBannerEdges(blobUrl)
+        } finally {
+          URL.revokeObjectURL(blobUrl)
+        }
+      }
+      // 1) 같은 출처로 프록시 URL로 fetch 시도 (개발 시 Vite proxy 사용)
+      const fetchUrl = this.getFetchUrlForBanner(imageUrl)
+      if (fetchUrl !== imageUrl) {
+        try {
+          const res = await fetch(fetchUrl, { mode: 'cors', credentials: 'omit' })
+          if (res.ok) {
+            const ct = (res.headers.get('content-type') || '').toLowerCase()
+            if (ct.startsWith('image/') || ct.includes('octet-stream')) {
+              const blob = await res.blob()
+              const out = await tryWithBlob(blob)
+              if (out) return out
+            }
+          }
+        } catch (_) {}
+      }
+      // 2) 이미지 URL로 직접 axios GET (백엔드 CORS 허용 시 동작)
+      try {
+        const { data } = await axios.get(imageUrl, {
+          responseType: 'blob',
+          timeout: 10000,
+          validateStatus: (s) => s === 200,
+        })
+        if (data && data.size > 0) {
+          const out = await tryWithBlob(data)
+          if (out) return out
+        }
+      } catch (_) {}
+      // 3) img 엘리먼트로 로드 후 캔버스 샘플 (crossOrigin 허용된 경우만 성공)
+      return this.sampleBannerEdges(imageUrl)
+    },
+    applyBannerGradient(bannerId, gradient) {
+      this.bannerBgCache[bannerId] = gradient
+      if (this.heroBanner?.id === bannerId) this.bannerBgGradient = gradient
+    },
     sampleBannerEdges(url) {
       return new Promise((resolve) => {
         const img = new Image()
-        img.crossOrigin = 'anonymous'
-        const timer = setTimeout(() => resolve(null), 5000)
+        try {
+          if (url.startsWith('data:') || url.startsWith('blob:')) {
+            img.crossOrigin = ''
+          } else if (typeof window !== 'undefined' && window.location?.origin) {
+            const u = new URL(url, window.location.origin)
+            if (u.origin === window.location.origin) {
+              img.crossOrigin = ''
+            } else {
+              img.crossOrigin = 'anonymous'
+            }
+          } else {
+            img.crossOrigin = 'anonymous'
+          }
+        } catch (_) {
+          img.crossOrigin = 'anonymous'
+        }
+        const timer = setTimeout(() => resolve(null), 8000)
 
         img.onload = () => {
           clearTimeout(timer)
           try {
-            const W = 100, H = 50
-            const canvas = document.createElement('canvas')
-            canvas.width = W
-            canvas.height = H
-            const ctx = canvas.getContext('2d')
-            ctx.drawImage(img, 0, 0, W, H)
+            const cw = 200
+            const ch = 100
+            const iw = img.naturalWidth || img.width
+            const ih = img.naturalHeight || img.height
+            if (!iw || !ih) {
+              resolve(null)
+              return
+            }
+            const scale = Math.min(cw / iw, ch / ih)
+            const destW = iw * scale
+            const destH = ih * scale
+            const destX = (cw - destW) / 2
+            const destY = (ch - destH) / 2
 
+            const canvas = document.createElement('canvas')
+            canvas.width = cw
+            canvas.height = ch
+            const ctx = canvas.getContext('2d')
+            if (!ctx) {
+              resolve(null)
+              return
+            }
+            ctx.drawImage(img, 0, 0, iw, ih, destX, destY, destW, destH)
+
+            const sampleWidth = Math.max(8, Math.min(20, Math.floor(destW * 0.15)))
             const avg = (x0, y0, w, h) => {
-              const d = ctx.getImageData(x0, y0, w, h).data
+              const x = Math.max(0, Math.floor(x0))
+              const y = Math.max(0, Math.floor(y0))
+              const ww = Math.max(1, Math.floor(w))
+              const hh = Math.max(1, Math.floor(h))
+              const d = ctx.getImageData(x, y, ww, hh).data
               let r = 0, g = 0, b = 0
-              const n = w * h
-              for (let i = 0; i < d.length; i += 4) { r += d[i]; g += d[i + 1]; b += d[i + 2] }
-              return { r: Math.round(r / n), g: Math.round(g / n), b: Math.round(b / n) }
+              const len = d.length
+              let n = 0
+              for (let i = 0; i < len; i += 4) {
+                const alpha = d[i + 3] / 255
+                if (alpha < 0.15) continue
+                r += d[i] * alpha
+                g += d[i + 1] * alpha
+                b += d[i + 2] * alpha
+                n += alpha
+              }
+              if (n === 0) return null
+              return {
+                r: Math.round(r / n),
+                g: Math.round(g / n),
+                b: Math.round(b / n),
+              }
             }
 
-            resolve({
-              left:  avg(0,     0, 5, H),   // 좌측 5px
-              right: avg(W - 5, 0, 5, H),   // 우측 5px
-            })
-          } catch (_) { resolve(null) }
+            const left = avg(destX, destY, sampleWidth, destH)
+            const right = avg(destX + destW - sampleWidth, destY, sampleWidth, destH)
+            if (!left || !right) {
+              resolve(null)
+              return
+            }
+            resolve({ left, right })
+          } catch (_) {
+            resolve(null)
+          }
         }
 
-        img.onerror = () => { clearTimeout(timer); resolve(null) }
+        img.onerror = () => {
+          clearTimeout(timer)
+          resolve(null)
+        }
         img.src = url
       })
     },
     // ──────────────────────────────────────────────────────────
 
     // ─── 히어로 배너 (프로모션 API) ──────────────────────────
+    resolveBannerImageUrl(raw) {
+      if (!raw || typeof raw !== 'string') return ''
+      const s = raw.trim()
+      if (s.startsWith('http://') || s.startsWith('https://')) return s
+      const base = (import.meta.env.VITE_API_BASE || 'http://localhost:8082').replace(/\/$/, '')
+      return s.startsWith('/') ? base + s : base + '/' + s
+    },
     async loadHeroBanners() {
       this.bannersLoading = true
       try {
@@ -610,7 +770,7 @@ export default {
         const list = Array.isArray(res) ? res : (res.content ?? res.items ?? [])
         this.heroBanners = list.map(p => ({
           id: p.id,
-          imageUrl: p.mainBannerUrl ?? p.bannerUrl ?? p.imageUrl ?? '',
+          imageUrl: this.resolveBannerImageUrl(p.mainBannerUrl ?? p.bannerUrl ?? p.imageUrl ?? ''),
           linkUrl: `/promotions/${p.id}`,
         }))
       } catch (_) {

@@ -217,10 +217,52 @@
 
         <!-- 구매평 탭 -->
         <div v-show="activeTab === 'reviews'" class="space-y-6">
-          <!-- 내 후기 작성 (로그인 시) -->
+          <!-- 내 후기 작성 (로그인 시, 결제·관람일 경과 시에만) -->
           <div v-if="authed" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <h3 class="text-sm font-semibold text-slate-900">내 후기</h3>
-            <form class="mt-4 grid gap-4" @submit.prevent="submitReview">
+            <div v-if="reviewEligibilityLoading" class="mt-4 py-6 text-center text-sm text-slate-400">
+              리뷰 작성 가능 여부 확인 중…
+            </div>
+            <div
+              v-else-if="!canWriteReview"
+              class="mt-4 rounded-xl border border-slate-100 bg-slate-50 px-4 py-5 text-center text-sm text-slate-600"
+            >
+              이 공연에 대한 리뷰는 <strong>결제 후 관람일이 지난 경우에만</strong> 작성할 수 있습니다.
+              <p class="mt-2 text-xs text-slate-500">
+                관람이 끝난 공연은 마이페이지 &gt; 리뷰 작성하기에서 확인할 수 있어요.
+              </p>
+            </div>
+            <!-- 저장 직후 토스트 (뷰 모드에서도 표시) -->
+            <div
+              v-if="reviewSuccess"
+              ref="reviewSuccessRef"
+              class="mt-4 flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800"
+            >
+              <Check class="h-5 w-5 shrink-0 text-emerald-600" />
+              <span>{{ reviewSuccess }}</span>
+            </div>
+            <!-- 내 후기 있음: 관람 후기와 동일 스타일로 표시 + 수정하기 (카드 구분 없음) -->
+            <template v-if="hasExistingReview && !isEditingReview">
+              <div class="mt-4 rounded-xl border border-slate-100 bg-slate-50/50 py-4 px-4">
+                <div class="flex items-center justify-between gap-2">
+                  <div class="flex items-center gap-2">
+                    <span class="text-amber-400">{{ '★'.repeat(myReview.rating) }}{{ '☆'.repeat(5 - myReview.rating) }}</span>
+                    <span class="text-xs font-semibold text-slate-700">내가 작성한 후기</span>
+                  </div>
+                  <button
+                    type="button"
+                    class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
+                    @click="isEditingReview = true"
+                  >
+                    <Pencil class="h-3.5 w-3.5" />
+                    수정하기
+                  </button>
+                </div>
+                <p class="mt-2 text-sm text-slate-600 whitespace-pre-wrap">{{ myReview.reviewContent || '(내용 없음)' }}</p>
+              </div>
+            </template>
+            <!-- 입력/수정 폼 -->
+            <form v-else class="mt-4 grid gap-4" @submit.prevent="submitReview">
               <div>
                 <label class="block text-xs font-semibold text-slate-500">평점 *</label>
                 <div class="mt-1.5 flex items-center gap-1">
@@ -253,21 +295,28 @@
                 <div class="mt-0.5 text-right text-xs text-slate-400">{{ myReview.reviewContent.length }}/1000</div>
               </div>
               <p v-if="reviewError" class="text-sm text-red-600">{{ reviewError }}</p>
-              <p v-if="reviewSuccess" class="text-sm text-green-600">{{ reviewSuccess }}</p>
-              <div class="flex justify-end">
+              <div class="flex justify-end gap-2">
+                <button
+                  v-if="isEditingReview"
+                  type="button"
+                  class="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
+                  @click="cancelEditReview"
+                >
+                  취소
+                </button>
                 <button
                   type="submit"
-                  class="rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700 disabled:opacity-50"
+                  class="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition disabled:opacity-50 bg-red-600 hover:bg-red-700"
                   :disabled="submittingReview || myReview.rating === 0"
                 >
-                  저장
+                  <span>{{ isEditingReview ? '수정 저장' : '저장' }}</span>
                 </button>
               </div>
             </form>
           </div>
 
           <!-- 관람 후기 목록 -->
-          <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div ref="reviewsListRef" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <div class="flex items-center justify-between">
               <h3 class="text-sm font-semibold text-slate-900">
                 관람 후기
@@ -281,13 +330,19 @@
               아직 후기가 없습니다. 첫 번째 후기를 남겨보세요!
             </div>
             <ul v-else class="mt-4 divide-y divide-slate-100">
-              <li v-for="(r, i) in reviews" :key="i" class="py-4 first:pt-0">
-                <div class="flex items-center gap-2">
+              <li
+                v-for="(r, i) in reviews"
+                :key="i"
+                class="py-4 first:pt-0"
+                :class="{ 'rounded-lg border border-red-100 bg-red-50/40 px-3 -mx-3': isMyReview(r) }"
+              >
+                <div class="flex items-center gap-2 flex-wrap">
                   <span class="text-amber-400">{{ '★'.repeat(r.rating) }}{{ '☆'.repeat(5 - r.rating) }}</span>
-                  <span class="text-xs font-semibold text-slate-700">{{ r.memberNickname }}</span>
+                  <span v-if="isMyReview(r)" class="rounded bg-red-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-red-600">내 후기</span>
+                  <span class="text-xs font-semibold text-slate-700">{{ maskNickname(r.memberNickname ?? r.nickname) }}</span>
                   <span class="ml-auto text-xs text-slate-400">{{ fmtDate(r.createdAt) }}</span>
                 </div>
-                <p class="mt-1.5 text-sm text-slate-600">{{ r.reviewContent }}</p>
+                <p class="mt-1.5 text-sm text-slate-600 whitespace-pre-wrap">{{ r.reviewContent }}</p>
               </li>
             </ul>
             <div v-if="reviewTotalPages > 1" class="mt-4 flex items-center justify-center gap-3">
@@ -323,19 +378,30 @@
 </template>
 
 <script>
-import { ChevronRight, ChevronUp, Heart, Star } from 'lucide-vue-next'
+import { Check, ChevronRight, ChevronUp, Heart, Pencil, Star } from 'lucide-vue-next'
 import ConcertCalendar from '../../components/concert/ConcertCalendar.vue'
 import VenuePreviewModal from '../../components/concert/VenuePreviewModal.vue'
 import { useApi } from '../../composables/useApi'
+import { useMe } from '../../composables/useMe'
 import { isAuthed } from '../../composables/useRole'
 import { ENDPOINTS } from '../../lib/api/endpoints'
+import { maskNickname } from '../../lib/utils/maskNickname'
+import {
+  extractOrdersList,
+  getViewDateTime,
+  getConcertId,
+  isPaidOrder,
+  isPastViewDate,
+} from '../../lib/utils/orderReviewEligibility'
 
 export default {
   name: 'ConcertDetailView',
   components: {
+    Check,
     ChevronRight,
     ChevronUp,
     Heart,
+    Pencil,
     Star,
     ConcertCalendar,
     VenuePreviewModal,
@@ -359,6 +425,10 @@ export default {
       reviewsLoading: false,
       reviewPage: 0,
       reviewTotalPages: 0,
+      canWriteReview: false,
+      reviewEligibilityLoading: false,
+      hasExistingReview: false,
+      isEditingReview: false,
       activeTab: 'info',
       selectedScheduleId: null,
       selectedDateKey: null,
@@ -366,6 +436,10 @@ export default {
     }
   },
   computed: {
+    meProfile() {
+      const me = this._me
+      return me?.profile?.value ?? me?.profile ?? null
+    },
     tabItems() {
       return [
         { key: 'info', label: '공연정보' },
@@ -434,16 +508,33 @@ export default {
       const slots = this.schedulesByDate[newKey] ?? []
       const firstOpen = slots.find((s) => s.status === 'OPEN')
       this.selectedScheduleId = firstOpen ? firstOpen.scheduleId : null
-    }
+    },
+    '$route.query.tab'(tab) {
+      if (tab === 'reviews') this.activeTab = 'reviews'
+    },
+    activeTab(tab) {
+      if (tab === 'reviews' && this.authed && this.$route.params.concertId) {
+        this.loadCanWriteReview()
+      }
+    },
   },
   created() {
     this.api = useApi()
+    this._me = useMe()
     this.authed = isAuthed()
   },
   mounted() {
     this.load()
+    if (this.$route.query.tab === 'reviews') this.activeTab = 'reviews'
   },
   methods: {
+    maskNickname,
+    isMyReview(r) {
+      if (!this.authed || !this.meProfile) return false
+      const myName = this.meProfile.nickname ?? this.meProfile.name ?? ''
+      const nick = r.memberNickname ?? r.nickname ?? ''
+      return !!myName && myName === nick
+    },
     extractTime(iso) {
       if (!iso) return '00:00'
       const d = new Date(iso)
@@ -549,12 +640,20 @@ export default {
       try {
         const data = await this.api.get(ENDPOINTS.concertUserInteraction(concertId))
         this.isLiked = data.isLiked ?? false
-        if (data.rating) {
+        if (data.rating != null && data.rating > 0) {
           this.myReview.rating = data.rating
           this.myReview.reviewContent = data.reviewContent ?? ''
+          this.hasExistingReview = true
+        } else if (data.reviewContent && String(data.reviewContent).trim()) {
+          this.myReview.rating = data.rating ?? 0
+          this.myReview.reviewContent = data.reviewContent
+          this.hasExistingReview = true
+        } else {
+          this.hasExistingReview = false
         }
       } catch {
         this.isLiked = false
+        this.hasExistingReview = false
       }
     },
     async loadReviews(page = 0, concertId) {
@@ -590,8 +689,44 @@ export default {
         this.liking = false
       }
     },
+    async loadCanWriteReview() {
+      const concertId = String(this.$route.params.concertId ?? '')
+      if (!concertId) return
+      this.reviewEligibilityLoading = true
+      this.canWriteReview = false
+      try {
+        // 1) 리뷰 작성 가능 전용 API 우선 (백엔드가 이미 결제완료+관람경과만 반환)
+        try {
+          const result = await this.api.get(ENDPOINTS.myOrdersReviewable())
+          const list = extractOrdersList(result)
+          const hasEligible = list.some((o) => getConcertId(o) === concertId)
+          this.canWriteReview = !!hasEligible
+          return
+        } catch (_) {}
+        // 2) 폴백: 전체 예매 조회 후 해당 공연·결제완료·관람일 경과 여부 판단
+        const result = await this.api.get(ENDPOINTS.myOrders())
+        const list = extractOrdersList(result)
+        if (!Array.isArray(list)) return
+        const hasEligible = list.some(
+          (o) =>
+            getConcertId(o) === concertId &&
+            isPaidOrder(o) &&
+            isPastViewDate(getViewDateTime(o))
+        )
+        this.canWriteReview = !!hasEligible
+      } catch (_) {
+        this.canWriteReview = false
+      } finally {
+        this.reviewEligibilityLoading = false
+      }
+    },
+    cancelEditReview() {
+      this.isEditingReview = false
+      this.reviewError = ''
+      this.loadUserInteraction(this.$route.params.concertId)
+    },
     async submitReview() {
-      if (this.myReview.rating === 0) return
+      if (this.myReview.rating === 0 || !this.canWriteReview) return
       const concertId = this.$route.params.concertId
       this.reviewError = ''
       this.reviewSuccess = ''
@@ -601,8 +736,17 @@ export default {
           rating: this.myReview.rating,
           reviewContent: this.myReview.reviewContent
         })
+        this.hasExistingReview = true
+        this.isEditingReview = false
         this.reviewSuccess = '후기가 저장되었습니다.'
         await Promise.allSettled([this.loadStats(concertId), this.loadReviews(0, concertId)])
+        this.$nextTick(() => {
+          this.$refs.reviewSuccessRef?.scrollIntoView?.({ behavior: 'smooth', block: 'nearest' })
+          setTimeout(() => {
+            this.reviewSuccess = ''
+            this.$refs.reviewsListRef?.scrollIntoView?.({ behavior: 'smooth', block: 'nearest' })
+          }, 1500)
+        })
       } catch (err) {
         this.reviewError = err.message || '후기 저장에 실패했습니다.'
       } finally {

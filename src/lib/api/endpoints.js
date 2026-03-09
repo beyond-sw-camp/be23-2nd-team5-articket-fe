@@ -1,6 +1,17 @@
 export const ENDPOINTS = {
   // GUEST
   concerts: () => `/concerts`,
+  /** 오픈 예정 공연 전용 목록 (예매 오픈 기준 정렬) */
+  concertsUpcoming: (params = {}) => {
+    const p = new URLSearchParams()
+    if (params.page != null) p.set('page', String(params.page))
+    if (params.size != null) p.set('size', String(params.size))
+    if (params.category) p.set('category', params.category)
+    if (params.regions?.length) params.regions.forEach((r) => p.append('regions', r))
+    if (params.sort) p.set('sort', params.sort)
+    const q = p.toString()
+    return `/concerts/upcoming${q ? `?${q}` : ''}`
+  },
   searchConcerts: (params = {}) => {
     const p = new URLSearchParams()
     if (params.keyword != null && params.keyword !== '') p.set('keyword', params.keyword)
@@ -57,6 +68,8 @@ export const ENDPOINTS = {
   requestOrganizer: () => `/users/requestOrganizer`,
   myOrders: (period) => period != null ? `/users/me/orders?period=${period}` : `/users/me/orders`,
   myOrder: (orderId) => `/order/${orderId}`,
+  /** 리뷰 작성 가능한 예매만 반환 (결제 완료 + 관람일 경과) */
+  myOrdersReviewable: () => `/users/me/orders/reviewable`,
   seatHold: (seatId) => `/seat-holds/${seatId}`,
 
   orderCreate: () => `/order/create`,

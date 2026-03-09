@@ -61,7 +61,7 @@
               @click.prevent="showOrganizerPendingModal = true"
             >주최자 (승인 대기)</RouterLink>
             <RouterLink
-              v-else-if="roleValue === 'ORGANIZER' || roleValue === 'ADMIN'"
+              v-else-if="showOrganizerEntry"
               to="/management"
               class="rounded-full bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-700"
             >관리자 페이지</RouterLink>
@@ -203,6 +203,8 @@ import ProfileDropdown from '../components/common/ProfileDropdown.vue'
 import { useRole } from '../composables/useRole'
 import { useMe } from '../composables/useMe'
 import { useSSE } from '../composables/useSSE'
+import { useApi } from '../composables/useApi'
+import { ENDPOINTS } from '../lib/api/endpoints'
 
 export default {
   name: 'DefaultLayout',
@@ -223,6 +225,7 @@ export default {
     return {
       q: this.$route.query.q || '',
       _me: null,
+      _refreshAttempted: false,
       organizerBannerDismissed: false,
       showOrganizerPendingModal: false,
       categories: [
@@ -276,6 +279,11 @@ export default {
       } catch {}
       return true
     },
+    /** 주최자 승인됐거나 이미 ORGANIZER/ADMIN 역할일 때 관리자 페이지 버튼 표시 */
+    showOrganizerEntry() {
+      if (this.roleValue === 'ORGANIZER' || this.roleValue === 'ADMIN') return true
+      return this.meProfile?.organizerStatus === 'APPROVED'
+    },
     roleLabel() {
       const r = this.roleValue
       if (r === 'ORGANIZER') return 'ORGANIZER'
@@ -296,6 +304,7 @@ export default {
     this._logoutComposable = logout
     this._syncFromToken = syncFromToken
     this._me = useMe()
+    this._api = useApi()
     const key = 'organizerBannerDismissed'
     try {
       const dismissed = sessionStorage.getItem(key)
@@ -303,6 +312,7 @@ export default {
       if (dismissed === today) this.organizerBannerDismissed = true
     } catch {}
     window.addEventListener('storage', this.onStorage)
+    window.addEventListener('focus', this.onWindowFocus)
     this.bumpTokenVersion()
     // SSE 초기화
     this._sse = useSSE()
@@ -310,13 +320,16 @@ export default {
     if (localStorage.getItem('accessToken')) this._sse.connect()
   },
   mounted() {
-    if (this.isLoggedIn && this._me?.refetch) this._me.refetch()
+    if (this.isLoggedIn && this._me?.refetch) {
+      this._me.refetch().then((profile) => this.maybeRefreshTokenAfterApproval(profile))
+    }
     window.addEventListener('scroll', this.onScroll, { passive: true })
     window.addEventListener('click', this.onClickOutside)
     this.onScroll()
   },
   beforeUnmount() {
     window.removeEventListener('storage', this.onStorage)
+    window.removeEventListener('focus', this.onWindowFocus)
     window.removeEventListener('scroll', this.onScroll)
     window.removeEventListener('click', this.onClickOutside)
     if (this._sse) this._sse.disconnect()
@@ -332,6 +345,13 @@ export default {
       if (v && this._me?.refetch) this._me.refetch()
       if (v) this._sse?.connect()
       else this._sse?.disconnect()
+    },
+    // 주최자 승인 후 프로필만 갱신된 경우: 토큰 갱신으로 role 반영
+    meProfile: {
+      handler(profile) {
+        this.maybeRefreshTokenAfterApproval(profile)
+      },
+      deep: true
     }
   },
   methods: {
@@ -364,7 +384,37 @@ export default {
       } catch {}
       this.organizerBannerDismissed = true
     },
-
+    /** 탭 포커스 시 내 정보 재요청 → admin 승인 후 UI·토큰 갱신 반영 (refetch 결과를 직접 사용해 타이밍 이슈 방지) */
+    onWindowFocus() {
+      if (!this.isLoggedIn || !this._me?.refetch) return
+      this._me.refetch().then((profile) => this.maybeRefreshTokenAfterApproval(profile))
+    },
+    /** 프로필에 승인(APPROVED)인데 JWT role은 아직 USER일 때만 토큰 갱신 시도 */
+    maybeRefreshTokenAfterApproval(profile) {
+      if (!profile || profile.organizerStatus !== 'APPROVED') return
+      if (this.roleValue === 'ORGANIZER' || this.roleValue === 'ADMIN') return
+      this.tryRefreshTokenForApprovedOrganizer()
+    },
+    /** 주최자 승인된 상태인데 JWT에는 아직 USER일 때: refresh API로 새 토큰 받아 role 동기화 */
+    async tryRefreshTokenForApprovedOrganizer() {
+      if (this._refreshAttempted) return
+      const refreshToken = typeof localStorage !== 'undefined' ? localStorage.getItem('refreshToken') : null
+      if (!refreshToken || typeof this._syncFromToken !== 'function') return
+      this._refreshAttempted = true
+      try {
+        const data = await this._api.post(ENDPOINTS.refreshAt(), { refreshToken }, { skipErrorAlert: true })
+        const accessToken = data?.access_token ?? data?.accessToken
+        if (accessToken && typeof localStorage !== 'undefined') {
+          localStorage.setItem('accessToken', accessToken)
+          this._syncFromToken()
+          this.bumpTokenVersion()
+        } else {
+          this._refreshAttempted = false
+        }
+      } catch (_) {
+        this._refreshAttempted = false
+      }
+    }
   }
 }
 </script>

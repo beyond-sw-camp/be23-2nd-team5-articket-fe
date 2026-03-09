@@ -10,6 +10,7 @@ import ManagementLayout from '../layouts/ManagementLayout.vue'
 import HomeView from '../views/home/HomeView.vue'
 import ConcertDetailView from '../views/concerts/ConcertDetailView.vue'
 import ConcertRankingView from '../views/concerts/ConcertRankingView.vue'
+import UpcomingConcertsView from '../views/concerts/UpcomingConcertsView.vue'
 import GenreConcertsView from '../views/concerts/GenreConcertsView.vue'
 import ConcertSchedulesView from '../views/concerts/ConcertSchedulesView.vue'
 import ScheduleDetailView from '../views/schedules/ScheduleDetailView.vue'
@@ -34,6 +35,7 @@ import MyOrdersView from '../views/orders/MyOrdersView.vue'
 import MyOrderDetailView from '../views/orders/MyOrderDetailView.vue'
 import MyPerformerLikesView from '../views/me/MyPerformerLikesView.vue'
 import MyConcertLikesView from '../views/me/MyConcertLikesView.vue'
+import MyReviewableConcertsView from '../views/me/MyReviewableConcertsView.vue'
 import ForUView from '../views/me/ForUView.vue'
 import HoldCreateView from '../views/hold/HoldCreateView.vue'
 import HoldDetailView from '../views/hold/HoldDetailView.vue'
@@ -102,6 +104,7 @@ const routes = [
       childRoute('', HomeView, { roleScope: 'guest' }),
       childRoute('genre/:genre', GenreConcertsView, { roleScope: 'guest' }),
       childRoute('concerts/ranking', ConcertRankingView, { roleScope: 'guest' }),
+      childRoute('concerts/upcoming', UpcomingConcertsView, { roleScope: 'guest' }),
       childRoute('concerts/:concertId', ConcertDetailView, { roleScope: 'guest' }),
       childRoute('concerts/:concertId/schedules', ConcertSchedulesView, { roleScope: 'guest' }),
       childRoute('schedules/:scheduleId', ScheduleDetailView, { roleScope: 'guest' }),
@@ -129,6 +132,7 @@ const routes = [
       childRoute('me/orders/:orderId', MyOrderDetailView, { requiresAuth: true }),
       childRoute('me/performers/likes', MyPerformerLikesView, { requiresAuth: true }),
       childRoute('me/concerts/likes', MyConcertLikesView, { requiresAuth: true }),
+      childRoute('me/reviews', MyReviewableConcertsView, { requiresAuth: true }),
       childRoute('me/foru', ForUView, { requiresAuth: true }),
       childRoute('hold', HoldCreateView, { requiresAuth: true }),
       childRoute('hold/:holdId', HoldDetailView, { requiresAuth: true }),
