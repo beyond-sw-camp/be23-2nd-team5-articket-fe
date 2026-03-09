@@ -6,17 +6,6 @@
         <h1 class="text-xl font-bold text-slate-900">공연/스케줄 내역</h1>
         <p class="mt-1 text-sm text-slate-500">회원 ID: {{ userId }}</p>
       </div>
-      <div class="ml-2 flex gap-2">
-        <button
-          class="h-9 rounded-xl border px-4 text-sm font-medium transition-colors border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-          @click="$router.push(`/admin/users/${userId}/orders?role=ORGANIZER`)"
-        >
-          주문 내역
-        </button>
-        <button class="h-9 rounded-xl border px-4 text-sm font-medium transition-colors border-red-500 bg-red-500 text-white">
-          공연/스케줄 내역
-        </button>
-      </div>
     </div>
 
     <!-- 공연 목록 -->

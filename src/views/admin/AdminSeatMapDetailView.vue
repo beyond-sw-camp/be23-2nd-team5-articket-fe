@@ -149,15 +149,14 @@
                 </td>
                 <td class="px-4 py-3 text-center">
                   <UiBadge
-                    :tone="concert.status === 'PUBLISHED' ? 'solid' : 'soft'"
-                    :color="concert.status === 'PUBLISHED' ? 'red' : 'slate'"
+                    :tone="['UPCOMING', 'AVAILABLE'].includes(concert.status) ? 'solid' : 'soft'"
+                    :color="concert.status === 'AVAILABLE' ? 'red' : concert.status === 'UPCOMING' ? 'amber' : 'slate'"
                   >
                     {{ statusLabel(concert.status) }}
                   </UiBadge>
                 </td>
-                <td class="px-4 py-3">
-                  <div class="text-slate-700">{{ concert.organizerName || concert.organizer?.name || '-' }}</div>
-                  <div v-if="concert.organizerEmail" class="text-xs text-slate-400">{{ concert.organizerEmail }}</div>
+                <td class="px-4 py-3 text-sm text-slate-700">
+                  {{ concert.organizerEmail || '-' }}
                 </td>
                 <td class="px-4 py-3 text-center">
                   <button
@@ -292,7 +291,7 @@ export default {
   },
   methods: {
     statusLabel(s) {
-      const m = { DRAFT: '초안', PUBLISHED: '게시', ENDED: '종료' }
+      const m = { DRAFT: '초안', UPCOMING: '게시', AVAILABLE: '예매중', CLOSED: '마감' }
       return m[s] ?? s ?? '-'
     },
     normalizeSeatMap(item) {

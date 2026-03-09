@@ -50,7 +50,11 @@
         </UiBadge>
       </template>
       <template #cell:actions="{ row }">
-        <UiButton variant="ghost" class="h-8 px-3 text-sm" @click="$router.push(`/admin/users/${row.id}/orders?role=${row.role}`)">
+        <UiButton
+          variant="ghost"
+          class="h-8 px-3 text-sm"
+          @click="$router.push(row.role === 'ORGANIZER' ? `/admin/users/${row.id}/concerts` : `/admin/users/${row.id}/orders?role=${row.role}`)"
+        >
           상세보기
         </UiButton>
       </template>
