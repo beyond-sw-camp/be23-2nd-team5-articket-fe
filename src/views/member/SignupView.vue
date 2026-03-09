@@ -121,6 +121,11 @@
                 placeholder="6자 이상 입력"
                 class="min-w-0 flex-1 bg-transparent text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none"
               />
+              <span
+                v-if="form.password"
+                class="shrink-0 text-xs font-semibold transition-colors"
+                :class="strengthTextColor"
+              >{{ strengthLabel }}</span>
               <button
                 type="button"
                 class="shrink-0 rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 focus:outline-none focus:ring-2 focus:ring-slate-300"
@@ -232,6 +237,28 @@ export default {
       authApi: null,
     }
   },
+  computed: {
+    passwordStrengthScore() {
+      const p = this.form.password
+      if (!p) return 0
+      let score = 0
+      if (/[A-Z]/.test(p)) score++
+      if (/[a-z]/.test(p)) score++
+      if (/[0-9]/.test(p)) score++
+      if (/[^A-Za-z0-9]/.test(p)) score++
+      return score
+    },
+    strengthLabel() {
+      if (this.passwordStrengthScore === 4) return '안전'
+      if (this.passwordStrengthScore >= 2) return '보통'
+      return '약함'
+    },
+    strengthTextColor() {
+      if (this.passwordStrengthScore === 4) return 'text-green-600'
+      if (this.passwordStrengthScore >= 2) return 'text-yellow-500'
+      return 'text-red-500'
+    },
+  },
   created() {
     this.authApi = useAuthApi()
   },
@@ -267,15 +294,9 @@ export default {
 
       const phone = (this.form.phoneNumber || '').trim()
       if (phone) {
-        const phoneRe = /^01[0-9]-?[0-9]{3,4}-?[0-9]{4}$/
-        const digitsOnly = phone.replace(/\D/g, '')
-        if (
-          digitsOnly.length < 10 ||
-          digitsOnly.length > 11 ||
-          !phoneRe.test(phone.replace(/\s/g, ''))
-        ) {
-          e.phoneNumber =
-            '올바른 휴대폰 번호를 입력해 주세요. (예: 010-1234-5678)'
+        const phoneRe = /^010-\d{4}-\d{4}$/
+        if (!phoneRe.test(phone)) {
+          e.phoneNumber = '전화번호는 010-xxxx-xxxx 형식이어야 합니다.'
           valid = false
         }
       }
@@ -318,7 +339,7 @@ export default {
           name: this.form.name.trim(),
           email: this.form.email.trim(),
           password: this.form.password,
-          phone_number: this.form.phoneNumber.trim(),
+          phoneNumber: this.form.phoneNumber.trim(),
         })
 
         if (success) {
@@ -341,7 +362,7 @@ export default {
       const e = { ...this.errors }
       for (const { field, reason } of data.details) {
         if (!reason) continue
-        const key = field === 'phone_number' ? 'phoneNumber' : field
+        const key = field
         if (key in e) e[key] = reason
       }
       this.errors = e
