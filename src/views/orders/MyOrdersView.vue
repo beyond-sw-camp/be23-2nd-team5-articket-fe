@@ -106,12 +106,32 @@
               class="rounded-full px-3 py-1 text-xs font-semibold"
               :class="order.status === '예매완료'
                 ? 'bg-emerald-100 text-emerald-800'
-                : order.status === '취소완료' || order.status === '관람완료'
-                  ? 'bg-slate-100 text-slate-600'
-                  : 'bg-amber-100 text-amber-800'"
+                : order.status === '부분환불'
+                  ? 'bg-amber-100 text-amber-800'
+                  : order.status === '취소완료'
+                    ? 'bg-slate-100 text-slate-600'
+                    : 'bg-slate-100 text-slate-600'"
             >
               {{ order.status }}
             </span>
+
+            <div class="mt-2 flex flex-wrap justify-end gap-2">
+              <RouterLink
+                v-if="order.orderId"
+                :to="`/me/orders/${order.orderId}`"
+                class="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+              >
+                상세보기
+              </RouterLink>
+
+              <RouterLink
+                v-if="canCancel(order)"
+                :to="`/orders/${order.orderId}/cancel`"
+                class="inline-flex h-10 items-center justify-center rounded-xl border border-red-200 bg-white px-3 text-sm font-semibold text-red-600 transition hover:bg-red-50"
+              >
+                취소하기
+              </RouterLink>
+            </div>
           </div>
         </div>
       </div>
@@ -126,8 +146,8 @@ import { ENDPOINTS } from '../../lib/api/endpoints'
 const STATUS_MAP = {
   PAID: '예매완료',
   PENDING: '결제대기',
-  CANCELLED: '취소완료',
   CANCELED: '취소완료',
+  REFUNDED: '부분환불',
 }
 
 function formatDateTime(isoStr) {
@@ -142,7 +162,7 @@ function formatDateTime(isoStr) {
 }
 
 const PERIOD_MAP = {
-  '전체': 0,
+  전체: 0,
   '1개월': 1,
   '3개월': 3,
   '6개월': 6,
@@ -171,17 +191,23 @@ export default {
     this.loadOrders()
   },
   methods: {
+    canCancel(order) {
+      const hasCancelableSeat = (order.seatDetails || []).some((seat) => seat.status === 'SOLD')
+      return !!order.orderId && !!order.paymentId && hasCancelableSeat
+    },
     async loadOrders() {
       this.loading = true
       try {
         const period = PERIOD_MAP[this.activeFilter]
         const result = await this.api.get(ENDPOINTS.myOrders(period))
         const list = result.content || []
+        console.log(list)
         this.orders = list.map((order) => ({
+          orderId: order.id ?? order.orderId ?? null,
           paymentId: order.paymentId,
           concertId: order.concertId ?? order.concert_id ?? null,
           bookingDate: order.createdAt,
-          bookingNumber: order.paymentId ? 'T' + order.paymentId.slice(-8) : '-',
+          bookingNumber: order.paymentId ? `T${order.paymentId.slice(-8)}` : '-',
           posterUrl: order.concertUrl || order.posterUrl || '',
           title: order.concertName || '-',
           viewDate: formatDateTime(order.scheduleDate),
