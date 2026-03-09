@@ -16,27 +16,12 @@
             viewBox="0 0 24 24"
             aria-hidden="true"
           >
-            <circle
-              class="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              stroke-width="4"
-            />
-            <path
-              class="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-            />
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
           </svg>
         </div>
-        <h2 class="text-lg font-bold text-slate-900">
-          카카오 계정으로 로그인하는 중이에요
-        </h2>
-        <p class="mt-2 text-sm text-slate-500">
-          잠시만 기다려 주세요.
-        </p>
+        <h2 class="text-lg font-bold text-slate-900">카카오 계정으로 로그인하는 중이에요</h2>
+        <p class="mt-2 text-sm text-slate-500">잠시만 기다려 주세요.</p>
       </template>
 
       <!-- 에러 -->
@@ -49,24 +34,13 @@
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
           </svg>
         </div>
-        <h2 class="text-lg font-bold text-slate-900">
-          로그인에 실패했어요
-        </h2>
-        <p class="mt-2 text-sm text-slate-600">
-          {{ errorMessage }}
-        </p>
+        <h2 class="text-lg font-bold text-slate-900">로그인에 실패했어요</h2>
+        <p class="mt-2 text-sm text-slate-600">{{ errorMessage }}</p>
         <div class="mt-6 flex flex-col gap-3">
-          <RouterLink
-            to="/member/doLogin"
-            class="inline-flex h-12 items-center justify-center rounded-xl bg-slate-900 font-semibold text-white transition hover:bg-slate-800"
-          >
+          <RouterLink to="/member/doLogin" class="inline-flex h-12 items-center justify-center rounded-xl bg-slate-900 font-semibold text-white transition hover:bg-slate-800">
             로그인 화면으로 돌아가기
           </RouterLink>
-          <button
-            type="button"
-            class="inline-flex h-12 items-center justify-center rounded-xl border border-slate-200 font-semibold text-slate-700 transition hover:bg-slate-50"
-            @click="retry"
-          >
+          <button type="button" class="inline-flex h-12 items-center justify-center rounded-xl border border-slate-200 font-semibold text-slate-700 transition hover:bg-slate-50" @click="retry">
             다시 시도
           </button>
         </div>
@@ -100,7 +74,15 @@ export default {
   methods: {
     async sendCodeToServer(code) {
       try {
-        const response = await axios.post(`${API_BASE}/member/kakao/doLogin`, { code })
+        // 통합 대기 플래그 확인 → merge 플래그를 로그인 요청에 포함
+        const pendingMerge = localStorage.getItem('pendingMerge')
+        const body = { code }
+        if (pendingMerge) {
+          body.merge = true
+          localStorage.removeItem('pendingMerge')
+        }
+
+        const response = await axios.post(`${API_BASE}/member/kakao/doLogin`, body)
         const access_token = response.data.access_token
         const refresh_token = response.data.refresh_token
         localStorage.setItem('accessToken', access_token)
@@ -111,12 +93,31 @@ export default {
           })
           localStorage.setItem('isVerified', true)
         } catch (_) {}
+
         const redirect = this.$route.query.redirect || '/'
         window.location.href = redirect
       } catch (e) {
+        const status = e?.response?.status
+        const responseData = e?.response?.data
+        const code = responseData?.code || responseData?.error?.code
+        const errorMsg = responseData?.error?.error_message || responseData?.message || ''
+
+        // 소셜 계정 중복 감지 (409 / 에러코드 / 메시지 키워드)
+        const isDuplicate =
+          status === 409 ||
+          code === 'DUPLICATE_SOCIAL_EMAIL' ||
+          (typeof errorMsg === 'string' && errorMsg.includes('소셜') && errorMsg.includes('중복'))
+
+        if (isDuplicate) {
+          const conflictType = responseData?.conflictSocialType || 'GOOGLE'
+          this.$router.replace({
+            path: '/member/doLogin',
+            query: { mergeConflict: conflictType },
+          })
+          return
+        }
         this.error = true
-        const msg = e?.response?.data?.message || e?.response?.data?.error
-        if (msg) this.errorMessage = typeof msg === 'string' ? msg : '로그인 처리에 실패했어요.'
+        if (errorMsg) this.errorMessage = typeof errorMsg === 'string' ? errorMsg : '로그인 처리에 실패했어요.'
       }
     },
     retry() {
