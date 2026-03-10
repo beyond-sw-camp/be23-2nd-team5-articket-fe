@@ -10,6 +10,10 @@
       </UiButton>
     </div>
 
+    <div class="rounded-2xl border border-slate-100 bg-white px-6 pb-12 pt-6 shadow-sm">
+      <StepIndicator :steps="['기본 정보', '가격 정책', '회차 등록']" :active="0" />
+    </div>
+
     <UiCard>
       <form id="concert-create-form" class="space-y-6" @submit.prevent="submitCreate">
         <section>
@@ -44,8 +48,10 @@
                 required
                 class="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm text-slate-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
               >
-                <option value="DRAFT">초안 (추후 게시)</option>
-                <option value="PUBLISHED">바로 게시</option>
+                <option value="DRAFT">초안 (임시 저장)</option>
+                <option value="UPCOMING">오픈 대기 (정보 공개)</option>
+                <option value="AVAILABLE">예매 가능</option>
+                <option value="CLOSED">예매 마감</option>
               </select>
             </div>
 
@@ -61,13 +67,22 @@
             </div>
 
             <div class="sm:col-span-2">
-              <label class="block text-sm font-medium text-slate-700">공연 썸네일 URL</label>
+              <label class="block text-sm font-medium text-slate-700">공연 썸네일 이미지</label>
               <input
-                v-model="form.thum_img_url"
-                type="url"
-                placeholder="https://..."
-                class="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+                type="file"
+                accept="image/*"
+                class="mt-1.5 block w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 shadow-sm file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-1 file:text-xs file:font-semibold file:text-slate-600 hover:file:bg-slate-200"
+                @change="onThumbFileChange"
               />
+              <p class="mt-1 text-xs text-slate-400">썸네일 이미지를 업로드해 주세요.</p>
+              <div v-if="thumbPreview" class="mt-3 inline-block overflow-hidden rounded-xl border border-slate-100 bg-slate-50">
+                <img
+                  :src="thumbPreview"
+                  alt="썸네일 미리보기"
+                  class="h-24 w-40 object-cover"
+                  @error="$event.target.style.visibility='hidden'"
+                />
+              </div>
             </div>
           </div>
         </section>
@@ -219,6 +234,7 @@ import UiCard from '../../components/common/UiCard.vue'
 import UiButton from '../../components/common/UiButton.vue'
 import UiBadge from '../../components/common/UiBadge.vue'
 import UiModal from '../../components/common/UiModal.vue'
+import StepIndicator from '../../components/common/StepIndicator.vue'
 import { useApi } from '../../composables/useApi'
 import { showErrorAlert } from '../../composables/useErrorToast'
 import { ENDPOINTS } from '../../lib/api/endpoints'
@@ -252,7 +268,8 @@ export default {
     UiCard,
     UiButton,
     UiBadge,
-    UiModal
+    UiModal,
+    StepIndicator
   },
   computed: {
     categoryOptions() {
@@ -281,7 +298,9 @@ export default {
       previewOffsetY: 0,
       isPreviewDragging: false,
       previewDragStartX: 0,
-      previewDragStartY: 0
+      previewDragStartY: 0,
+      thumbFile: null,
+      thumbPreview: null,
     }
   },
   created() {
@@ -292,8 +311,24 @@ export default {
   },
   beforeUnmount() {
     if (this.venueSearchTimer) clearTimeout(this.venueSearchTimer)
+    if (this.thumbPreview && this.thumbPreview.startsWith('blob:')) {
+      URL.revokeObjectURL(this.thumbPreview)
+    }
   },
   methods: {
+    onThumbFileChange(e) {
+      const file = e.target.files?.[0]
+      if (!file) {
+        this.thumbFile = null
+        this.thumbPreview = null
+        return
+      }
+      this.thumbFile = file
+      if (this.thumbPreview && this.thumbPreview.startsWith('blob:')) {
+        URL.revokeObjectURL(this.thumbPreview)
+      }
+      this.thumbPreview = URL.createObjectURL(file)
+    },
     onVenueQueryInput() {
       if (this.venueSearchTimer) clearTimeout(this.venueSearchTimer)
       this.venueSearchTimer = setTimeout(() => {
@@ -381,25 +416,33 @@ export default {
       }
       this.successMessage = ''
       this.saving = true
-      const payload = {
+
+      // dto (JSON) 상세 구조
+      const dto = {
         title: this.form.title || DUMMY_CONCERT.title,
         category: this.form.category || 'CONCERT',
         status: this.form.status || DUMMY_CONCERT.status,
-        seatMapId: this.form.seat_map_id
+        ageLimit: (this.form.age_limit !== null && this.form.age_limit !== undefined && this.form.age_limit !== '')
+          ? Number(this.form.age_limit)
+          : 0,
+        seatMapId: Number(this.form.seat_map_id)
       }
-      if (this.form.age_limit !== null && this.form.age_limit !== undefined && this.form.age_limit !== '') {
-        payload.ageLimit = Number(this.form.age_limit)
+
+      // multipart/form-data payload
+      const fd = new FormData()
+      fd.append('dto', new Blob([JSON.stringify(dto)], { type: 'application/json' }))
+
+      if (this.thumbFile) {
+        fd.append('thumImg', this.thumbFile)
       }
-      if (this.form.thum_img_url) {
-        payload.thumImgUrl = this.form.thum_img_url
-      }
+
       try {
-        const res = await this.api.post(ENDPOINTS.organizerCreateConcert(), payload)
+        const res = await this.api.post(ENDPOINTS.organizerCreateConcert(), fd)
         let concertId = res?.id ?? res?.concertId
         if (concertId == null) {
           const list = await this.api.get(ENDPOINTS.organizerConcerts()).catch(() => [])
           const arr = Array.isArray(list) ? list : (list?.items ?? list?.content ?? [])
-          const found = arr.find((c) => c.title === payload.title)
+          const found = arr.find((c) => c.title === dto.title)
           concertId = found?.id
         }
         if (concertId) {
@@ -407,6 +450,7 @@ export default {
           return
         }
       } catch (err) {
+        console.error('Failed to create concert:', err)
       } finally {
         this.saving = false
       }

@@ -1,95 +1,187 @@
 <template>
-  <div class="grid gap-4">
+  <div class="space-y-6 pb-24">
+    <!-- Page Title -->
+    <div>
+      <h1 class="text-xl font-bold text-slate-900">가격 정책</h1>
+      <p class="mt-1 text-sm text-slate-500">공연 생성 후 정책(가격) 설정 -> 회차 추가 순서로 진행됩니다</p>
+    </div>
+
+    <!-- Step Indicator Container -->
+    <div v-if="fromCreate" class="rounded-2xl border border-slate-100 bg-white px-6 pb-12 pt-6 shadow-sm">
+      <StepIndicator :steps="['기본 정보', '가격 정책', '회차 등록']" :active="1" />
+    </div>
+
+    <!-- Info Alert -->
     <div v-if="fromCreate" class="rounded-xl border border-green-200 bg-green-50 px-4 py-3">
       <p class="text-sm font-medium text-green-800">공연이 생성되었습니다.</p>
       <p class="mt-0.5 text-sm text-green-700">가격 정책을 먼저 설정한 뒤 회차를 추가하세요.</p>
     </div>
 
+    <!-- Header + Policy List Card -->
     <UiCard>
-      <div class="flex items-start justify-between gap-3">
+      <!-- Card Header -->
+      <div class="flex items-start justify-between gap-6">
         <div>
-          <div class="text-sm font-semibold text-slate-900">공연 정책 관리</div>
-          <div class="mt-1 text-sm text-slate-500">기본 가격, 선예매, 할인, 구매 제한 정책을 설정합니다.</div>
+          <div class="flex items-center gap-2">
+            <div class="text-sm font-semibold text-slate-900">공연 정책 관리</div>
+            <UiBadge tone="soft" class="mt-0.5">ORGANIZER</UiBadge>
+          </div>
+          <div class="mt-1 text-sm text-slate-500">
+            기본 가격, 선예매, 할인, 구매 제한 정책을 설정합니다.
+          </div>
         </div>
-        <UiBadge tone="soft">ORGANIZER</UiBadge>
+        <div class="shrink-0">
+          <UiButton
+            class="h-11 px-5 text-sm font-semibold"
+            :disabled="!availableTypes.length"
+            @click="openCreateModal"
+          >
+            + 정책 추가
+          </UiButton>
+        </div>
       </div>
 
-      <div v-if="!loading && !hasBasePricePolicy" class="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3">
+      <!-- Base price required notice -->
+      <div
+        v-if="!loading && !hasBasePricePolicy"
+        class="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3"
+      >
         <div class="text-xs font-semibold text-amber-700">필수 설정 필요</div>
         <div class="mt-0.5 text-xs text-amber-600">
           회차를 생성하려면 <strong>BASE_PRICE</strong>를 먼저 등록해야 합니다.
         </div>
       </div>
 
-      <div class="mt-4 flex justify-end">
-        <UiButton class="h-11 px-5" :disabled="!availableTypes.length" @click="openCreateModal">+ 정책 추가</UiButton>
-      </div>
-    </UiCard>
+      <!-- Policy List (simple rows, no extra box) -->
+      <div class="mt-5 border-t border-slate-100">
+        <!-- Loading / Error / Empty states -->
+        <div v-if="loading" class="py-3 text-sm text-slate-500">불러오는 중...</div>
+        <div v-else-if="errorMessage" class="py-3 text-sm text-red-600">
+          {{ errorMessage }}
+        </div>
+        <div v-else-if="!items.length" class="py-3 text-sm text-slate-500">
+          등록된 정책이 없습니다. <strong>BASE_PRICE</strong>를 먼저 등록하세요.
+        </div>
 
-    <UiCard v-if="loading"><div class="text-sm text-slate-500">불러오는 중...</div></UiCard>
-    <UiCard v-else-if="errorMessage"><div class="text-sm text-red-600">{{ errorMessage }}</div></UiCard>
-    <UiCard v-else-if="!items.length">
-      <div class="py-2 text-sm text-slate-500">등록된 정책이 없습니다. <strong>BASE_PRICE</strong>를 먼저 등록하세요.</div>
-    </UiCard>
+        <!-- Policies -->
+        <template v-else>
+          <div
+            v-for="item in items"
+            :key="item.id"
+            class="flex items-center justify-between gap-4 border-b border-slate-100 py-3"
+          >
+            <div class="flex-1 min-w-0">
+              <!-- Type & primary summary -->
+              <div class="flex items-center gap-3">
+                <span class="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                  {{ TYPE_LABEL[item.type] || item.type }}
+                </span>
 
-    <UiCard v-else v-for="item in items" :key="item.id">
-      <div class="flex items-start justify-between gap-3">
-        <div class="flex-1 min-w-0">
-          <UiBadge :tone="item.type === 'BASE_PRICE' ? 'solid' : 'soft'" :color="item.type === 'BASE_PRICE' ? 'red' : 'slate'">
-            {{ TYPE_LABEL[item.type] || item.type }}
-          </UiBadge>
-          <div class="mt-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
-            <template v-if="item.type === 'BASE_PRICE'">
-              <div class="grid grid-cols-[1fr_auto] gap-x-6 gap-y-1">
-                <template v-for="(price, grade) in parseConfig(item.config)" :key="grade">
-                  <div class="text-sm text-slate-600">{{ grade }}</div>
-                  <div class="text-sm font-semibold text-slate-900 text-right">{{ Number(price).toLocaleString() }}원</div>
+                <template v-if="item.type === 'BASE_PRICE'">
+                  <span class="rounded-full bg-slate-50 px-2 py-0.5 text-xs font-semibold text-slate-700">
+                    {{ firstBasePriceEntry(item.config).grade || '-' }}
+                  </span>
+                </template>
+                <template v-else-if="item.type === 'PRESALE'">
+                  <span class="text-sm font-medium text-slate-800">
+                    {{ fmtDate(parseConfig(item.config).startAt) }} ~
+                    {{ fmtDate(parseConfig(item.config).endAt) }}
+                  </span>
+                </template>
+                <template v-else-if="item.type === 'DISCOUNT'">
+                  <span class="text-sm font-medium text-slate-800">
+                    {{ parseConfig(item.config).discountName || '할인 정책' }}
+                  </span>
+                </template>
+                <template v-else-if="item.type === 'PURCHASE_LIMIT'">
+                  <span class="text-sm font-medium text-slate-800">
+                    1인당 최대 {{ parseConfig(item.config).limit }}매
+                  </span>
                 </template>
               </div>
-            </template>
-            <template v-else-if="item.type === 'PRESALE'">
-              <div class="grid gap-1 text-sm text-slate-700">
-                <div>기간: <span class="font-semibold">{{ fmtDate(parseConfig(item.config).startAt) }} ~ {{ fmtDate(parseConfig(item.config).endAt) }}</span></div>
-                <div>
-                  인증 필요: <span class="font-semibold">{{ parseConfig(item.config).authRequired ? '예' : '아니오' }}</span>
-                  <span v-if="parseConfig(item.config).authType" class="ml-1 text-xs text-slate-400">({{ parseConfig(item.config).authType }})</span>
-                </div>
+
+              <!-- Detail line -->
+              <div class="mt-1 text-xs text-slate-500">
+                <template v-if="item.type === 'BASE_PRICE'">
+                  좌석 등급별 기본 가격을 설정합니다.
+                </template>
+                <template v-else-if="item.type === 'PRESALE'">
+                  인증 여부, 선예매 기간을 관리합니다.
+                </template>
+                <template v-else-if="item.type === 'DISCOUNT'">
+                  할인율과 대상 좌석 등급을 설정합니다.
+                </template>
+                <template v-else-if="item.type === 'PURCHASE_LIMIT'">
+                  회원당 구매 제한 수량을 설정합니다.
+                </template>
               </div>
-            </template>
-            <template v-else-if="item.type === 'DISCOUNT'">
-              <div class="grid gap-1 text-sm text-slate-700">
-                <div class="font-semibold text-slate-900">{{ parseConfig(item.config).discountName || '할인 정책' }}</div>
-                <div>할인율: <span class="font-semibold">{{ Math.round((parseConfig(item.config).discountRate || 0) * 100) }}%</span></div>
-                <div v-if="(parseConfig(item.config).targetGrades || []).length">
-                  대상 등급: <span class="font-semibold">{{ (parseConfig(item.config).targetGrades || []).join(', ') }}</span>
-                </div>
-                <div v-if="parseConfig(item.config).validUntil">
-                  유효 기간: <span class="font-semibold">{{ fmtDate(parseConfig(item.config).validUntil) }}</span>
-                </div>
+            </div>
+
+            <!-- Right side: price/summary + actions -->
+            <div class="flex items-center gap-4 shrink-0">
+              <div class="min-w-[80px] text-right text-sm font-semibold text-slate-900">
+                <template v-if="item.type === 'BASE_PRICE'">
+                  {{ firstBasePriceEntry(item.config).price.toLocaleString() }}원
+                </template>
+                <template v-else-if="item.type === 'DISCOUNT'">
+                  {{ Math.round((parseConfig(item.config).discountRate || 0) * 100) }}%
+                </template>
               </div>
-            </template>
-            <template v-else-if="item.type === 'PURCHASE_LIMIT'">
-              <div class="grid gap-1 text-sm text-slate-700">
-                <div>1인당 최대 구매 수: <span class="font-semibold">{{ parseConfig(item.config).limit }}</span></div>
-                <div v-if="parseConfig(item.config).message" class="text-xs text-slate-500">{{ parseConfig(item.config).message }}</div>
+              <div class="flex gap-2">
+                <UiButton
+                  variant="ghost"
+                  class="h-8 px-3 text-xs font-semibold"
+                  @click="openEditModal(item)"
+                >
+                  수정
+                </UiButton>
+                <UiButton
+                  variant="ghost"
+                  class="h-8 px-3 text-xs font-semibold text-red-600 hover:text-red-700"
+                  @click="openDeleteModal(item)"
+                >
+                  삭제
+                </UiButton>
               </div>
-            </template>
-            <template v-else>
-              <pre class="whitespace-pre-wrap text-xs text-slate-600">{{ JSON.stringify(parseConfig(item.config), null, 2) }}</pre>
-            </template>
+            </div>
           </div>
-        </div>
-        <div class="flex flex-col gap-2 shrink-0">
-          <UiButton variant="ghost" class="h-8 px-3 text-sm" @click="openEditModal(item)">수정</UiButton>
-          <UiButton variant="ghost" class="h-8 px-3 text-sm text-red-600 hover:text-red-700" @click="openDeleteModal(item)">삭제</UiButton>
-        </div>
+        </template>
       </div>
     </UiCard>
 
-    <UiCard v-if="!loading && items.length && !availableTypes.length">
-      <div class="text-xs text-slate-400">모든 정책 유형이 등록되었습니다.</div>
-    </UiCard>
+    <!-- Navigation Footer (Fixed & Centered in Content Area) -->
+    <div
+      v-if="fromCreate"
+      class="fixed bottom-6 left-64 right-0 z-50 flex justify-center px-6 pointer-events-none"
+    >
+      <div
+        class="pointer-events-auto flex w-full max-w-4xl items-center justify-between rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-2xl backdrop-blur-md"
+      >
+        <UiButton
+          variant="ghost"
+          class="h-11 px-6 text-sm text-slate-600"
+          @click="$router.push(`/organizer/concerts/${$route.params.concertId}/edit?from=create`)"
+        >
+          <- 이전 (기본 정보)
+        </UiButton>
+        <div class="flex items-center gap-4">
+          <p
+            v-if="!hasBasePricePolicy"
+            class="hidden text-xs font-medium text-amber-600 sm:block"
+          >
+            기본 가격(BASE_PRICE)을 먼저 등록해 주세요
+          </p>
+          <UiButton
+            class="h-11 px-8 font-bold shadow-sm"
+            :disabled="!hasBasePricePolicy"
+          >
+            다음: 회차 등록 ->
+          </UiButton>
+        </div>
+      </div>
+    </div>
 
+    <!-- Modals -->
     <UiModal :open="createModalOpen" title="정책 추가" @close="closeCreateModal">
       <form id="policy-create-form" class="grid gap-4" @submit.prevent="submitCreate">
         <div>
@@ -179,6 +271,7 @@ import UiCard from '../../components/common/UiCard.vue'
 import UiBadge from '../../components/common/UiBadge.vue'
 import UiButton from '../../components/common/UiButton.vue'
 import UiModal from '../../components/common/UiModal.vue'
+import StepIndicator from '../../components/common/StepIndicator.vue'
 import PolicyConfigForm from '../../components/organizer/PolicyConfigForm.vue'
 import { useApi } from '../../composables/useApi'
 import { ENDPOINTS } from '../../lib/api/endpoints'
@@ -199,7 +292,7 @@ export const TYPE_LABEL = {
 
 export default {
   name: 'OrganizerConcertPoliciesView',
-  components: { UiCard, UiBadge, UiButton, UiModal, PolicyConfigForm },
+  components: { UiCard, UiBadge, UiButton, UiModal, PolicyConfigForm, StepIndicator },
   data() {
     return {
       TYPE_LABEL,
@@ -234,6 +327,13 @@ export default {
     this.loadSeatGrades()
   },
   methods: {
+    firstBasePriceEntry(config) {
+      const parsed = this.parseConfig(config)
+      const entries = Object.entries(parsed || {})
+      if (!entries.length) return { grade: '-', price: 0 }
+      const [grade, price] = entries[0]
+      return { grade, price: Number(price) || 0 }
+    },
     async loadSeatGrades() {
       const concertId = this.$route.params.concertId
       if (!concertId) return

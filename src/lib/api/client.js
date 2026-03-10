@@ -9,6 +9,10 @@ const DEFAULTS = {
 }
 
 const REFRESH_PATH = '/member/refresh-at'
+// 401 발생 시 자동 재시도(토큰 갱신 후 재요청)를 하면 안 되는, 멱등이 보장되지 않는 POST 엔드포인트 목록
+const NON_IDEMPOTENT_RETRY_PATHS = [
+  '/concerts/organizer/create', // 공연 생성
+]
 
 export function createApiClient(opts = {}) {
   const baseUrl = opts.baseUrl || DEFAULTS.baseUrl
@@ -45,6 +49,15 @@ export function createApiClient(opts = {}) {
       }
 
       if (status !== 401 || originalRequest._retried) {
+        return Promise.reject(err)
+      }
+      // 멱등이 보장되지 않는 POST 요청은 401 발생 시 토큰 갱신 후 재요청을 하지 않고 그대로 에러를 반환
+      const method = (originalRequest.method || '').toUpperCase()
+      if (
+        method === 'POST' &&
+        originalRequest.url &&
+        NON_IDEMPOTENT_RETRY_PATHS.includes(originalRequest.url)
+      ) {
         return Promise.reject(err)
       }
       if (originalRequest.url?.includes(REFRESH_PATH) || originalRequest.baseURL + originalRequest.url === baseUrl + REFRESH_PATH) {

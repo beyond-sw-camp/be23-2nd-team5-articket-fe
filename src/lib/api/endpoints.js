@@ -132,7 +132,7 @@
     return `/concerts/organizer/dashboard/report-details${q ? `?${q}` : ''}`
   },
   organizerCreateConcert: () => `/concerts/organizer/create`,
-  organizerUpdateConcert: (concertId) => `/concerts/organizer/${concertId}`,
+  organizerUpdateConcert: (concertId) => `/concerts/organizer/${concertId}/update`,
   organizerPublishConcert: (concertId) => `/concerts/organizer/${concertId}/publish`,
   organizerCreateSchedule: (concertId) => `/concerts/organizer/${concertId}/schedules`,
   organizerBulkCreateSchedules: (concertId) => `/concerts/organizer/${concertId}/schedules/bulk`,
