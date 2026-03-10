@@ -1,7 +1,7 @@
-<template>
+﻿<template>
   <div class="grid gap-4">
     <UiCard v-if="loading">
-      <div class="text-sm text-slate-500">불러오는 중…</div>
+      <div class="text-sm text-slate-500">불러오는 중...</div>
     </UiCard>
 
     <UiCard v-else-if="!item">
@@ -9,16 +9,13 @@
       <UiButton class="mt-3" @click="load">다시 시도</UiButton>
     </UiCard>
 
-    <UiCard v-else-if="item">
+    <UiCard v-else>
       <div class="flex items-start justify-between gap-3">
         <div>
           <div class="text-sm font-semibold text-slate-900">주문 상세 (ORGANIZER)</div>
           <div class="mt-1 text-sm text-slate-500">{{ item.id }}</div>
         </div>
-        <UiBadge
-          :tone="item.status === 'SUCCESS' ? 'solid' : 'soft'"
-          :color="item.status === 'SUCCESS' ? 'green' : 'slate'"
-        >
+        <UiBadge :tone="item.status === 'SUCCESS' || item.status === 'PAID' ? 'solid' : 'soft'" :color="item.status === 'SUCCESS' || item.status === 'PAID' ? 'green' : 'slate'">
           {{ item.status }}
         </UiBadge>
       </div>
@@ -27,26 +24,26 @@
         <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm">
           <div class="text-xs font-semibold text-slate-500">생성일</div>
           <div class="mt-1 text-sm font-semibold text-slate-900">
-            {{ new Date(item.createdAt).toLocaleString() }}
+            {{ formatDateTime(item.createdAt) }}
           </div>
         </div>
         <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm">
           <div class="text-xs font-semibold text-slate-500">금액</div>
           <div class="mt-1 text-sm font-semibold text-slate-900">
-            ₩{{ Number(item.totalAmount || 0).toLocaleString() }}
+            {{ formatWon(item.amount) }}
           </div>
         </div>
         <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm sm:col-span-2">
           <div class="text-xs font-semibold text-slate-500">좌석</div>
           <div class="mt-1 text-sm font-semibold text-slate-900">
-            {{ (item.seats || []).join(', ') }}
+            {{ formatSeats(item.seatDetails) }}
           </div>
         </div>
       </div>
 
       <div class="mt-4 flex gap-2">
-        <UiButton variant="ghost" class="h-11 px-4" @click="$router.back()">뒤로</UiButton>
-        <UiButton class="h-11 px-5" @click="$router.push(`/organizer/concerts/${item.concertId}/orders`)">
+        <UiButton variant="ghost" class="h-11 px-4" @click="goBackToList">이전 화면</UiButton>
+        <UiButton class="h-11 px-5" @click="goToConcertOrders">
           공연 주문 목록
         </UiButton>
       </div>
@@ -98,6 +95,33 @@ export default {
       } finally {
         this.loading = false
       }
+    },
+    goBackToList() {
+      if (window.history.length > 1) {
+        this.$router.back()
+        return
+      }
+      this.goToConcertOrders()
+    },
+    goToConcertOrders() {
+      if (!this.item?.concertId) {
+        this.$router.push('/organizer/reports')
+        return
+      }
+      this.$router.push(`/organizer/concerts/${this.item.concertId}/orders`)
+    },
+    formatDateTime(value) {
+      if (!value) return '-'
+      const date = new Date(value)
+      if (Number.isNaN(date.getTime())) return value
+      return date.toLocaleString()
+    },
+    formatWon(value) {
+      return `${Number(value || 0).toLocaleString()}원`
+    },
+    formatSeats(seatDetails) {
+      const seats = (seatDetails || []).map((seat) => seat.seatDefName).filter(Boolean)
+      return seats.length ? seats.join(', ') : '-'
     }
   }
 }
