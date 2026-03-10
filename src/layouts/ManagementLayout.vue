@@ -69,7 +69,6 @@
         <RouterView />
       </main>
     </div>
-    <ToastNotification v-if="sseState" :notifications="sseState.notifications" />
   </div>
 </template>
 
@@ -82,6 +81,7 @@ import { useApi } from '../composables/useApi'
 import { ENDPOINTS } from '../lib/api/endpoints'
 import NotificationPanel from '../components/common/NotificationPanel.vue'
 import ProfileDropdown from '../components/common/ProfileDropdown.vue'
+
 
 const ORGANIZER_NAV = [
   { to: '/organizer/dashboard', label: '대시보드', icon: LayoutGrid },
@@ -112,7 +112,6 @@ export default {
     Megaphone,
     NotificationPanel,
     ProfileDropdown,
-    ToastNotification
   },
   data() {
     return {
