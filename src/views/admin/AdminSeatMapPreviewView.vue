@@ -6,11 +6,14 @@
 
     <template v-else-if="seatMap">
       <!-- 상단 헤더 -->
-      <div class="flex flex-wrap items-start justify-between gap-4 mb-2">
+      <div class="flex flex-wrap items-start justify-between gap-4">
         <div>
           <div class="flex items-center gap-2">
             <h1 class="text-xl font-bold text-slate-900">{{ seatMap.name || '좌석맵' }}</h1>
-            <UiBadge :tone="seatMap.status === 'PUBLISHED' ? 'solid' : 'soft'" :color="seatMap.status === 'PUBLISHED' ? 'green' : 'slate'">
+            <UiBadge
+              :tone="seatMap.status === 'PUBLISHED' ? 'solid' : 'soft'"
+              :color="seatMap.status === 'PUBLISHED' ? 'green' : 'slate'"
+            >
               {{ seatMap.status || 'DRAFT' }}
             </UiBadge>
           </div>
@@ -18,21 +21,24 @@
         </div>
         <div class="flex items-center gap-2">
           <UiBadge tone="soft">ADMIN</UiBadge>
+          <UiButton variant="ghost" class="h-10 px-4" @click="$router.push('/admin/dashboard')">
+            대시보드
+          </UiButton>
           <UiButton
             v-if="venueId"
             variant="ghost"
             class="h-10 px-4"
             @click="$router.push(`/admin/venues/${venueId}/seat-maps`)"
           >
-            목록
+            좌석맵 목록
           </UiButton>
         </div>
       </div>
 
       <div class="grid gap-6 lg:grid-cols-3">
-        <!-- 배치도 미리보기 (왼쪽, 작은 크기) -->
+        <!-- 배치도 미리보기 (왼쪽) -->
         <div class="lg:col-span-1">
-          <div class="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+          <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
             <div class="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-4 py-2">
               <span class="text-xs font-semibold text-slate-600">배치도 미리보기</span>
               <div class="flex items-center gap-1">
@@ -54,7 +60,7 @@
               v-if="seatMap.thumbnailUrl"
               class="relative bg-white"
               :class="imgDragging ? 'cursor-grabbing' : 'cursor-grab'"
-              :style="{ height: '240px' }"
+              style="height: 240px"
               @wheel.prevent="onImgWheel"
               @mousedown.prevent="onImgMouseDown"
               @mousemove="onImgMouseMove"
@@ -72,20 +78,22 @@
                 }"
               />
             </div>
-            <div v-else class="flex flex-col items-center justify-center py-16 text-slate-500 bg-slate-50">
-              <span class="text-4xl mb-2">🗺️</span>
-              <span class="text-sm">저장된 배치도가 없습니다</span>
+            <div v-else class="flex flex-col items-center justify-center py-16 bg-slate-50">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-slate-300 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="0.8">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+              </svg>
+              <span class="text-sm text-slate-400">저장된 배치도가 없습니다</span>
               <span class="text-xs mt-1 text-slate-400">레이아웃 편집 후 저장해주세요</span>
             </div>
             <div class="flex justify-center border-t border-slate-200 bg-slate-50 px-4 py-3">
               <UiButton class="h-9 px-4" @click="$router.push(`/admin/seat-maps/${seatMap.id}/layout`)">
-                🗺️ 레이아웃 편집
+                레이아웃 편집
               </UiButton>
             </div>
           </div>
         </div>
 
-        <!-- 정보 및 액션 (오른쪽) -->
+        <!-- 정보 및 관리 (오른쪽) -->
         <div class="lg:col-span-2 space-y-4">
           <UiCard>
             <div class="space-y-4">
@@ -108,37 +116,19 @@
                 <label class="block text-xs font-semibold text-slate-500 mb-2">게시 상태</label>
                 <div class="flex flex-wrap items-center gap-2">
                   <button
+                    v-for="s in ['DRAFT', 'PUBLISHED', 'ARCHIVED']"
+                    :key="s"
                     type="button"
                     class="rounded-xl px-4 py-2 text-sm font-medium transition-colors"
-                    :class="statusDraft === 'DRAFT'
-                      ? 'bg-slate-800 text-white ring-2 ring-slate-800 ring-offset-2'
+                    :class="statusDraft === s
+                      ? s === 'PUBLISHED' ? 'bg-green-600 text-white ring-2 ring-green-600 ring-offset-2'
+                        : s === 'ARCHIVED' ? 'bg-amber-600 text-white ring-2 ring-amber-600 ring-offset-2'
+                        : 'bg-slate-800 text-white ring-2 ring-slate-800 ring-offset-2'
                       : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
                     :disabled="statusUpdating"
-                    @click="statusDraft = 'DRAFT'"
+                    @click="statusDraft = s"
                   >
-                    임시저장
-                  </button>
-                  <button
-                    type="button"
-                    class="rounded-xl px-4 py-2 text-sm font-medium transition-colors"
-                    :class="statusDraft === 'PUBLISHED'
-                      ? 'bg-green-600 text-white ring-2 ring-green-600 ring-offset-2'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
-                    :disabled="statusUpdating"
-                    @click="statusDraft = 'PUBLISHED'"
-                  >
-                    게시
-                  </button>
-                  <button
-                    type="button"
-                    class="rounded-xl px-4 py-2 text-sm font-medium transition-colors"
-                    :class="statusDraft === 'ARCHIVED'
-                      ? 'bg-amber-600 text-white ring-2 ring-amber-600 ring-offset-2'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
-                    :disabled="statusUpdating"
-                    @click="statusDraft = 'ARCHIVED'"
-                  >
-                    폐기
+                    {{ s === 'DRAFT' ? '임시저장' : s === 'PUBLISHED' ? '게시' : '폐기' }}
                   </button>
                   <UiButton
                     class="ml-2 shrink-0"
@@ -154,10 +144,6 @@
               <p v-if="successMessage" class="text-sm text-green-600">{{ successMessage }}</p>
             </div>
           </UiCard>
-
-          <div class="flex flex-wrap gap-2">
-            <UiButton variant="ghost" class="h-11 px-5" @click="$router.back()">뒤로</UiButton>
-          </div>
         </div>
       </div>
     </template>
@@ -165,7 +151,7 @@
     <UiCard v-else>
       <div class="py-12 text-center text-sm text-slate-500">좌석맵 정보를 찾을 수 없습니다.</div>
       <div class="flex justify-center mt-4">
-        <UiButton variant="ghost" @click="$router.back()">뒤로</UiButton>
+        <UiButton variant="ghost" @click="$router.push('/admin/dashboard')">대시보드로</UiButton>
       </div>
     </UiCard>
   </div>
@@ -179,7 +165,7 @@ import { useApi } from '../../composables/useApi'
 import { ENDPOINTS } from '../../lib/api/endpoints'
 
 export default {
-  name: 'AdminSeatMapPreviewView',
+  name: 'AdminSeatMapDetailView',
   components: { UiCard, UiBadge, UiButton },
   data() {
     return {
@@ -218,13 +204,13 @@ export default {
   },
   methods: {
     normalizeSeatMap(item) {
-      const status = item?.status ?? item?.seatMapStatus ?? 'DRAFT'
+      const status = String(item?.status ?? item?.seatMapStatus ?? 'DRAFT').toUpperCase()
       return {
         id: item?.id,
         name: item?.name ?? '',
         venue_id: item?.venue_id ?? item?.venueId ?? item?.venue?.id,
         version: item?.version ?? null,
-        status: String(status).toUpperCase() || 'DRAFT',
+        status,
         thumbnailUrl: item?.thumbnailUrl ?? item?.thumbnail_url ?? null
       }
     },
@@ -253,8 +239,6 @@ export default {
         this.statusDraft = status
         const labels = { DRAFT: '임시저장', PUBLISHED: '게시', ARCHIVED: '폐기' }
         this.successMessage = `상태가 ${labels[status]}로 변경되었습니다.`
-      } catch (err) {
-        // ErrorAlertModal
       } finally {
         this.statusUpdating = false
       }
@@ -269,8 +253,6 @@ export default {
         })
         this.successMessage = '좌석맵 이름이 수정되었습니다.'
         this.seatMap = this.normalizeSeatMap({ ...this.seatMap, name: this.seatMapNameDraft.trim() })
-      } catch (err) {
-        // ErrorAlertModal
       } finally {
         this.savingSeatMapName = false
       }

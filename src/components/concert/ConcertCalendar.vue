@@ -57,13 +57,14 @@
               'flex items-center justify-between rounded-xl border px-4 py-3 text-left transition',
               slot.status === 'OPEN'
                 ? 'border-red-200 bg-red-50 hover:border-red-400'
-                : 'cursor-not-allowed border-slate-200 bg-slate-50 opacity-60'
+                : adminMode ? 'border-slate-200 bg-slate-50 hover:border-slate-400' : 'cursor-not-allowed border-slate-200 bg-slate-50 opacity-60'
             ]"
-            :disabled="slot.status !== 'OPEN'"
+            :disabled="!adminMode && slot.status !== 'OPEN'"
             @click="$emit('select-schedule', slot.scheduleId)"
           >
-            <span class="text-sm font-semibold text-slate-900">
-              {{ formatTime(slot.playTime) }}
+            <span class="flex flex-col gap-0.5">
+              <span v-if="slot.concertTitle" class="text-xs font-medium text-slate-500">{{ slot.concertTitle }}</span>
+              <span class="text-sm font-semibold text-slate-900">{{ formatTime(slot.playTime) }}</span>
             </span>
             <span :class="['text-xs font-semibold', slot.status === 'OPEN' ? 'text-red-500' : 'text-slate-400']">
               {{ slot.status === 'OPEN' ? '예매 가능' : slot.status }}
@@ -87,7 +88,9 @@ export default {
     // schedulesByDate: { '2026-03-21': [{scheduleId, playTime, status}] }
     schedulesByDate: { type: Object, default: () => ({}) },
     // 초기 선택 날짜 (부모와 동기화용)
-    modelValue: { type: String, default: null }
+    modelValue: { type: String, default: null },
+    // 어드민 모드: 상태에 관계없이 모든 슬롯 클릭 가능, 공연명 표시
+    adminMode: { type: Boolean, default: false }
   },
   emits: ['select-schedule', 'update:selectedDate', 'update:modelValue'],
   data() {

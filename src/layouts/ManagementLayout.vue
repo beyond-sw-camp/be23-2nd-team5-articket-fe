@@ -25,7 +25,14 @@
             : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'"
         >
           <component :is="item.icon" class="h-5 w-5 shrink-0" />
-          {{ item.label }}
+          <span class="truncate">{{ item.label }}</span>
+          <!-- 주최자 승인 대기 뱃지 (ADMIN 전용, 대기 건 존재 시) -->
+          <span
+            v-if="item.to === '/admin/pending-organizers' && showPendingOrganizerBadge"
+            class="ml-auto inline-flex h-5 items-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white"
+          >
+            NEW
+          </span>
         </RouterLink>
       </nav>
 
@@ -62,7 +69,6 @@
         <RouterView />
       </main>
     </div>
-
     <ToastNotification v-if="sseState" :notifications="sseState.notifications" />
   </div>
 </template>
@@ -72,9 +78,10 @@ import { Ticket, LayoutGrid, CirclePlus, Users2, User, LineChart, ReceiptText, M
 import { getRole } from '../composables/useRole'
 import { useMe } from '../composables/useMe'
 import { useSSE } from '../composables/useSSE'
+import { useApi } from '../composables/useApi'
+import { ENDPOINTS } from '../lib/api/endpoints'
 import NotificationPanel from '../components/common/NotificationPanel.vue'
 import ProfileDropdown from '../components/common/ProfileDropdown.vue'
-import ToastNotification from '../components/common/ToastNotification.vue'
 
 const ORGANIZER_NAV = [
   { to: '/organizer/dashboard', label: '대시보드', icon: LayoutGrid },
@@ -109,7 +116,9 @@ export default {
   },
   data() {
     return {
-      _sse: null
+      _sse: null,
+      _api: null,
+      hasPendingOrganizers: false,
     }
   },
   computed: {
@@ -129,7 +138,10 @@ export default {
     isOrganizerReportOrderRoute() {
       const path = this.$route.path
       return /^\/organizer\/concerts\/\d+\/orders$/.test(path) || /^\/organizer\/orders\/\d+$/.test(path)
-    }
+    },
+    showPendingOrganizerBadge() {
+      return this.roleValue === 'ADMIN' && this.hasPendingOrganizers
+    },
   },
   watch: {
     isSeatMapLayoutEditor: {
@@ -145,6 +157,12 @@ export default {
     if (me?.refetch) me.refetch()
     this._sse = useSSE()
     if (localStorage.getItem('accessToken')) this._sse.connect()
+
+    // 관리자일 때만 주최자 승인 대기 목록 여부 체크
+    this._api = useApi()
+    if (this.roleValue === 'ADMIN') {
+      this.checkPendingOrganizers()
+    }
   },
   beforeUnmount() {
     document.documentElement.style.overflowX = ''
@@ -167,7 +185,17 @@ export default {
         return path === '/management/me'
       }
       return path === to || path.startsWith(to + '/')
-    }
-  }
+    },
+    async checkPendingOrganizers() {
+      if (!this._api) return
+      try {
+        const res = await this._api.get(ENDPOINTS.adminPendingOrganizers({ page: 0, size: 1 }))
+        const raw = res?.content ?? res?.data ?? []
+        this.hasPendingOrganizers = Array.isArray(raw) && raw.length > 0
+      } catch (_) {
+        this.hasPendingOrganizers = false
+      }
+    },
+  },
 }
 </script>
