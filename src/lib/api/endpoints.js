@@ -1,4 +1,4 @@
-export const ENDPOINTS = {
+﻿export const ENDPOINTS = {
   // GUEST
   concerts: () => `/concerts`,
   /** 오픈 예정 공연 전용 목록 (예매 오픈 기준 정렬) */
@@ -104,6 +104,33 @@ export const ENDPOINTS = {
   },
   organizerConcertStats: (concertId) => `/concerts/organizer/${concertId}/stats`,
   organizerDashboardOverview: () => `/concerts/organizer/dashboard/overview`,
+  organizerSeatInsights: ({ concertId, scheduleId } = {}) => {
+    const p = new URLSearchParams()
+    if (concertId != null) p.set('concertId', String(concertId))
+    if (scheduleId != null) p.set('scheduleId', String(scheduleId))
+    const q = p.toString()
+    return `/concerts/organizer/dashboard/seat-insights${q ? `?${q}` : ''}`
+  },
+  organizerSeatInsightOptions: () => `/concerts/organizer/dashboard/seat-insights/options`,
+  organizerSettlementReport: ({ days = 14, concertId = null, scheduleId = null } = {}) => {
+    const p = new URLSearchParams()
+    if (days != null) p.set('days', String(days))
+    if (concertId != null) p.set('concertId', String(concertId))
+    if (scheduleId != null) p.set('scheduleId', String(scheduleId))
+    const q = p.toString()
+    return `/concerts/organizer/dashboard/reports${q ? `?${q}` : ''}`
+  },
+  organizerReportDetails: ({ concertId = null, scheduleId = null, status = null, keyword = '', page = 0, size = 20 } = {}) => {
+    const p = new URLSearchParams()
+    if (concertId != null) p.set('concertId', String(concertId))
+    if (scheduleId != null) p.set('scheduleId', String(scheduleId))
+    if (status) p.set('status', status)
+    if (keyword) p.set('keyword', keyword)
+    if (page != null) p.set('page', String(page))
+    if (size != null) p.set('size', String(size))
+    const q = p.toString()
+    return `/concerts/organizer/dashboard/report-details${q ? `?${q}` : ''}`
+  },
   organizerCreateConcert: () => `/concerts/organizer/create`,
   organizerUpdateConcert: (concertId) => `/concerts/organizer/${concertId}`,
   organizerPublishConcert: (concertId) => `/concerts/organizer/${concertId}/publish`,
