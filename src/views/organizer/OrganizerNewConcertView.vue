@@ -10,6 +10,10 @@
       </UiButton>
     </div>
 
+    <div class="rounded-2xl border border-slate-100 bg-white px-6 pb-12 pt-6 shadow-sm">
+      <StepIndicator :steps="['기본 정보', '가격 정책', '회차 등록']" :active="0" />
+    </div>
+
     <UiCard>
       <form id="concert-create-form" class="space-y-6" @submit.prevent="submitCreate">
         <section>
@@ -230,6 +234,7 @@ import UiCard from '../../components/common/UiCard.vue'
 import UiButton from '../../components/common/UiButton.vue'
 import UiBadge from '../../components/common/UiBadge.vue'
 import UiModal from '../../components/common/UiModal.vue'
+import StepIndicator from '../../components/common/StepIndicator.vue'
 import { useApi } from '../../composables/useApi'
 import { showErrorAlert } from '../../composables/useErrorToast'
 import { ENDPOINTS } from '../../lib/api/endpoints'
@@ -263,7 +268,8 @@ export default {
     UiCard,
     UiButton,
     UiBadge,
-    UiModal
+    UiModal,
+    StepIndicator
   },
   computed: {
     categoryOptions() {

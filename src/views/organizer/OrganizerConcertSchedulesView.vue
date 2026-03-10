@@ -1,11 +1,21 @@
 <template>
-  <div class="grid gap-4">
+  <div class="space-y-6 pb-24">
+    <!-- Page Title -->
+    <div>
+      <h1 class="text-xl font-bold text-slate-900">회차 등록</h1>
+      <p class="mt-1 text-sm text-slate-500">가격 정책 설정 후 회차를 등록해 주세요</p>
+    </div>
+
+    <div v-if="fromCreate" class="rounded-2xl border border-slate-100 bg-white px-6 pb-12 pt-6 shadow-sm">
+      <StepIndicator :steps="['기본 정보', '가격 정책', '회차 등록']" :active="2" />
+    </div>
+
     <!-- Header -->
     <UiCard>
       <div class="flex items-start justify-between gap-3">
         <div>
           <div class="text-sm font-semibold text-slate-900">회차 목록</div>
-          <div class="mt-1 text-sm text-slate-500">play_time · booking_start/end · status</div>
+          <div class="mt-1 text-sm text-slate-500">공연 회차별 시작 시간, 예매 기간, 상태를 관리합니다.</div>
         </div>
         <UiBadge tone="soft">ORGANIZER</UiBadge>
       </div>
@@ -19,13 +29,13 @@
     </UiCard>
 
     <UiCard v-else-if="!items.length">
-      <div class="text-sm text-slate-500">등록된 회차가 없습니다.</div>
+      <div class="text-sm text-slate-500">등록된 회차가 없습니다. 회차를 생성해 주세요.</div>
     </UiCard>
 
     <template v-else>
       <UiTable :columns="columns" :rows="items">
         <template #cell:play_time="{ row }">
-          {{ new Date(row.play_time).toLocaleString() }}
+          <div class="text-sm font-medium text-slate-900">{{ new Date(row.play_time).toLocaleString('ko-KR', { dateStyle: 'short', timeStyle: 'short' }) }}</div>
         </template>
 
         <template #cell:status="{ row }">
@@ -39,27 +49,52 @@
 
         <template #cell:occupancy="{ row }">
           <div class="flex items-center gap-2">
-            <div class="h-1.5 w-20 overflow-hidden rounded-full bg-slate-200">
+            <div class="h-1.5 w-20 overflow-hidden rounded-full bg-slate-100">
               <div
-                class="h-full rounded-full bg-red-500"
+                class="h-full rounded-full bg-red-500 transition-all"
                 :style="{ width: Math.min(row.occupancy, 100) + '%' }"
               />
             </div>
-            <span class="text-xs text-slate-600">{{ row.occupancy }}%</span>
+            <span class="text-xs font-semibold text-slate-600">{{ row.occupancy }}%</span>
           </div>
         </template>
 
         <template #cell:performers="{ row }">
-          <div class="flex gap-1">
-            <UiButton
-              variant="ghost"
-              class="h-8 px-2 text-sm"
-              @click="$router.push(`/organizer/schedules/${row.id}/performers`)"
-            >출연진</UiButton>
-          </div>
+          <UiButton
+            variant="ghost"
+            class="h-8 px-2 text-xs font-semibold text-slate-600"
+            @click="$router.push(`/organizer/schedules/${row.id}/performers`)"
+          >
+            출연진 관리
+          </UiButton>
         </template>
       </UiTable>
     </template>
+
+    <!-- Navigation Footer (Fixed & Centered in Content Area) -->
+    <div v-if="fromCreate" class="fixed bottom-6 left-64 right-0 z-50 flex justify-center px-6 pointer-events-none">
+      <div class="pointer-events-auto flex w-full max-w-4xl items-center justify-between rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-2xl backdrop-blur-md">
+        <UiButton
+          variant="ghost"
+          class="h-11 px-6 text-sm text-slate-600"
+          @click="$router.push(`/organizer/concerts/${$route.params.concertId}/policies?from=create`)"
+        >
+          <- 이전 (가격 정책)
+        </UiButton>
+        <div class="flex items-center gap-4">
+          <p v-if="!items.length" class="hidden text-xs font-medium text-amber-600 sm:block">최소 한 개 이상의 회차를 등록해야 합니다</p>
+          <UiButton
+            variant="solid"
+            color="red"
+            class="h-11 px-10 font-bold shadow-sm"
+            :disabled="!items.length"
+            @click="$router.push('/organizer/concerts')"
+          >
+            공연 등록 완료
+          </UiButton>
+        </div>
+      </div>
+    </div>
 
     <!-- ── Create Modal ── -->
     <UiModal :open="createModalOpen" title="회차 생성" @close="closeCreateModal">
@@ -162,6 +197,7 @@ import UiTable from '../../components/common/UiTable.vue'
 import UiBadge from '../../components/common/UiBadge.vue'
 import UiButton from '../../components/common/UiButton.vue'
 import UiModal from '../../components/common/UiModal.vue'
+import StepIndicator from '../../components/common/StepIndicator.vue'
 import { useApi } from '../../composables/useApi'
 import { ENDPOINTS } from '../../lib/api/endpoints'
 
@@ -197,7 +233,11 @@ export default {
     UiTable,
     UiBadge,
     UiButton,
-    UiModal
+    UiModal,
+    StepIndicator
+  },
+  computed: {
+    fromCreate() { return this.$route.query?.from === 'create' },
   },
   data() {
     return {
@@ -213,10 +253,7 @@ export default {
         { key: 'play_time', label: '일시' },
         { key: 'status', label: '상태' },
         { key: 'occupancy', label: '예매율' },
-        { key: 'sold', label: 'SOLD' },
-        { key: 'hold', label: 'HELD' },
-        { key: 'total', label: '총 좌석' },
-        { key: 'performers', label: '출연진' }
+        { key: 'performers', label: '관리' }
       ]
     }
   },
