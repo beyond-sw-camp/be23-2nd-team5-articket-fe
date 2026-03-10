@@ -467,6 +467,19 @@ export default {
       const hi = maxs.length ? Math.max(...maxs) : 0
       return lo === hi ? `₩${lo.toLocaleString()}` : `₩${lo.toLocaleString()} ~ ₩${hi.toLocaleString()}`
     },
+    // 연령 제한/로그인/연령 인증 상태
+    isAgeLimited() {
+      const age = this.item?.ageLimit ?? this.item?.age_limit
+      return typeof age === 'number' && age > 0
+    },
+    isLoggedIn() {
+      if (typeof localStorage === 'undefined') return false
+      return !!localStorage.getItem('accessToken')
+    },
+    isAgeVerified() {
+      const p = this.meProfile
+      return !!(p && (p.ageVerifiedAt || p.age_verified_at))
+    },
     availableDates() {
       const set = new Set()
       for (const s of this.schedules) {
@@ -758,7 +771,20 @@ export default {
         if (this.item?.id) this.$router.push(`/concerts/${this.item.id}/schedules`)
         return
       }
-      if (!this.authed) {
+      // 연령 제한 공연인 경우: 로그인/연령 인증 사전 검증
+      if (this.isAgeLimited) {
+        if (!this.isLoggedIn) {
+          alert('연령 제한이 있는 공연입니다. 로그인 후 이용해 주세요.')
+          this.$router.push({ path: '/member/doLogin', query: { redirect: this.$route.fullPath } })
+          return
+        }
+        if (!this.isAgeVerified) {
+          alert('연령 인증이 되지 않은 사용자입니다. 본인 인증을 먼저 진행해 주세요.')
+          this.$router.push('/me/verify-identity')
+          return
+        }
+      } else if (!this.authed) {
+        // 전체 관람가 공연은 비로그인 예매 허용 정책이면 이 블록을 제거/완화할 수 있음
         this.$router.push({ path: '/member/doLogin', query: { redirect: this.$route.fullPath } })
         return
       }
