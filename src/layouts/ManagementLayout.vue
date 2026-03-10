@@ -1,6 +1,5 @@
-<template>
+﻿<template>
   <div class="flex min-h-screen bg-slate-50 min-w-0" :class="{ 'overflow-x-hidden': isSeatMapLayoutEditor }">
-    <!-- Sidebar -->
     <aside class="fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-slate-200 bg-white">
       <RouterLink
         to="/management"
@@ -57,9 +56,7 @@
       </div>
     </aside>
 
-    <!-- Main -->
     <div class="flex min-w-0 flex-1 flex-col pl-64">
-      <!-- Top header -->
       <header class="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200 bg-white px-6">
         <div class="h-5 w-5 shrink-0" />
         <div class="flex items-center gap-4">
@@ -68,11 +65,11 @@
         </div>
       </header>
 
-      <!-- Content -->
       <main class="min-w-0 flex-1 p-6 min-h-0 overflow-x-hidden" :class="{ 'overflow-hidden': isSeatMapLayoutEditor }">
         <RouterView />
       </main>
     </div>
+    <ToastNotification v-if="sseState" :notifications="sseState.notifications" />
   </div>
 </template>
 
@@ -91,7 +88,7 @@ const ORGANIZER_NAV = [
   { to: '/organizer/reports', label: '정산/리포트', icon: ReceiptText },
   { to: '/organizer/seat-insights', label: '좌석 인사이트', icon: LineChart },
   { to: '/organizer/concerts', label: '공연 관리', icon: Ticket },
-  { to: '/organizer/performers', label: '아티스트 관리', icon: Users2 },
+  { to: '/organizer/performers', label: '아티스트 관리', icon: Users2 }
 ]
 
 const ADMIN_NAV = [
@@ -99,7 +96,7 @@ const ADMIN_NAV = [
   { to: '/admin/venues', label: '공연장', icon: Ticket },
   { to: '/admin/users', label: '회원관리', icon: Users2 },
   { to: '/admin/pending-organizers', label: '주최자 승인', icon: CirclePlus },
-  { to: '/admin/promotions', label: '프로모션 배너', icon: Megaphone },
+  { to: '/admin/promotions', label: '프로모션 배너', icon: Megaphone }
 ]
 
 export default {
@@ -115,6 +112,7 @@ export default {
     Megaphone,
     NotificationPanel,
     ProfileDropdown,
+    ToastNotification
   },
   data() {
     return {
@@ -136,6 +134,10 @@ export default {
     },
     navItems() {
       return this.roleValue === 'ADMIN' ? ADMIN_NAV : ORGANIZER_NAV
+    },
+    isOrganizerReportOrderRoute() {
+      const path = this.$route.path
+      return /^\/organizer\/concerts\/\d+\/orders$/.test(path) || /^\/organizer\/orders\/\d+$/.test(path)
     },
     showPendingOrganizerBadge() {
       return this.roleValue === 'ADMIN' && this.hasPendingOrganizers
@@ -170,6 +172,12 @@ export default {
   methods: {
     isActive(to) {
       const path = this.$route.path
+      if (to === '/organizer/reports' && this.isOrganizerReportOrderRoute) {
+        return true
+      }
+      if (to === '/organizer/concerts' && this.isOrganizerReportOrderRoute) {
+        return false
+      }
       if (to === '/organizer' || to === '/admin') {
         return path === to || path.startsWith(to + '/')
       }
@@ -191,4 +199,3 @@ export default {
   },
 }
 </script>
-

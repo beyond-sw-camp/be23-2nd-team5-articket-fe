@@ -1,18 +1,20 @@
-<template>
+﻿<template>
   <div class="grid gap-4">
-    <!-- Header -->
     <UiCard>
       <div class="flex items-start justify-between gap-3">
         <div>
           <div class="text-sm font-semibold text-slate-900">주문 목록</div>
           <div class="mt-1 text-sm text-slate-500">주문 ID를 클릭하면 상세 내역을 확인할 수 있습니다.</div>
         </div>
-        <UiBadge tone="soft">ORGANIZER</UiBadge>
+        <div class="flex items-center gap-2">
+          <UiButton variant="ghost" class="h-10 px-4" @click="goBack">뒤로가기</UiButton>
+          <UiBadge tone="soft">ORGANIZER</UiBadge>
+        </div>
       </div>
     </UiCard>
 
     <UiCard v-if="loading">
-      <div class="text-sm text-slate-500">불러오는 중…</div>
+      <div class="text-sm text-slate-500">불러오는 중...</div>
     </UiCard>
 
     <UiCard v-else-if="errorMessage">
@@ -35,24 +37,21 @@
       </template>
 
       <template #cell:status="{ row }">
-        <UiBadge
-          :tone="statusTone(row.status)"
-          :color="statusColor(row.status)"
-        >
+        <UiBadge :tone="statusTone(row.status)" :color="statusColor(row.status)">
           {{ row.status }}
         </UiBadge>
       </template>
 
       <template #cell:createdAt="{ row }">
-        {{ row.createdAt ? new Date(row.createdAt).toLocaleString() : '-' }}
+        {{ formatDateTime(row.createdAt) }}
       </template>
 
-      <template #cell:totalAmount="{ row }">
-        ₩{{ Number(row.totalAmount || 0).toLocaleString() }}
+      <template #cell:amount="{ row }">
+        {{ formatWon(row.amount) }}
       </template>
 
       <template #cell:seats="{ row }">
-        <span class="text-slate-600">{{ (row.seats || []).join(', ') || '-' }}</span>
+        <span class="text-slate-600">{{ formatSeats(row.seatDetails) }}</span>
       </template>
 
       <template #cell:detail="{ row }">
@@ -62,12 +61,10 @@
       </template>
     </UiTable>
 
-    <!-- ── Order Detail Modal ── -->
     <UiModal :open="detailModalOpen" title="주문 상세" @close="closeDetail">
-      <div v-if="detailLoading" class="text-sm text-slate-500">불러오는 중…</div>
+      <div v-if="detailLoading" class="text-sm text-slate-500">불러오는 중...</div>
       <div v-else-if="detailError" class="text-sm text-red-600">{{ detailError }}</div>
       <template v-else-if="detailItem">
-        <!-- Status + ID -->
         <div class="mb-4 flex items-center justify-between">
           <span class="text-xs text-slate-400">주문 #{{ detailItem.id }}</span>
           <UiBadge :tone="statusTone(detailItem.status)" :color="statusColor(detailItem.status)">
@@ -75,33 +72,31 @@
           </UiBadge>
         </div>
 
-        <!-- Info grid -->
         <div class="grid grid-cols-2 gap-3">
           <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
             <div class="text-xs font-semibold text-slate-500">결제 금액</div>
             <div class="mt-1 text-sm font-bold text-slate-900">
-              ₩{{ Number(detailItem.totalAmount || 0).toLocaleString() }}
+              {{ formatWon(detailItem.amount) }}
             </div>
           </div>
           <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
             <div class="text-xs font-semibold text-slate-500">주문 시각</div>
             <div class="mt-1 text-sm font-semibold text-slate-900">
-              {{ detailItem.createdAt ? new Date(detailItem.createdAt).toLocaleString() : '-' }}
+              {{ formatDateTime(detailItem.createdAt) }}
             </div>
           </div>
           <div class="col-span-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
             <div class="text-xs font-semibold text-slate-500">좌석</div>
             <div class="mt-1 text-sm font-semibold text-slate-900">
-              {{ (detailItem.seats || []).join(', ') || '-' }}
+              {{ formatSeats(detailItem.seatDetails) }}
             </div>
           </div>
         </div>
 
-        <!-- Extra fields if present -->
-        <div v-if="detailItem.scheduleName || detailItem.scheduleId" class="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
+        <div v-if="detailItem.scheduleDate" class="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
           <div class="text-xs font-semibold text-slate-500">회차</div>
           <div class="mt-1 text-sm text-slate-700">
-            {{ detailItem.scheduleName ?? `#${detailItem.scheduleId}` }}
+            {{ detailItem.scheduleDate }}
           </div>
         </div>
       </template>
@@ -132,7 +127,6 @@ export default {
       items: [],
       errorMessage: '',
       api: null,
-      // detail modal
       detailModalOpen: false,
       detailItem: null,
       detailLoading: false,
@@ -141,10 +135,10 @@ export default {
         { key: 'id', label: '주문ID' },
         { key: 'status', label: '상태' },
         { key: 'createdAt', label: '주문 시각' },
-        { key: 'totalAmount', label: '금액' },
+        { key: 'amount', label: '금액' },
         { key: 'seats', label: '좌석' },
-        { key: 'detail', label: '' },
-      ],
+        { key: 'detail', label: '' }
+      ]
     }
   },
   created() {
@@ -156,13 +150,14 @@ export default {
   methods: {
     async load() {
       const concertId = this.$route.params.concertId
-      if (!concertId) { this.loading = false; return }
+      if (!concertId) {
+        this.loading = false
+        return
+      }
       this.loading = true
       this.errorMessage = ''
       try {
-        const res = await this.api.get(
-          `${ENDPOINTS.organizerConcertOrders(concertId)}?page=0&size=50`
-        )
+        const res = await this.api.get(`${ENDPOINTS.organizerConcertOrders(concertId)}?page=0&size=50`)
         this.items = res.content ?? res.items ?? (Array.isArray(res) ? res : [])
       } catch (err) {
         this.errorMessage = err.message || '주문 목록을 불러오지 못했습니다.'
@@ -170,7 +165,13 @@ export default {
         this.loading = false
       }
     },
-
+    goBack() {
+      if (window.history.length > 1) {
+        this.$router.back()
+        return
+      }
+      this.$router.push('/organizer/reports/details')
+    },
     async openDetail(orderId) {
       this.detailItem = null
       this.detailError = ''
@@ -188,16 +189,28 @@ export default {
       this.detailModalOpen = false
       this.detailItem = null
     },
-
+    formatDateTime(value) {
+      if (!value) return '-'
+      const date = new Date(value)
+      if (Number.isNaN(date.getTime())) return value
+      return date.toLocaleString()
+    },
+    formatWon(value) {
+      return `${Number(value || 0).toLocaleString()}원`
+    },
+    formatSeats(seatDetails) {
+      const seats = (seatDetails || []).map((seat) => seat.seatDefName).filter(Boolean)
+      return seats.length ? seats.join(', ') : '-'
+    },
     statusTone(status) {
       if (status === 'SUCCESS' || status === 'PAID') return 'solid'
       return 'soft'
     },
     statusColor(status) {
       if (status === 'SUCCESS' || status === 'PAID') return 'green'
-      if (status === 'CANCELLED' || status === 'FAILED') return 'red'
+      if (status === 'CANCELLED' || status === 'FAILED' || status === 'REFUNDED') return 'red'
       return 'slate'
-    },
-  },
+    }
+  }
 }
 </script>
