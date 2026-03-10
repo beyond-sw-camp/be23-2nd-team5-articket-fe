@@ -26,14 +26,29 @@
               class="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
             />
           </div>
-          <div class="sm:col-span-2">
-            <label class="block text-sm font-medium text-slate-700">썸네일 이미지 URL</label>
-            <input
-              v-model="form.thumImgUrl"
-              type="url"
-              placeholder="https://..."
-              class="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
-            />
+          <div class="sm:col-span-2 space-y-2">
+            <label class="block text-sm font-medium text-slate-700">썸네일 이미지</label>
+            <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <div class="flex-1">
+                <input
+                  type="file"
+                  accept="image/*"
+                  class="block w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 shadow-sm file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-1 file:text-xs file:font-semibold file:text-slate-600 hover:file:bg-slate-200"
+                  @change="onThumbFileChange"
+                />
+                <p class="mt-1 text-xs text-slate-400">
+                  새 파일을 선택하면 기존 썸네일이 교체됩니다. 선택하지 않으면 현재 이미지를 유지합니다.
+                </p>
+              </div>
+              <div v-if="thumbPreview" class="shrink-0 overflow-hidden rounded-xl border border-slate-100 bg-slate-50">
+                <img
+                  :src="thumbPreview"
+                  alt="썸네일 미리보기"
+                  class="h-20 w-32 object-cover"
+                  @error="$event.target.style.visibility='hidden'"
+                />
+              </div>
+            </div>
           </div>
           <div>
             <label class="block text-sm font-medium text-slate-700">카테고리</label>
@@ -42,6 +57,19 @@
               class="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm text-slate-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
             >
               <option v-for="opt in categoryOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700">게시 상태</label>
+            <select
+              v-model="form.status"
+              required
+              class="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm text-slate-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+            >
+              <option value="DRAFT">초안 (임시 저장)</option>
+              <option value="UPCOMING">오픈 대기 (정보 공개)</option>
+              <option value="AVAILABLE">예매 가능</option>
+              <option value="CLOSED">예매 마감</option>
             </select>
           </div>
           <div>
@@ -96,9 +124,11 @@ export default {
     return {
       loading: false,
       item: null,
-      form: { title: '', category: 'CONCERT', ageLimit: null, thumImgUrl: '', seatMapId: null },
+      form: { title: '', category: 'CONCERT', status: 'DRAFT', ageLimit: null, thumImgUrl: '', seatMapId: null },
       saving: false,
-      api: null
+      api: null,
+      thumbFile: null,
+      thumbPreview: null,
     }
   },
   created() {
@@ -106,6 +136,11 @@ export default {
   },
   mounted() {
     this.load()
+  },
+  beforeUnmount() {
+    if (this.thumbPreview && this.thumbPreview.startsWith('blob:')) {
+      URL.revokeObjectURL(this.thumbPreview)
+    }
   },
   methods: {
     goBack() {
@@ -125,33 +160,64 @@ export default {
         this.form = {
           title: detail.title ?? '',
           category: detail.category ?? 'CONCERT',
+          status: detail.status ?? 'DRAFT',
           ageLimit: detail.ageLimit ?? detail.age_limit ?? null,
           seatMapId: detail.seatMapId ?? detail.seat_map_id ?? detail.concertSeatMapResDto?.id ?? null,
           thumImgUrl: detail.thumImgUrl ?? detail.thum_img_url ?? ''
         }
+        this.thumbPreview = this.form.thumImgUrl || null
       } catch {
         this.item = null
       } finally {
         this.loading = false
       }
     },
+    onThumbFileChange(e) {
+      const file = e.target.files?.[0]
+      if (!file) {
+        this.thumbFile = null
+        // 기존 썸네일 유지
+        this.thumbPreview = this.form.thumImgUrl || null
+        return
+      }
+      this.thumbFile = file
+      if (this.thumbPreview && this.thumbPreview.startsWith('blob:')) {
+        URL.revokeObjectURL(this.thumbPreview)
+      }
+      this.thumbPreview = URL.createObjectURL(file)
+    },
     async submitUpdate() {
       const concertId = this.$route.params.concertId
       if (concertId == null || concertId === '' || !this.item) return
       this.saving = true
+
+      // dto (JSON) 상세 구조
+      const dto = {
+        title: this.form.title,
+        category: this.form.category ?? 'CONCERT',
+        status: this.form.status || 'DRAFT',
+        ageLimit: (this.form.ageLimit != null && this.form.ageLimit !== '')
+          ? Number(this.form.ageLimit)
+          : 0,
+        seatMapId: (this.form.seatMapId != null && this.form.seatMapId !== '')
+          ? Number(this.form.seatMapId)
+          : null
+      }
+
       try {
-        const payload = {
-          title: this.form.title,
-          status: this.item.status ?? 'DRAFT',
-          seatMapId: this.form.seatMapId,
-          category: this.form.category ?? 'CONCERT',
-          ageLimit: this.form.ageLimit != null && this.form.ageLimit !== '' ? Number(this.form.ageLimit) : 0,
+        // multipart/form-data payload
+        const fd = new FormData()
+        fd.append('dto', new Blob([JSON.stringify(dto)], { type: 'application/json' }))
+
+        // 새 파일을 선택한 경우에만 'newThumImg'로 교체
+        if (this.thumbFile) {
+          fd.append('newThumImg', this.thumbFile)
         }
-        if (this.form.thumImgUrl) {
-          payload.thumImgUrl = this.form.thumImgUrl
-        }
-        await this.api.put(ENDPOINTS.organizerUpdateConcert(concertId), payload)
+
+        await this.api.put(ENDPOINTS.organizerUpdateConcert(concertId), fd)
         this.$router.push(`/organizer/concerts/${concertId}`)
+      } catch (err) {
+        console.error('Failed to update concert:', err)
       } finally {
         this.saving = false
       }
