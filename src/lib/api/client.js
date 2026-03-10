@@ -42,12 +42,6 @@ export function createApiClient(opts = {}) {
       const originalRequest = err.config
       const status = err.response?.status
 
-      // 403: 권한 없음 → 홈으로 이동
-      if (status === 403) {
-        if (typeof window !== 'undefined') window.location.href = '/'
-        return Promise.reject(err)
-      }
-
       if (status !== 401 || originalRequest._retried) {
         return Promise.reject(err)
       }
@@ -136,6 +130,7 @@ export function createApiClient(opts = {}) {
       err.code = code
       err.details = details
       err.responseData = data
+      // 403은 각 화면에서 연령 제한/권한 UX에 맞게 처리하도록 글로벌 알럿은 띄우지 않는다.
       if (status !== 403 && !opts.skipErrorAlert) showErrorAlert(err)
       throw err
     }

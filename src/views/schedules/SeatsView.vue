@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="flex flex-col gap-3">
 
     <!-- 등급 범례 -->
@@ -403,7 +403,7 @@ export default {
       }
       try {
         const [res, seatMapRes, scheduleRes] = await Promise.allSettled([
-          this.api.get(ENDPOINTS.seats(scheduleId)),
+          this.api.get(ENDPOINTS.seats(scheduleId), { skipErrorAlert: true }),
           this.api.get(ENDPOINTS.seatMap(scheduleId)),
           this.api.get(ENDPOINTS.schedule(scheduleId))
         ])
@@ -447,7 +447,26 @@ export default {
           this.$nextTick(() => this.initKonva())
         }
       } catch (err) {
-        this.loadError = err.message || '좌석 배치도를 불러오지 못했습니다.'
+        // 연령 제한/권한 관련 403은 가이드에 맞게 분기 처리
+        if (err?.status === 403 && err?.code === 'AUTH_FORBIDDEN') {
+          const data = err.responseData || {}
+          const msg = data.error_message || data.message || err.message || '좌석을 조회할 수 없습니다.'
+          alert(msg)
+
+          if (msg.includes('로그인')) {
+            this.$router.push({
+              path: '/member/doLogin',
+              query: { redirect: this.$route.fullPath },
+            })
+          } else if (msg.includes('연령 인증')) {
+            this.$router.push('/me/verify-identity')
+          } else {
+            this.$router.back()
+          }
+          return
+        }
+
+        this.loadError = err?.message || '좌석 배치도를 불러오지 못했습니다.'
         this.seats = []
       } finally {
         this.loading = false
