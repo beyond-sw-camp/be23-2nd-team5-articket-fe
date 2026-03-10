@@ -13,9 +13,15 @@
     </div>
 
     <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-      <StatCard label="오늘 매출" :value="formatWon(todaySalesAmount)" hint="PAID 주문 기준" />
-      <StatCard label="이번 달 매출" :value="formatWon(thisMonthSalesAmount)" hint="이번 달 누적" />
-      <StatCard label="전체 매출" :value="formatWon(totalSalesAmount)" hint="전체 기간 누적" />
+      <button type="button" class="text-left" @click="goReportDetails('PAID')">
+        <StatCard label="오늘 순 매출" :value="formatWon(todaySalesAmount)" hint="PAID 주문 기준" />
+      </button>
+      <button type="button" class="text-left" @click="goReportDetails('PAID')">
+        <StatCard label="이번 달 순 매출" :value="formatWon(thisMonthSalesAmount)" hint="이번 달 누적" />
+      </button>
+      <button type="button" class="text-left" @click="goReportDetails('PAID')">
+        <StatCard label="전체 순 매출" :value="formatWon(totalSalesAmount)" hint="전체 기간 누적" />
+      </button>
       <StatCard label="오늘 주문 건수" :value="formatCount(todayOrderCount)" hint="오늘 생성된 PAID 주문" />
     </div>
 
@@ -27,6 +33,7 @@
         </div>
         <div class="flex gap-2">
           <UiButton variant="ghost" class="h-11 px-4" @click="$router.push('/organizer/concerts')">내 공연</UiButton>
+          <UiButton variant="ghost" class="h-11 px-4" @click="goReportDetails('PAID')">매출 상세</UiButton>
           <UiButton class="h-11 px-5" @click="$router.push('/organizer/concerts/new')">공연 생성</UiButton>
         </div>
       </div>
@@ -65,7 +72,9 @@
           </template>
 
           <template #cell:revenue="{ row }">
-            {{ formatWon(row.revenue) }}
+            <button type="button" class="font-semibold text-red-600 hover:underline" @click="goConcertReportDetails(row.concertId)">
+              {{ formatWon(row.revenue) }}
+            </button>
           </template>
 
           <template #cell:remainingSeats="{ row }">
@@ -77,52 +86,59 @@
       </div>
     </UiCard>
 
-    <UiCard>
-      <div class="flex items-center justify-between gap-3">
-        <div>
-          <div class="text-sm font-semibold text-slate-900">최근 7일 매출</div>
-          <div class="mt-1 text-sm text-slate-500">날짜별 매출 흐름입니다.</div>
-        </div>
-      </div>
+    <section class="grid gap-4 xl:grid-cols-2">
+      <UiCard>
+        <div class="text-sm font-semibold text-slate-900">오픈 예정 회차</div>
+        <div class="mt-1 text-sm text-slate-500">예매 오픈을 앞둔 회차를 확인합니다.</div>
 
-      <div v-if="loading" class="mt-4 text-sm text-slate-500">불러오는 중...</div>
-      <div v-else class="mt-4 grid gap-4">
-        <div class="rounded-xl border border-slate-200 bg-white px-3 pb-3 pt-4">
-          <div class="flex h-40 items-end gap-2">
-            <div
-              v-for="day in dailySales"
-              :key="`bar-${day.date}`"
-              class="flex min-w-0 flex-1 flex-col items-center gap-2"
-            >
-              <div class="flex h-28 w-full max-w-12 items-end">
-                <div
-                  class="w-full rounded-t-md bg-emerald-500/80 transition-[height] duration-300"
-                  :style="{ height: `${chartHeight(day.salesAmount)}%` }"
-                  :title="`${formatDateWithDay(day.date)} - ${formatWon(day.salesAmount)}`"
-                />
-              </div>
-              <div class="text-[11px] font-medium text-slate-500">
-                {{ formatDateWithDay(day.date) }}
-              </div>
-            </div>
-          </div>
-        </div>
+        <div v-if="loading" class="mt-4 text-sm text-slate-500">불러오는 중...</div>
 
-        <div class="grid gap-2">
+        <div v-else class="mt-4 space-y-3">
           <div
-            v-for="day in dailySales"
-            :key="day.date"
-            class="grid items-center gap-3 sm:grid-cols-[96px_1fr_120px]"
+            v-for="item in overview?.upcomingSchedules || []"
+            :key="item.scheduleId"
+            class="rounded-xl border border-slate-100 bg-slate-50 p-4"
           >
-            <div class="text-xs font-medium text-slate-500">{{ formatDateWithDay(day.date) }}</div>
-            <div class="h-2 overflow-hidden rounded-full bg-slate-100">
-              <div class="h-full rounded-full bg-emerald-500/40" :style="{ width: `${barWidth(day.salesAmount)}%` }" />
+            <div class="text-sm font-semibold text-slate-900">{{ item.concertTitle }}</div>
+            <div class="mt-1 text-sm text-slate-500">{{ formatDateTime(item.playTime) }}</div>
+            <div class="mt-2 flex items-center justify-between text-sm text-slate-600">
+              <span>예매율 {{ formatPercent(item.bookingRate) }}</span>
+              <span>잔여 {{ formatCount(item.remainingSeats) }} / {{ formatCount(item.totalSeats) }}</span>
             </div>
-            <div class="text-right text-sm font-medium text-slate-700">{{ formatWon(day.salesAmount) }}</div>
+          </div>
+
+          <div v-if="!(overview?.upcomingSchedules || []).length" class="text-sm text-slate-400">
+            표시할 오픈 예정 회차가 없습니다.
           </div>
         </div>
-      </div>
-    </UiCard>
+      </UiCard>
+
+      <UiCard>
+        <div class="text-sm font-semibold text-slate-900">마감 임박 회차</div>
+        <div class="mt-1 text-sm text-slate-500">운영 체크가 필요한 오픈 중 회차를 확인합니다.</div>
+
+        <div v-if="loading" class="mt-4 text-sm text-slate-500">불러오는 중...</div>
+
+        <div v-else class="mt-4 space-y-3">
+          <div
+            v-for="item in overview?.closingSoonSchedules || []"
+            :key="item.scheduleId"
+            class="rounded-xl border border-slate-100 bg-slate-50 p-4"
+          >
+            <div class="text-sm font-semibold text-slate-900">{{ item.concertTitle }}</div>
+            <div class="mt-1 text-sm text-slate-500">{{ formatDateTime(item.playTime) }}</div>
+            <div class="mt-2 flex items-center justify-between text-sm text-slate-600">
+              <span>예매율 {{ formatPercent(item.bookingRate) }}</span>
+              <span>잔여 {{ formatCount(item.remainingSeats) }} / {{ formatCount(item.totalSeats) }}</span>
+            </div>
+          </div>
+
+          <div v-if="!(overview?.closingSoonSchedules || []).length" class="text-sm text-slate-400">
+            표시할 마감 임박 회차가 없습니다.
+          </div>
+        </div>
+      </UiCard>
+    </section>
   </div>
 </template>
 
@@ -236,6 +252,12 @@ export default {
         this.loading = false
       }
     },
+    goReportDetails(status) {
+      this.$router.push({ path: '/organizer/reports/details', query: { status } })
+    },
+    goConcertReportDetails(concertId) {
+      this.$router.push({ path: '/organizer/reports/details', query: { status: 'PAID', concertId: String(concertId) } })
+    },
     formatWon(value) {
       const num = Number(value || 0)
       return `${num.toLocaleString()}원`
@@ -253,6 +275,19 @@ export default {
       const dd = String(d.getDate()).padStart(2, '0')
       const weekdays = ['일', '월', '화', '수', '목', '금', '토']
       return `${mm}.${dd}(${weekdays[d.getDay()]})`
+    },
+    formatDateTime(value) {
+      if (!value) return '-'
+      const date = new Date(value)
+      if (Number.isNaN(date.getTime())) return value
+
+      const yyyy = date.getFullYear()
+      const mm = String(date.getMonth() + 1).padStart(2, '0')
+      const dd = String(date.getDate()).padStart(2, '0')
+      const hh = String(date.getHours()).padStart(2, '0')
+      const mi = String(date.getMinutes()).padStart(2, '0')
+
+      return `${yyyy}.${mm}.${dd} ${hh}:${mi}`
     },
     chartHeight(amount) {
       if (this.maxDailySales <= 0) return 6

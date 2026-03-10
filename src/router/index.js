@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from 'vue-router'
+﻿import { createRouter, createWebHistory } from 'vue-router'
 import { getRole, isAuthed } from '../composables/useRole'
 
 
@@ -60,6 +60,7 @@ import OrganizerPriceHistoryView from '../views/organizer/OrganizerPriceHistoryV
 import OrganizerPolicyHistoryView from '../views/organizer/OrganizerPolicyHistoryView.vue'
 import OrganizerSchedulePerformersView from '../views/organizer/OrganizerSchedulePerformersView.vue'
 import OrganizerReportsView from '../views/organizer/OrganizerReportsView.vue'
+import OrganizerReportDetailsView from '../views/organizer/OrganizerReportDetailsView.vue'
 import OrganizerSeatInsightsView from '../views/organizer/OrganizerSeatInsightsView.vue'
 
 // management (organizer / admin hub)
@@ -168,6 +169,7 @@ const routes = [
       { path: '', redirect: '/organizer/dashboard' },
       childRoute('dashboard', OrganizerDashboardView),
       childRoute('reports', OrganizerReportsView),
+      childRoute('reports/details', OrganizerReportDetailsView),
       childRoute('seat-insights', OrganizerSeatInsightsView),
       childRoute('concerts', OrganizerConcertsView),
       childRoute('concerts/new', OrganizerNewConcertView),
