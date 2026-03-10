@@ -105,6 +105,7 @@
 
 <script>
 import { useApi } from '../../composables/useApi'
+import { ENDPOINTS } from '../../lib/api/endpoints'
 
 export default {
   name: 'SeatSelectionView',
@@ -163,9 +164,11 @@ export default {
     async fetchSeats() {
       this.loading = true;
       try {
-        // 백엔드 API 호출 (경로는 실제 API 명세에 맞게 수정 필요)
-        const response = await this.api.get(`/concerts/schedules/${this.scheduleId}/seats`);
-        this.seatList = response; // useApi는 response.data를 반환한다고 가정
+        // 좌석 조회 API (연령 제한 포함 검증)
+        const response = await this.api.get(ENDPOINTS.seats(this.scheduleId), { skipErrorAlert: true });
+        this.seatList = Array.isArray(response)
+          ? response
+          : response?.content ?? response?.items ?? [];
 
         // 첫 번째 좌석 데이터에서 스테이지 정보 추출 (모든 좌석에 동일하게 포함됨)
         if (this.seatList.length > 0) {
@@ -178,8 +181,32 @@ export default {
             rotation: first.stageRotation || 0
           };
         }
-      } catch (error) {
-        console.error('좌석 정보를 불러오는데 실패했습니다.', error);
+      } catch (err) {
+        // 연령 제한/권한 관련 403 처리
+        if (err?.status === 403) {
+          const data = err.responseData || {};
+          const msg =
+            data.error_message ||
+            data.message ||
+            err.message ||
+            '좌석을 조회할 수 없습니다.';
+
+          alert(msg);
+
+          if (msg.includes('로그인')) {
+            this.$router.push({
+              path: '/member/doLogin',
+              query: { redirect: this.$route.fullPath },
+            });
+          } else if (msg.includes('연령 인증')) {
+            this.$router.push('/me/verify-identity');
+          } else {
+            this.$router.back();
+          }
+          return;
+        }
+
+        console.error('좌석 정보를 불러오는데 실패했습니다.', err);
       } finally {
         this.loading = false;
       }

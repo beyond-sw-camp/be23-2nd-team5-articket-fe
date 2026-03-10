@@ -448,9 +448,14 @@ export default {
         }
       } catch (err) {
         // 연령 제한/권한 관련 403은 가이드에 맞게 분기 처리
-        if (err?.status === 403 && err?.code === 'AUTH_FORBIDDEN') {
+        if (err?.status === 403) {
           const data = err.responseData || {}
-          const msg = data.error_message || data.message || err.message || '좌석을 조회할 수 없습니다.'
+          const msg =
+            data.error_message ||
+            data.message ||
+            err.message ||
+            '좌석을 조회할 수 없습니다.'
+
           alert(msg)
 
           if (msg.includes('로그인')) {
