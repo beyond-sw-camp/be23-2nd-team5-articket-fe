@@ -1,15 +1,10 @@
 <template>
-  <div class="mx-auto space-y-6 pb-12">
-    <!-- 헤더 -->
-    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-      <div class="flex items-center gap-3">
-        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-900 shadow-sm">
-          <Star class="h-5 w-5 text-white" />
-        </div>
-        <div>
-          <h1 class="text-xl font-bold text-slate-900 sm:text-2xl">For U</h1>
-          <p class="mt-0.5 text-sm text-slate-500">나를 위한 맞춤 공연 경험</p>
-        </div>
+  <div class="mx-auto space-y-6 pb-12 max-w-6xl">
+    <!-- 헤더 (마이페이지 디자인 시스템 적용) -->
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between px-1">
+      <div class="flex flex-col">
+        <h1 class="text-xl font-bold text-slate-900 sm:text-2xl">For U</h1>
+        <p class="mt-1 text-sm text-slate-500">마이페이지 · {{ userName }}님을 위한 맞춤 공연 경험입니다.</p>
       </div>
       <RouterLink
         to="/me"
@@ -21,235 +16,230 @@
 
     <div class="grid gap-6 lg:grid-cols-3">
       <!-- 공연 플래너 (좌측 2/3) -->
-      <section class="content-start space-y-4 lg:col-span-2">
-        <div class="flex items-center justify-between">
-          <h2 class="text-base font-bold text-slate-900">공연 플래너</h2>
-          <span class="text-xs text-slate-400">{{ selectedIdx + 1 }} / {{ likedPerformers.length + 1 }}</span>
-        </div>
+      <section class="content-start space-y-6 lg:col-span-2">
+        <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+          <div class="mb-5 flex items-center justify-between">
+            <h2 class="text-base font-bold text-slate-900">공연 플래너</h2>
+            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">{{ selectedIdx + 1 }} / {{ likedPerformers.length + 1 }} SELECTED</span>
+          </div>
 
-        <!-- 아티스트 필터 -->
-        <div
-          class="flex gap-3 overflow-x-auto pb-2 foru-scroll-hide"
-        >
-          <button
-            type="button"
-            class="flex shrink-0 flex-col items-center gap-1.5"
-            @click="selectedId = null"
-          >
-            <div
-              class="flex h-14 w-14 items-center justify-center rounded-full border-2 transition"
-              :class="selectedId === null
-                ? 'border-slate-900 bg-slate-100'
-                : 'border-slate-200 bg-slate-50 hover:border-slate-300'"
+          <!-- 아티스트 필터 (가로 스크롤) -->
+          <div class="flex gap-4 overflow-x-auto pb-4 foru-scroll-hide">
+            <!-- 전체 일정 버튼 -->
+            <button
+              type="button"
+              class="flex shrink-0 flex-col items-center gap-2 group"
+              @click="selectedId = null"
             >
-              <span
-                class="text-xs font-bold"
-                :class="selectedId === null ? 'text-slate-900' : 'text-slate-400'"
-              >ALL</span>
-            </div>
-            <span
-              class="whitespace-nowrap text-xs font-medium"
-              :class="selectedId === null ? 'text-slate-900' : 'text-slate-500'"
-            >나의 일정</span>
-          </button>
-
-          <button
-            v-for="p in likedPerformers"
-            :key="p.performerId"
-            type="button"
-            class="flex shrink-0 flex-col items-center gap-1.5"
-            @click="selectedId = p.performerId"
-          >
-            <div class="relative">
-              <img
-                v-if="p.performerProfileImgUrl"
-                :src="p.performerProfileImgUrl"
-                :alt="p.performerName"
-                class="h-14 w-14 rounded-full border-2 object-cover transition"
-                :class="selectedId === p.performerId
-                  ? 'border-slate-900 scale-105 shadow-md'
-                  : 'border-slate-200 hover:border-slate-300'"
-              />
               <div
-                v-else
-                class="flex h-14 w-14 items-center justify-center rounded-full border-2 text-lg font-bold text-white transition"
-                :class="selectedId === p.performerId
-                  ? 'border-slate-900 scale-105 bg-slate-700 shadow-md'
-                  : 'border-slate-200 bg-slate-500'"
+                class="flex h-14 w-14 items-center justify-center rounded-full border-2 transition-all"
+                :class="selectedId === null
+                  ? 'border-red-600 bg-red-50 text-red-600 ring-4 ring-red-50'
+                  : 'border-slate-100 bg-slate-50 text-slate-400 group-hover:border-slate-200'"
               >
-                {{ (p.performerName || '?').charAt(0) }}
+                <span class="text-xs font-bold uppercase tracking-tight">ALL</span>
               </div>
-              <div
-                v-if="selectedId === p.performerId"
-                class="absolute -bottom-0.5 left-1/2 h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-slate-900"
-              />
-            </div>
-            <span
-              class="max-w-[56px] truncate whitespace-nowrap text-xs font-medium"
-              :class="selectedId === p.performerId ? 'text-slate-900' : 'text-slate-500'"
-            >{{ p.performerName }}</span>
-          </button>
+              <span
+                class="whitespace-nowrap text-[11px] font-bold tracking-tight"
+                :class="selectedId === null ? 'text-slate-900' : 'text-slate-400'"
+              >나의 일정</span>
+            </button>
 
-          <button
-            v-for="i in addSlots"
-            :key="`add-${i}`"
-            type="button"
-            class="flex shrink-0 flex-col items-center gap-1.5"
-            @click="$router.push('/performers')"
-          >
-            <div class="flex h-14 w-14 items-center justify-center rounded-full border-2 border-dashed border-slate-200 transition hover:border-slate-300">
-              <Plus class="h-4 w-4 text-slate-300" />
-            </div>
-            <span class="text-xs text-slate-400">추가</span>
-          </button>
-        </div>
-
-        <!-- 인사말 카드 -->
-        <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-          <p class="text-sm font-bold text-slate-800">{{ userName }}님을 위한 공연일정입니다.</p>
-          <p class="mt-0.5 text-xs text-slate-500">공연플래너에 담은 공연과 선호 아티스트의 공연스케줄을 타임라인으로 확인해보세요.</p>
-        </div>
-
-        <!-- 로딩 -->
-        <div
-          v-if="loading"
-          class="flex min-h-[180px] items-center justify-center rounded-2xl border border-slate-200 bg-white py-12"
-        >
-          <div class="flex flex-col items-center gap-3 text-slate-500">
-            <svg
-              class="h-8 w-8 animate-spin text-slate-400"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
+            <!-- 개별 아티스트 버튼 -->
+            <button
+              v-for="p in likedPerformers"
+              :key="p.performerId"
+              type="button"
+              class="flex shrink-0 flex-col items-center gap-2 group"
+              @click="selectedId = p.performerId"
             >
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-            </svg>
-            <span class="text-sm">불러오는 중…</span>
+              <div class="relative">
+                <img
+                  v-if="p.performerProfileImgUrl"
+                  :src="p.performerProfileImgUrl"
+                  :alt="p.performerName"
+                  class="h-14 w-14 rounded-full border-2 object-cover transition-all"
+                  :class="selectedId === p.performerId
+                    ? 'border-red-600 scale-105 shadow-md ring-4 ring-red-50'
+                    : 'border-slate-100 group-hover:border-slate-200'"
+                />
+                <div
+                  v-else
+                  class="flex h-14 w-14 items-center justify-center rounded-full border-2 text-sm font-bold text-white transition-all"
+                  :class="selectedId === p.performerId
+                    ? 'border-red-600 scale-105 bg-red-600 shadow-md ring-4 ring-red-50'
+                    : 'border-slate-100 bg-slate-300'"
+                >
+                  {{ (p.performerName || '?').charAt(0) }}
+                </div>
+              </div>
+              <span
+                class="max-w-[64px] truncate whitespace-nowrap text-[11px] font-bold tracking-tight"
+                :class="selectedId === p.performerId ? 'text-slate-900' : 'text-slate-400'"
+              >{{ p.performerName }}</span>
+            </button>
+
+            <!-- 추가 버튼 -->
+            <button
+              type="button"
+              class="flex shrink-0 flex-col items-center gap-2 group"
+              @click="$router.push('/performers')"
+            >
+              <div class="flex h-14 w-14 items-center justify-center rounded-full border-2 border-dashed border-slate-200 transition-all hover:border-slate-300 hover:bg-slate-50">
+                <Plus class="h-4 w-4 text-slate-300" />
+              </div>
+              <span class="text-[11px] font-bold text-slate-300 tracking-tight">추가</span>
+            </button>
+          </div>
+
+          <!-- 인사말 영역 -->
+          <div class="mt-4 rounded-xl bg-slate-50 p-4 border border-slate-100">
+            <p class="text-sm font-bold text-slate-800">{{ userName }}님을 위한 맞춤 공연 일정입니다.</p>
+            <p class="mt-1 text-xs font-medium text-slate-500 leading-relaxed">선호 아티스트의 공연 스케줄을 타임라인으로 한눈에 확인해보세요.</p>
           </div>
         </div>
 
-        <!-- 빈 상태 -->
-        <div
-          v-else-if="filteredSchedules.length === 0"
-          class="rounded-2xl border border-slate-200 bg-white py-14 text-center"
-        >
-          <p class="text-sm font-medium text-slate-700">선호 아티스트와 매칭되는 공연이 없네요.</p>
-          <p class="mt-1 text-xs text-slate-400">곧 좋은 공연을 준비하여 알려드리겠습니다.</p>
-          <RouterLink
-            to="/"
-            class="mt-5 inline-flex h-11 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
-          >
-            테마/지역별 공연보기 <ChevronRight class="h-4 w-4" />
-          </RouterLink>
-        </div>
-
-        <!-- 스케줄 목록 -->
-        <ul v-else class="grid gap-2">
-          <li
-            v-for="s in filteredSchedules"
-            :key="s.key"
-            class="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm transition hover:border-slate-300"
-          >
-            <div class="shrink-0">
-              <img
-                v-if="s.performerImg"
-                :src="s.performerImg"
-                :alt="s.performerName"
-                class="h-10 w-10 rounded-full border border-slate-200 object-cover"
-              />
-              <div
-                v-else
-                class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-500 text-sm font-bold text-white"
-              >
-                {{ s.performerName?.charAt(0) ?? '?' }}
-              </div>
+        <!-- 로딩/스케줄 목록 -->
+        <div class="space-y-4">
+          <div v-if="loading" class="flex min-h-[200px] items-center justify-center rounded-2xl border border-slate-200 bg-white py-12">
+            <div class="flex flex-col items-center gap-3 text-slate-400">
+              <svg class="h-8 w-8 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              </svg>
+              <span class="text-sm font-medium">일정을 불러오는 중…</span>
             </div>
+          </div>
 
-            <div class="min-w-0 flex-1">
-              <div class="flex items-center gap-1.5">
-                <span class="text-xs font-semibold text-slate-700">{{ s.performerName }}</span>
-                <span v-if="s.role" class="text-xs text-slate-400">· {{ s.role }}</span>
-              </div>
-              <div class="mt-0.5 truncate text-sm font-semibold text-slate-900">{{ s.title }}</div>
-              <div v-if="s.displayText" class="mt-0.5 text-xs text-slate-400">{{ s.displayText }}</div>
-            </div>
-
+          <div v-else-if="filteredSchedules.length === 0" class="rounded-2xl border border-slate-200 bg-white py-16 text-center shadow-sm">
+            <p class="text-sm font-bold text-slate-800">선호 아티스트와 매칭되는 공연이 없네요.</p>
+            <p class="mt-1 text-xs font-medium text-slate-400">곧 새로운 공연 소식을 들려드릴게요!</p>
             <RouterLink
-              v-if="s.scheduleId"
-              :to="`/schedules/${s.scheduleId}`"
-              class="shrink-0 rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white transition hover:bg-slate-800"
+              to="/"
+              class="mt-6 inline-flex h-11 items-center gap-2 rounded-xl bg-slate-900 px-6 text-sm font-bold text-white transition hover:bg-black shadow-sm"
             >
-              예매
+              전체 공연 보기 <ChevronRight class="h-4 w-4" />
             </RouterLink>
-          </li>
-        </ul>
+          </div>
+
+          <ul v-else class="space-y-3">
+            <li
+              v-for="s in filteredSchedules"
+              :key="s.key"
+              class="group flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-red-200 hover:shadow-md sm:px-5"
+            >
+              <div class="shrink-0">
+                <img
+                  v-if="s.performerImg"
+                  :src="s.performerImg"
+                  :alt="s.performerName"
+                  class="h-12 w-12 rounded-full border border-slate-100 object-cover"
+                />
+                <div
+                  v-else
+                  class="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-sm font-bold text-slate-400"
+                >
+                  {{ s.performerName?.charAt(0) ?? '?' }}
+                </div>
+              </div>
+
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-bold text-red-600">{{ s.performerName }}</span>
+                  <span v-if="s.role" class="text-[10px] font-bold text-slate-300 uppercase tracking-widest">{{ s.role }}</span>
+                </div>
+                <div class="mt-1 truncate text-sm font-bold text-slate-900 group-hover:text-red-600 transition-colors">{{ s.title }}</div>
+                <div v-if="s.displayText" class="mt-1 flex items-center gap-1.5 text-xs font-medium text-slate-400">
+                  <Clock class="h-3.5 w-3.5" />
+                  <span>{{ s.displayText }}</span>
+                </div>
+              </div>
+
+              <RouterLink
+                v-if="s.scheduleId"
+                :to="`/schedules/${s.scheduleId}`"
+                class="shrink-0 rounded-xl bg-slate-900 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-black shadow-sm"
+              >
+                예매하기
+              </RouterLink>
+            </li>
+          </ul>
+        </div>
       </section>
 
-      <!-- 맞춤 공연 (우측 1/3) -->
-      <section class="content-start space-y-4">
-        <h2 class="text-base font-bold text-slate-900">맞춤 공연</h2>
-
+      <!-- 맞춤 공연 사이드바 (우측 1/3) -->
+      <section class="content-start space-y-6">
         <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div v-if="likedPerformers.length === 0" class="text-center">
-            <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-slate-100">
-              <Heart class="h-6 w-6 text-slate-300" />
-            </div>
-            <p class="mt-3 text-sm leading-relaxed text-slate-500">
-              공연 준비중인 아티스트를 추가하고<br />공연을 추천받으세요.
-            </p>
+          <div class="mb-5 flex items-center gap-2">
+            <Heart class="h-5 w-5 text-red-600" />
+            <h2 class="text-base font-bold text-slate-900">추천 아티스트</h2>
           </div>
 
-          <div v-else>
-            <p class="mb-3 text-xs font-semibold text-slate-500">좋아요한 아티스트</p>
-            <ul class="grid gap-1">
+          <div v-if="likedPerformers.length === 0" class="py-8 text-center">
+            <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-slate-50 text-slate-200">
+              <Plus class="h-6 w-6" />
+            </div>
+            <p class="mt-4 text-xs font-medium leading-relaxed text-slate-400">
+              좋아요한 아티스트를 추가하고<br />맞춤 공연 정보를 확인하세요.
+            </p>
+            <RouterLink
+              to="/performers"
+              class="mt-6 inline-flex h-10 items-center justify-center rounded-xl bg-slate-900 px-5 text-xs font-bold text-white transition hover:bg-black"
+            >
+              아티스트 추가하기
+            </RouterLink>
+          </div>
+
+          <div v-else class="space-y-1">
+            <p class="mb-3 text-[11px] font-bold uppercase tracking-widest text-slate-400">Favorite Artists</p>
+            <ul class="space-y-1">
               <RouterLink
                 v-for="p in likedPerformers.slice(0, 5)"
                 :key="p.performerId"
                 :to="`/performers/${p.performerId}`"
-                class="flex cursor-pointer items-center gap-3 rounded-xl px-2 py-2 transition hover:bg-slate-50"
+                class="flex cursor-pointer items-center gap-3 rounded-xl p-2.5 transition-all hover:bg-slate-50 group"
               >
                 <img
                   v-if="p.performerProfileImgUrl"
                   :src="p.performerProfileImgUrl"
                   :alt="p.performerName"
-                  class="h-9 w-9 shrink-0 rounded-full border border-slate-200 object-cover"
+                  class="h-10 w-10 shrink-0 rounded-full border border-slate-100 object-cover group-hover:border-red-200"
                 />
                 <div
                   v-else
-                  class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-500 text-sm font-bold text-white"
+                  class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-400 group-hover:bg-red-50 group-hover:text-red-400"
                 >
                   {{ (p.performerName || '?').charAt(0) }}
                 </div>
                 <div class="min-w-0 flex-1">
-                  <div class="truncate text-sm font-semibold text-slate-800">{{ p.performerName }}</div>
-                  <div class="text-xs text-slate-400">좋아요한 아티스트</div>
+                  <div class="truncate text-sm font-bold text-slate-800 group-hover:text-red-600 transition-colors">{{ p.performerName }}</div>
+                  <div class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Liked Performer</div>
                 </div>
-                <ChevronRight class="h-4 w-4 shrink-0 text-slate-300" />
+                <ChevronRight class="h-4 w-4 shrink-0 text-slate-300 group-hover:text-red-600" />
               </RouterLink>
             </ul>
-            <p v-if="likedPerformers.length > 5" class="mt-1 text-center text-xs text-slate-400">
-              외 {{ likedPerformers.length - 5 }}명
+            <p v-if="likedPerformers.length > 5" class="mt-3 text-center text-[11px] font-bold text-slate-300 uppercase">
+              + {{ likedPerformers.length - 5 }} More
             </p>
-          </div>
 
-          <RouterLink
-            to="/performers"
-            class="mt-5 flex w-full items-center justify-center rounded-xl bg-slate-900 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-slate-800"
-          >
-            추천공연 확인하기
-          </RouterLink>
+            <RouterLink
+              to="/performers"
+              class="mt-6 flex w-full items-center justify-center rounded-xl bg-slate-900 py-3.5 text-xs font-bold text-white shadow-sm transition hover:bg-black"
+            >
+              전체 아티스트 탐색
+            </RouterLink>
+          </div>
         </div>
 
-        <div class="rounded-2xl border border-dashed border-slate-200 p-4 text-center">
-          <p class="text-xs leading-relaxed text-slate-400">
-            더 많은 아티스트를 좋아요하면<br />더 정확한 추천을 받을 수 있어요.
+        <div class="rounded-2xl border border-dashed border-slate-200 p-6 text-center bg-slate-50/30">
+          <p class="text-xs font-medium leading-relaxed text-slate-400">
+            더 많은 아티스트를 팔로우하면<br />정교한 공연 추천을 받을 수 있습니다.
           </p>
           <RouterLink
             to="/performers"
-            class="mt-3 inline-block text-xs font-semibold text-slate-700 transition hover:underline"
+            class="mt-3 inline-flex items-center gap-1 text-[11px] font-bold text-slate-500 transition hover:text-red-600"
           >
-            아티스트 탐색하기 →
+            추천 더 보기 <ChevronRight class="h-3 w-3" />
           </RouterLink>
         </div>
       </section>
@@ -258,13 +248,13 @@
 </template>
 
 <script>
-import { Star, Heart, ChevronRight, Plus } from 'lucide-vue-next'
+import { Heart, ChevronRight, Plus, Clock } from 'lucide-vue-next'
 import { useApi } from '../../composables/useApi'
 import { ENDPOINTS } from '../../lib/api/endpoints'
 
 export default {
   name: 'ForUView',
-  components: { Star, Heart, ChevronRight, Plus },
+  components: { Heart, ChevronRight, Plus, Clock },
   data() {
     return {
       api: null,
@@ -340,7 +330,13 @@ export default {
               })
             })
           })
-          this.allSchedules = allSchedules
+          
+          // 날짜 순으로 정렬 (Timeline 경험 개선)
+          this.allSchedules = allSchedules.sort((a, b) => {
+            const dateA = new Date(a.displayText || 0)
+            const dateB = new Date(b.displayText || 0)
+            return dateA - dateB
+          })
         }
       } finally {
         this.loading = false
