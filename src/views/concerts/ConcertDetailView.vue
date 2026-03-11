@@ -1,5 +1,5 @@
 <template>
-  <div class="mx-auto max-w-6xl space-y-6 pb-12">
+  <div class="mx-auto max-w-6xl space-y-6 pb-12 pt-8">
     <!-- 로딩 -->
     <div
       v-if="loading"
