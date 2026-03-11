@@ -77,6 +77,7 @@
   payment: () => `/payment`,
   order: (orderId) => `/order/${orderId}`,
   orderCancel: () => `/order/cancel`,
+  /** POST: 공연 좋아요 토글 (좋아요 ↔ 취소 모두 같은 endpoint) → { isLiked: boolean } */
   concertLike: (concertId) => `/user-concerts/${concertId}/like`,
   /** GET 목록: 내가 좋아요한 공연 (content 또는 배열) */
   concertLikeList: (params = {}) => {
@@ -86,8 +87,6 @@
     const q = p.toString()
     return `/user-concerts/likes${q ? `?${q}` : ''}`
   },
-  /** DELETE: 공연 좋아요 취소 */
-  concertUnlike: (concertId) => `/user-concerts/${concertId}/like`,
   concertReview: (concertId) => `/user-concerts/${concertId}/review`,
   concertUserInteraction: (concertId) => `/user-concerts/${concertId}/user-interaction`,
   concertStats: (concertId) => `/user-concerts/${concertId}/stats`,

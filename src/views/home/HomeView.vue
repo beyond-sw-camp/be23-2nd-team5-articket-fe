@@ -145,7 +145,7 @@
 
       <!-- 카드 캐러셀 -->
       <div class="relative min-h-[260px]">
-        <Transition name="ranking-fade" mode="out-in">
+        <Transition name="ranking-fade" mode="out-in" @after-enter="updateRankingScrollState">
           <div
             v-if="loading && items.length === 0"
             key="loading"
@@ -180,7 +180,7 @@
               <ChevronRight class="h-4 w-4 text-slate-600" />
             </button>
 
-            <Transition name="ranking-fade" mode="out-in">
+            <Transition name="ranking-fade" mode="out-in" @after-enter="updateRankingScrollState">
               <div
                 :key="rankingCat"
                 ref="rankingScrollRef"
@@ -509,6 +509,7 @@ export default {
   watch: {
     items() {
       this.$nextTick(this.updateRankingScrollState)
+      setTimeout(this.updateRankingScrollState, 350)
     },
     heroBanner(val) {
       if (!val) return

@@ -138,7 +138,7 @@ export default {
       const id = row?.id
       if (id == null || id === '') return
       try {
-        await this.api.del(ENDPOINTS.concertUnlike(id))
+        await this.api.post(ENDPOINTS.concertLike(id))
         this.rows = this.rows.filter((r) => r.id !== id)
       } catch (e) {
         console.warn('Concert like cancel failed', e)
