@@ -1,6 +1,6 @@
 <template>
   <div class="space-y-6">
-    <!-- 로딩 스켈레톤 -->
+    <!-- 로딩 중 스켈레톤 -->
     <template v-if="loading">
       <div class="flex gap-6">
         <div class="h-64 w-48 shrink-0 animate-pulse rounded-2xl bg-slate-200" />
@@ -15,20 +15,20 @@
       </div>
     </template>
 
+    <!-- 공연 데이터가 정상적으로 있는 경우 -->
     <template v-else-if="item">
-      <!-- 상단: 뒤로가기 | 수정 -->
       <div class="flex items-center justify-between">
-        <UiButton variant="ghost" class="h-9 px-2 text-sm text-slate-600 -ml-2" @click="$router.push('/organizer/concerts')">
-          <ChevronLeft class="h-5 w-5 mr-0.5" />
+        <UiButton variant="ghost" class="-ml-2 h-9 px-2 text-sm text-slate-600" @click="$router.push('/organizer/concerts')">
+          <ChevronLeft class="mr-0.5 h-5 w-5" />
           공연 목록
         </UiButton>
         <UiButton class="h-9 px-4" @click="$router.push(`/organizer/concerts/${item.id}/edit`)">
-          <Pencil class="h-4 w-4 mr-1.5" />
+          <Pencil class="mr-1.5 h-4 w-4" />
           수정
         </UiButton>
       </div>
 
-      <!-- 히어로: 포스터 + 메타 -->
+      <!-- 공연 기본 정보 -->
       <div class="flex flex-col gap-6 sm:flex-row">
         <div class="shrink-0">
           <div class="relative overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 shadow-sm">
@@ -42,14 +42,15 @@
             <div v-else class="flex aspect-[3/4] min-w-[200px] max-w-[240px] items-center justify-center bg-slate-100 sm:w-56">
               <Ticket class="h-16 w-16 text-slate-300" />
             </div>
-            <div class="absolute top-3 left-3">
+            <div class="absolute left-3 top-3">
               <UiBadge :tone="statusTone(item.status)" :color="statusColor(item.status)">
                 {{ statusLabel(item.status) }}
               </UiBadge>
             </div>
           </div>
         </div>
-        <div class="flex-1 min-w-0">
+
+        <div class="min-w-0 flex-1">
           <h1 class="text-xl font-bold text-slate-900 sm:text-2xl">{{ item.title }}</h1>
           <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-500">
             <span v-if="item.venue?.name" class="flex items-center gap-1">
@@ -65,7 +66,7 @@
         </div>
       </div>
 
-      <!-- 퀵 액션 카드 -->
+      <!-- 액션 카드 -->
       <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <button
           type="button"
@@ -81,6 +82,7 @@
           </div>
           <ChevronRight class="ml-auto h-5 w-5 shrink-0 text-slate-400" />
         </button>
+
         <button
           type="button"
           class="flex items-center gap-4 rounded-xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:border-red-200 hover:bg-red-50/50 hover:shadow"
@@ -95,6 +97,23 @@
           </div>
           <ChevronRight class="ml-auto h-5 w-5 shrink-0 text-slate-400" />
         </button>
+
+        <!-- 추가된 좌석맵 보기 액션 -->
+        <button
+          type="button"
+          class="flex items-center gap-4 rounded-xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:border-red-200 hover:bg-red-50/50 hover:shadow"
+          @click="openSeatMapPreview"
+        >
+          <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-100">
+            <Ticket class="h-5 w-5 text-slate-600" />
+          </div>
+          <div>
+            <div class="text-sm font-semibold text-slate-900">좌석맵 보기</div>
+            <div class="text-xs text-slate-500">현재 공연에 연결된 좌석맵 확인</div>
+          </div>
+          <ChevronRight class="ml-auto h-5 w-5 shrink-0 text-slate-400" />
+        </button>
+
         <button
           v-if="item.status === 'DRAFT'"
           type="button"
@@ -110,6 +129,7 @@
           </div>
           <ChevronRight class="ml-auto h-5 w-5 shrink-0 text-red-400" />
         </button>
+
         <button
           v-if="item.status === 'PUBLISHED'"
           type="button"
@@ -127,7 +147,7 @@
         </button>
       </div>
 
-      <!-- 좌석 현황 + 점유율 바 -->
+      <!-- 좌석 통계 -->
       <UiCard v-if="stats" class="overflow-hidden">
         <div class="flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -139,6 +159,7 @@
             <ChevronRight class="ml-1 h-4 w-4" />
           </UiButton>
         </div>
+
         <div v-if="(stats.totalSeats ?? 0) > 0" class="mt-4">
           <div class="mb-2 flex justify-between text-sm">
             <span class="text-slate-600">점유율</span>
@@ -151,6 +172,7 @@
             />
           </div>
         </div>
+
         <div class="mt-5 grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
           <div class="rounded-xl bg-slate-50 p-3">
             <div class="text-xs font-medium text-slate-500">총 좌석</div>
@@ -182,10 +204,64 @@
           </div>
         </div>
       </UiCard>
+
+      <!-- 좌석맵 미리보기 모달 -->
+      <UiModal
+        :open="seatMapPreviewOpen"
+        title="좌석맵 보기"
+        max-width-class="max-w-6xl"
+        @close="closeSeatMapPreview"
+      >
+        <div v-if="seatMapPreview" class="flex h-[75vh] flex-col">
+          <!-- 썸네일 이미지를 확대/축소/드래그해서 보는 영역 -->
+          <div
+            class="w-full flex-1 select-none overflow-hidden rounded-lg bg-slate-50 p-2"
+            :class="isPreviewDragging ? 'cursor-grabbing' : 'cursor-grab'"
+            @wheel.prevent="onPreviewWheel"
+            @mousedown.left="startPreviewDrag"
+            @mousemove="onPreviewDrag"
+            @mouseup="endPreviewDrag"
+            @mouseleave="endPreviewDrag"
+          >
+            <img
+              v-if="seatMapPreview.thumbnailUrl || seatMapPreview.thumbnail_url"
+              :src="seatMapPreview.thumbnailUrl || seatMapPreview.thumbnail_url"
+              :alt="seatMapPreview.name || '좌석맵'"
+              class="h-full w-full rounded-lg object-contain transition-transform duration-75"
+              :style="{ transform: `translate(${previewOffsetX}px, ${previewOffsetY}px) scale(${previewScale})`, transformOrigin: 'center center' }"
+              draggable="false"
+              @dragstart.prevent
+              @error="$event.target.style.display='none'"
+            />
+            <div
+              v-else
+              class="flex h-full w-full items-center justify-center rounded-lg border border-dashed border-slate-300 text-sm text-slate-500"
+            >
+              좌석맵 미리보기가 없습니다.
+            </div>
+          </div>
+
+          <div class="mt-3 flex items-center justify-between">
+            <p class="text-sm text-slate-600">{{ seatMapPreview.name || `배치 ${seatMapPreview.id}` }}</p>
+            <div class="flex items-center gap-2">
+              <UiButton variant="ghost" class="h-8 px-3 text-xs" @click="zoomOutPreview">-</UiButton>
+              <div class="text-xs text-slate-500">{{ Math.round(previewScale * 100) }}%</div>
+              <UiButton variant="ghost" class="h-8 px-3 text-xs" @click="zoomInPreview">+</UiButton>
+              <UiButton variant="ghost" class="h-8 px-3 text-xs" @click="resetPreviewZoom">100%</UiButton>
+            </div>
+          </div>
+        </div>
+
+        <template #footer>
+          <div class="flex justify-end">
+            <UiButton variant="ghost" @click="closeSeatMapPreview">닫기</UiButton>
+          </div>
+        </template>
+      </UiModal>
     </template>
 
-    <!-- 에러/없음 -->
-    <EmptyState v-else title="공연을 찾을 수 없습니다" description="존재하지 않거나 권한이 없을 수 있습니다.">
+    <!-- 공연을 못 찾았을 때 -->
+    <EmptyState v-else title="공연을 찾을 수 없습니다" description="존재하지 않거나 권한이 없는 공연일 수 있습니다.">
       <UiButton class="mt-3" @click="$router.push('/organizer/concerts')">목록으로</UiButton>
     </EmptyState>
   </div>
@@ -197,6 +273,7 @@ import UiCard from '../../components/common/UiCard.vue'
 import UiButton from '../../components/common/UiButton.vue'
 import UiBadge from '../../components/common/UiBadge.vue'
 import EmptyState from '../../components/common/EmptyState.vue'
+import UiModal from '../../components/common/UiModal.vue'
 import { useApi } from '../../composables/useApi'
 import { ENDPOINTS } from '../../lib/api/endpoints'
 import { getCategoryLabel } from '../../lib/constants/concertCategory'
@@ -216,9 +293,11 @@ export default {
     UiCard,
     UiButton,
     UiBadge,
-    EmptyState
+    EmptyState,
+    UiModal
   },
   computed: {
+    // 점유율 표시 문자열
     occupancyDisplay() {
       const rate = this.stats?.occupancyRate
       if (rate == null || Number.isNaN(rate)) return '-'
@@ -230,7 +309,19 @@ export default {
       loading: false,
       item: null,
       stats: null,
-      api: null
+      api: null,
+
+      // 좌석맵 미리보기 모달 상태
+      seatMapPreviewOpen: false,
+      seatMapPreview: null,
+
+      // 이미지 확대/이동 상태
+      previewScale: 1,
+      previewOffsetX: 0,
+      previewOffsetY: 0,
+      isPreviewDragging: false,
+      previewDragStartX: 0,
+      previewDragStartY: 0
     }
   },
   created() {
@@ -239,9 +330,17 @@ export default {
   mounted() {
     this.load()
   },
+  beforeUnmount() {
+    this.isPreviewDragging = false
+  },
   methods: {
     statusLabel(s) {
-      const m = { DRAFT: '초안', PUBLISHED: '게시', ENDED: '종료' }
+      const m = {
+        DRAFT: '초안',
+        PUBLISHED: '게시',
+        ENDED: '종료',
+        AVAILABLE: 'AVAILABLE'
+      }
       return m[s] ?? s ?? '-'
     },
     statusTone(s) {
@@ -263,12 +362,15 @@ export default {
     onThumbError(e) {
       e.target.style.display = 'none'
     },
+
+    // 공연 상세와 좌석 통계를 같이 조회
     async load() {
       const concertId = this.$route.params.concertId
       if (concertId == null || concertId === '') {
         this.loading = false
         return
       }
+
       this.loading = true
       try {
         const [detail, statsRes] = await Promise.all([
@@ -279,10 +381,91 @@ export default {
         this.stats = statsRes
       } catch (err) {
         this.item = null
-        // 에러는 ErrorAlertModal에서 표시됨
       } finally {
         this.loading = false
       }
+    },
+
+    // 공연에 연결된 seatMapId / venueId로 좌석맵 목록을 찾아 미리보기 데이터 확보
+    async openSeatMapPreview() {
+      if (!this.item) return
+
+      const seatMapId =
+        this.item.seatMapId ??
+        this.item.seat_map_id ??
+        this.item.concertSeatMapResDto?.id ??
+        null
+
+      const venueId =
+        this.item.venue?.id ??
+        this.item.venueId ??
+        this.item.venue_id ??
+        null
+
+      if (!seatMapId || !venueId) return
+
+      try {
+        const res = await this.api.get(ENDPOINTS.venueSeatMaps(venueId))
+        const seatMaps = Array.isArray(res) ? res : res?.content || res?.items || []
+        this.seatMapPreview =
+          seatMaps.find((sm) => Number(sm.id) === Number(seatMapId)) ?? null
+      } catch (err) {
+        this.seatMapPreview = null
+      }
+
+      // 모달 열 때 확대/이동 상태 초기화
+      this.previewScale = 1
+      this.previewOffsetX = 0
+      this.previewOffsetY = 0
+      this.isPreviewDragging = false
+      this.seatMapPreviewOpen = true
+    },
+
+    closeSeatMapPreview() {
+      this.seatMapPreviewOpen = false
+      this.previewScale = 1
+      this.previewOffsetX = 0
+      this.previewOffsetY = 0
+      this.isPreviewDragging = false
+    },
+
+    // 마우스 휠로 확대/축소
+    onPreviewWheel(evt) {
+      const delta = evt.deltaY > 0 ? -0.1 : 0.1
+      this.previewScale = Math.min(4, Math.max(0.5, +(this.previewScale + delta).toFixed(2)))
+    },
+
+    // 드래그 시작
+    startPreviewDrag(evt) {
+      this.isPreviewDragging = true
+      this.previewDragStartX = evt.clientX - this.previewOffsetX
+      this.previewDragStartY = evt.clientY - this.previewOffsetY
+    },
+
+    // 드래그 중 위치 이동
+    onPreviewDrag(evt) {
+      if (!this.isPreviewDragging) return
+      this.previewOffsetX = evt.clientX - this.previewDragStartX
+      this.previewOffsetY = evt.clientY - this.previewDragStartY
+    },
+
+    // 드래그 종료
+    endPreviewDrag() {
+      this.isPreviewDragging = false
+    },
+
+    zoomInPreview() {
+      this.previewScale = Math.min(4, +(this.previewScale + 0.1).toFixed(2))
+    },
+
+    zoomOutPreview() {
+      this.previewScale = Math.max(0.5, +(this.previewScale - 0.1).toFixed(2))
+    },
+
+    resetPreviewZoom() {
+      this.previewScale = 1
+      this.previewOffsetX = 0
+      this.previewOffsetY = 0
     }
   }
 }

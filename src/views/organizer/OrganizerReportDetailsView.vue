@@ -69,9 +69,27 @@
           <div class="text-sm font-semibold text-slate-900">조회 결과</div>
           <div class="mt-1 text-sm text-slate-500">총 {{ totalElements.toLocaleString() }}건</div>
         </div>
-        <UiButton variant="ghost" class="h-10 px-4" :disabled="!currentConcertOrderListId" @click="openOrderList">
-          주문목록 바로가기
-        </UiButton>
+
+        <div class="flex items-center gap-2">
+          <!-- 현재 선택된 회차 기준으로 좌석 인사이트 진입 -->
+          <UiButton
+            variant="ghost"
+            class="h-10 px-4"
+            :disabled="!selectedScheduleId"
+            @click="openSeatMapByFilter"
+          >
+            이 회차 좌석맵 보기
+          </UiButton>
+
+          <UiButton
+            variant="ghost"
+            class="h-10 px-4"
+            :disabled="!currentConcertOrderListId"
+            @click="openOrderList"
+          >
+            주문목록 바로가기
+          </UiButton>
+        </div>
       </div>
 
       <UiTable class="mt-4" :columns="columns" :rows="items">
@@ -99,6 +117,13 @@
 
         <template #cell:createdAt="{ row }">
           {{ formatDateTime(row.createdAt) }}
+        </template>
+
+        <template #cell:seatMap="{ row }">
+          <!-- 주문 단위로 좌석 인사이트 이동 + 주문 좌석 강조 -->
+          <UiButton variant="ghost" class="h-8 px-3 text-xs" @click="openSeatMapByRow(row)">
+            좌석맵 보기
+          </UiButton>
         </template>
 
         <template #cell:detail="{ row }">
@@ -149,6 +174,7 @@ export default {
         { key: 'amount', label: '금액' },
         { key: 'status', label: '상태' },
         { key: 'createdAt', label: '주문 시각' },
+        { key: 'seatMap', label: '' },
         { key: 'detail', label: '' }
       ],
       statusOptions: [
@@ -273,6 +299,33 @@ export default {
       if (!this.currentConcertOrderListId) return
       this.$router.push(`/organizer/concerts/${this.currentConcertOrderListId}/orders`)
     },
+    openSeatMapByFilter() {
+      // 회차 선택이 되어 있어야 회차 좌석맵으로 이동 가능
+      if (!this.selectedScheduleId) return
+
+      this.$router.push({
+        path: '/organizer/seat-insights',
+        query: {
+          ...(this.selectedConcertId != null ? { concertId: String(this.selectedConcertId) } : {}),
+          scheduleId: String(this.selectedScheduleId)
+        }
+      })
+    },
+
+    openSeatMapByRow(row) {
+      // 주문 정보 기준으로 좌석맵 이동 + 주문 좌석 강조
+      if (!row?.concertId || !row?.scheduleId || !row?.id) return
+
+      this.$router.push({
+        path: '/organizer/seat-insights',
+        query: {
+          concertId: String(row.concertId),
+          scheduleId: String(row.scheduleId),
+          orderId: String(row.id)
+        }
+      })
+    },
+    
     formatWon(value) {
       return `${Number(value || 0).toLocaleString()}원`
     },
