@@ -25,23 +25,13 @@
 
         <div class="mt-8 flex flex-col gap-3">
           <RouterLink
-            to="/member/doLogin"
+            to="/"
             class="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-slate-900 font-semibold text-white shadow-sm transition hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2"
           >
-            로그인하러 가기
+            홈으로 가기
             <ArrowRight class="h-5 w-5 shrink-0" />
           </RouterLink>
-          <RouterLink
-            to="/"
-            class="flex h-12 w-full items-center justify-center rounded-xl border border-slate-200 bg-white font-semibold text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-200"
-          >
-            홈으로
-          </RouterLink>
         </div>
-
-        <p class="mt-6 text-center text-xs text-slate-400">
-          이미 로그인되어 있다면 홈에서 서비스를 이용해 주세요.
-        </p>
       </div>
     </div>
   </div>
