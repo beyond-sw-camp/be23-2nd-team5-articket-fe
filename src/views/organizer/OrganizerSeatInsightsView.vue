@@ -1,6 +1,6 @@
 <template>
   <div class="grid gap-4">
-    <div class="rounded-xl border border-slate-200 bg-white p-5">
+    <div class="min-w-0 rounded-xl border border-slate-200 bg-white p-5">
       <h1 class="text-lg font-semibold text-slate-900">좌석 인사이트</h1>
       <p class="mt-2 text-sm text-slate-600">
         전체 공연 합산, 공연별, 회차별 좌석 판매 현황을 확인합니다.
@@ -51,8 +51,8 @@
     </div>
 
     <template v-else>
-      <div class="grid gap-4 lg:grid-cols-3">
-        <div class="rounded-xl border border-slate-200 bg-white p-5">
+      <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div class="min-w-0 rounded-xl border border-slate-200 bg-white p-5">
           <h2 class="text-base font-semibold text-slate-900">구역별 판매 동향</h2>
           <p class="mt-1 text-sm text-slate-500">어떤 구역이 가장 잘 팔리는지 비교합니다.</p>
 
@@ -80,7 +80,7 @@
           </div>
         </div>
 
-        <div class="rounded-xl border border-slate-200 bg-white p-5">
+        <div class="min-w-0 rounded-xl border border-slate-200 bg-white p-5">
           <h2 class="text-base font-semibold text-slate-900">등급별 판매율</h2>
           <p class="mt-1 text-sm text-slate-500">좌석 등급별 판매 비율입니다.</p>
 
@@ -109,7 +109,7 @@
           </div>
         </div>
 
-        <div class="rounded-xl border border-slate-200 bg-white p-5">
+        <div class="min-w-0 rounded-xl border border-slate-200 bg-white p-5">
           <h2 class="text-base font-semibold text-slate-900">잔여석 시각화</h2>
           <p class="mt-1 text-sm text-slate-500">전체 좌석 대비 예매 완료/잔여 좌석 현황입니다.</p>
 
@@ -140,7 +140,7 @@
       </div>
 
       <div class="grid gap-4 xl:grid-cols-2">
-        <div class="rounded-xl border border-slate-200 bg-white p-5">
+        <div class="min-w-0 rounded-xl border border-slate-200 bg-white p-5">
           <h2 class="text-base font-semibold text-slate-900">구역별 상세 현황</h2>
           <p class="mt-1 text-sm text-slate-500">구역별 판매/잔여 좌석을 숫자로 확인합니다.</p>
 
@@ -172,7 +172,7 @@
           </table>
         </div>
 
-        <div class="rounded-xl border border-slate-200 bg-white p-5">
+        <div class="min-w-0 rounded-xl border border-slate-200 bg-white p-5">
           <h2 class="text-base font-semibold text-slate-900">등급별 상세 현황</h2>
           <p class="mt-1 text-sm text-slate-500">등급별 판매/잔여 좌석을 숫자로 확인합니다.</p>
 
@@ -205,7 +205,7 @@
         </div>
       </div>
 
-      <div v-if="seatMapInsight" class="rounded-xl border border-slate-200 bg-white p-5">
+      <div v-if="seatMapInsight" class="min-w-0 rounded-xl border border-slate-200 bg-white p-5">
         <div class="flex items-start justify-between gap-3">
           <div>
             <h2 class="text-base font-semibold text-slate-900">좌석맵 인사이트</h2>
