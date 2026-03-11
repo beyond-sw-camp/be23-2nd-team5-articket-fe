@@ -31,8 +31,8 @@
         class="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900"
         @click="menuOpen = false"
       >
-        <Package class="h-4 w-4 shrink-0 text-slate-400" />
-        내 주문 목록
+        <Ticket class="h-4 w-4 shrink-0 text-slate-400" />
+        내 예매 내역
       </RouterLink>
       <RouterLink
         to="/me/foru"
@@ -57,7 +57,7 @@
 </template>
 
 <script>
-import { User, Package, Star, LogOut } from 'lucide-vue-next'
+import { User, Ticket, Star, LogOut } from 'lucide-vue-next'
 import { getRole, useRole } from '../../composables/useRole'
 import { useMe } from '../../composables/useMe'
 import { useSSE } from '../../composables/useSSE'
@@ -70,7 +70,7 @@ export default {
   },
   components: {
     User,
-    Package,
+    Ticket,
     Star,
     LogOut,
   },
