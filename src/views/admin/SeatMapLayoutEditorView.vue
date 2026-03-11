@@ -1313,55 +1313,84 @@ onBeforeUnmount(() => {
   window.removeEventListener('beforeunload', handleBeforeUnload)
 })
 
-// ── THUMBNAIL / IMAGE CAPTURE ─────────────────────────────────────────
-// 모든 객체가 보이도록 뷰를 맞춘 뒤 캡처 → base64 반환
-// DB 저장(thumbnailUrl) 및 로컬 다운로드에 공통 사용
+/**
+ * 렌더된 실제 bounds 기준으로 좌석맵 썸네일을 캡처한다.
+ *
+ * 왜 이렇게 바꾸는가:
+ * - 기존 구현은 x/y + width/height만 사용해서 회전된 section, label, stroke 영역이 잘렸다.
+ * - Konva의 getClientRect()는 실제 화면에 그려진 bounding box를 계산해주므로
+ *   회전/라벨/테두리까지 포함한 안전한 캡처가 가능하다.
+ *
+ * 성능 고려:
+ * - 객체별로 삼각함수 계산을 직접 하지 않는다.
+ * - mainLayer 전체 bounds를 1회만 읽는다.
+ * - 저장 시점에만 실행되므로 렌더 성능에 거의 영향이 없다.
+ */
 const captureLayoutDataUrl = () => {
   if (!konvaStage || !mainLayer || objects.value.length === 0) return null
 
-  // 트랜스포머, 선택 박스 임시 숨김
+  // 편집용 오버레이는 썸네일에 들어가면 안 되므로 캡처 직전에 숨긴다.
   const prevNodes = transformer.nodes()
   transformer.nodes([])
+
+  const selectionWasVisible = selectionRect ? selectionRect.visible() : false
   if (selectionRect) selectionRect.visible(false)
+
   mainLayer.draw()
 
-  // 오브젝트 전체의 스크린 좌표 바운딩박스 계산 → 콘텐츠에 딱 맞게 크롭
-  const scale = konvaStage.scaleX()
-  const stagePos = konvaStage.position()
-  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
-  objects.value.forEach(obj => {
-    const w = obj.width || (obj.cols * (SEAT_W + SEAT_GAP))
-    const h = obj.height || (obj.rows * (SEAT_H + SEAT_GAP))
-    const sx = obj.x * scale + stagePos.x
-    const sy = obj.y * scale + stagePos.y
-    minX = Math.min(minX, sx)
-    minY = Math.min(minY, sy)
-    maxX = Math.max(maxX, sx + w * scale)
-    maxY = Math.max(maxY, sy + h * scale)
-  })
+  try {
+    /**
+     * layer의 실제 렌더 bounds를 구한다.
+     * skipTransform:false 여야 rotation / scale / position 이 반영된다.
+     * skipStroke:false 여야 stage/section 외곽선이 잘리지 않는다.
+     * skipShadow:false 는 이후 shadow가 생겨도 안전하게 동작하게 둔다.
+     */
+    const rect = mainLayer.getClientRect({
+      skipTransform: false,
+      skipStroke: false,
+      skipShadow: false
+    })
 
-  const PAD = 24
-  const cropX = Math.max(0, minX - PAD)
-  const cropY = Math.max(0, minY - PAD)
-  const cropW = Math.min(konvaStage.width(), maxX + PAD) - cropX
-  const cropH = Math.min(konvaStage.height(), maxY + PAD) - cropY
+    // 빈 rect 방어
+    if (!rect || rect.width <= 0 || rect.height <= 0) {
+      return null
+    }
 
-  const dataUrl = konvaStage.toDataURL({
-    mimeType: 'image/jpeg',
-    quality: 0.9,
-    pixelRatio: 2,
-    x: cropX,
-    y: cropY,
-    width: cropW,
-    height: cropH
-  })
+    /**
+     * 라벨과 외곽선이 가장자리에서 붙지 않게 여백 추가.
+     * PAD를 너무 크게 잡으면 이미지가 불필요하게 커지므로 적당히만 준다.
+     */
+    const PAD = 32
 
-  // 복원
-  transformer.nodes(prevNodes)
-  if (selectionRect) selectionRect.visible(false) // Keep it hidden after capture
-  mainLayer.draw()
+    const cropX = Math.max(0, Math.floor(rect.x - PAD))
+    const cropY = Math.max(0, Math.floor(rect.y - PAD))
+    const cropRight = Math.min(
+      konvaStage.width(),
+      Math.ceil(rect.x + rect.width + PAD)
+    )
+    const cropBottom = Math.min(
+      konvaStage.height(),
+      Math.ceil(rect.y + rect.height + PAD)
+    )
 
-  return dataUrl
+    const cropW = Math.max(1, cropRight - cropX)
+    const cropH = Math.max(1, cropBottom - cropY)
+
+    return konvaStage.toDataURL({
+      mimeType: 'image/jpeg',
+      quality: 0.9,
+      pixelRatio: 2,
+      x: cropX,
+      y: cropY,
+      width: cropW,
+      height: cropH
+    })
+  } finally {
+    // 편집 상태 복구
+    transformer.nodes(prevNodes)
+    if (selectionRect) selectionRect.visible(selectionWasVisible)
+    mainLayer.draw()
+  }
 }
 
 // ── DEBOUNCED INPUT HANDLER ───────────────────────────────────────────
