@@ -43,6 +43,12 @@
 
       <div class="mt-4 flex gap-2">
         <UiButton variant="ghost" class="h-11 px-4" @click="goBackToList">이전 화면</UiButton>
+
+        <!-- 현재 주문의 회차/좌석을 좌석 인사이트 화면에서 강조 표시 -->
+        <UiButton variant="ghost" class="h-11 px-4" @click="openSeatMap">
+          좌석맵 보기
+        </UiButton>
+
         <UiButton class="h-11 px-5" @click="goToConcertOrders">
           공연 주문 목록
         </UiButton>
@@ -109,6 +115,19 @@ export default {
         return
       }
       this.$router.push(`/organizer/concerts/${this.item.concertId}/orders`)
+    },
+    openSeatMap() {
+      // 공연/회차/주문 정보가 있어야 좌석맵 상세 진입 가능
+      if (!this.item?.concertId || !this.item?.scheduleId || !this.item?.id) return
+
+      this.$router.push({
+        path: '/organizer/seat-insights',
+        query: {
+          concertId: String(this.item.concertId),
+          scheduleId: String(this.item.scheduleId),
+          orderId: String(this.item.id)
+        }
+      })
     },
     formatDateTime(value) {
       if (!value) return '-'
