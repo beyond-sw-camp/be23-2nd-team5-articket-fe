@@ -215,7 +215,7 @@
         <div v-if="seatMapPreview" class="flex h-[75vh] flex-col">
           <!-- 썸네일 이미지를 확대/축소/드래그해서 보는 영역 -->
           <div
-            class="w-full flex-1 select-none overflow-hidden rounded-lg bg-slate-50 p-2"
+            class="relative w-full flex-1 select-none overflow-hidden rounded-lg bg-slate-50 p-2"
             :class="isPreviewDragging ? 'cursor-grabbing' : 'cursor-grab'"
             @wheel.prevent="onPreviewWheel"
             @mousedown.left="startPreviewDrag"
@@ -227,8 +227,12 @@
               v-if="seatMapPreview.thumbnailUrl || seatMapPreview.thumbnail_url"
               :src="seatMapPreview.thumbnailUrl || seatMapPreview.thumbnail_url"
               :alt="seatMapPreview.name || '좌석맵'"
-              class="h-full w-full rounded-lg object-contain transition-transform duration-75"
-              :style="{ transform: `translate(${previewOffsetX}px, ${previewOffsetY}px) scale(${previewScale})`, transformOrigin: 'center center' }"
+              class="block h-full w-full rounded-lg object-contain transition-transform duration-75"
+              :style="{
+                transform: `translate(${previewOffsetX}px, ${previewOffsetY}px) scale(${previewScale})`,
+                transformOrigin: 'center center',
+                willChange: 'transform'
+              }"
               draggable="false"
               @dragstart.prevent
               @error="$event.target.style.display='none'"
