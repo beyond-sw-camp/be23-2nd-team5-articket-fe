@@ -62,6 +62,103 @@
         </div>
       </div>
 
+      <!-- 모바일 티켓 슬라이더 (결제 완료 + 유효 티켓만) -->
+      <div
+        v-if="ticketCount > 0"
+        class="mt-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
+      >
+        <div class="flex items-center justify-between gap-2">
+          <div>
+            <div class="text-sm font-semibold text-slate-900">모바일 티켓</div>
+            <p class="mt-0.5 text-xs text-slate-500">
+              좌우로 넘기며 각 좌석의 QR 코드를 확인할 수 있습니다.
+            </p>
+          </div>
+          <span class="text-xs font-medium text-slate-500">
+            {{ currentTicketIndex + 1 }} / {{ ticketCount }}
+          </span>
+        </div>
+
+        <div class="mt-3 flex items-center gap-3">
+          <button
+            type="button"
+            class="hidden h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 sm:flex"
+            :disabled="currentTicketIndex === 0"
+            @click="prevTicket"
+          >
+            ‹
+          </button>
+
+          <div class="relative flex-1 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 p-3">
+            <transition name="fade-slide" mode="out-in">
+              <div
+                v-if="currentTicket"
+                :key="currentTicket.id"
+                class="flex flex-col gap-3"
+              >
+                <div class="flex items-start justify-between gap-2">
+                  <div>
+                    <div class="text-xs font-semibold text-slate-500">좌석</div>
+                    <div class="mt-0.5 text-sm font-semibold text-slate-900">
+                      {{ currentTicket.seatDefName }}
+                    </div>
+                  </div>
+                  <UiBadge
+                    :tone="'soft'"
+                    :color="'green'"
+                  >
+                    사용 가능
+                  </UiBadge>
+                </div>
+
+                <div class="text-xs text-slate-600">
+                  <div class="font-semibold text-slate-500">티켓 번호</div>
+                  <div class="mt-0.5 font-mono text-[11px] text-slate-900">
+                    {{ currentTicket.ticketNumber || '티켓 생성 중입니다.' }}
+                  </div>
+                </div>
+
+                <div v-if="currentTicket.qrCodeUrl" class="mt-1 rounded-xl bg-white p-2 text-center">
+                  <img
+                    :src="currentTicket.qrCodeUrl"
+                    alt="모바일 티켓 QR"
+                    class="mx-auto h-32 w-32 object-contain"
+                  />
+                </div>
+
+                <div
+                  v-else
+                  class="mt-1 rounded-xl border border-dashed border-slate-200 bg-white px-3 py-4 text-center text-xs text-slate-400"
+                >
+                  QR 코드 준비 중입니다. 잠시 후 다시 확인해 주세요.
+                </div>
+              </div>
+            </transition>
+          </div>
+
+          <button
+            type="button"
+            class="hidden h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 sm:flex"
+            :disabled="currentTicketIndex >= ticketCount - 1"
+            @click="nextTicket"
+          >
+            ›
+          </button>
+        </div>
+
+        <!-- 모바일에서는 하단 도트만 표시 -->
+        <div class="mt-3 flex justify-center gap-1 sm:hidden">
+          <button
+            v-for="(_, idx) in tickets"
+            :key="idx"
+            type="button"
+            class="h-1.5 rounded-full transition-all"
+            :class="idx === currentTicketIndex ? 'w-4 bg-slate-700' : 'w-2 bg-slate-300'"
+            @click="currentTicketIndex = idx"
+          />
+        </div>
+      </div>
+
       <div class="mt-4 flex gap-2">
         <UiButton variant="ghost" class="h-11 px-4" @click="$router.push('/me/orders')">
           목록
@@ -98,13 +195,26 @@ export default {
     return {
       loading: false,
       item: null,
-      api: null
+      api: null,
+      currentTicketIndex: 0
     }
   },
   computed: {
     canCancel() {
       return !!this.item?.paymentId &&
        (this.item?.seatDetails || []).some((seat) => seat.status === 'SOLD')
+    },
+    // 주문 상태가 PAID 이고 좌석 상태가 SOLD인 티켓만 노출
+    tickets() {
+      if (!this.item || this.item.status !== 'PAID') return []
+      return (this.item.seatDetails || []).filter((seat) => seat.status === 'SOLD')
+    },
+    ticketCount() {
+      return this.tickets.length
+    },
+    currentTicket() {
+      if (!this.ticketCount) return null
+      return this.tickets[Math.min(this.currentTicketIndex, this.ticketCount - 1)]
     }
   },
   created() {
@@ -124,6 +234,13 @@ export default {
       const d = new Date(value)
       if (Number.isNaN(d.getTime())) return value
       return d.toLocaleString()
+    },
+
+    prevTicket() {
+      if (this.currentTicketIndex > 0) this.currentTicketIndex -= 1
+    },
+    nextTicket() {
+      if (this.currentTicketIndex < this.ticketCount - 1) this.currentTicketIndex += 1
     },
 
     async load() {
