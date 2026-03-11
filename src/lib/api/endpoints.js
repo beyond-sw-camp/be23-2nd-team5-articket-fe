@@ -111,6 +111,21 @@
     const q = p.toString()
     return `/concerts/organizer/dashboard/seat-insights${q ? `?${q}` : ''}`
   },
+    organizerSeatMapInsights: ({ concertId = null, scheduleId = null, orderId = null } = {}) => {
+    const p = new URLSearchParams()
+
+    // 공연 선택값
+    if (concertId != null) p.set('concertId', String(concertId))
+
+    // 회차 선택값
+    if (scheduleId != null) p.set('scheduleId', String(scheduleId))
+
+    // 특정 주문 좌석 강조 표시용
+    if (orderId != null) p.set('orderId', String(orderId))
+
+    const q = p.toString()
+    return `/concerts/organizer/dashboard/seat-map-insights${q ? `?${q}` : ''}`
+  },
   organizerSeatInsightOptions: () => `/concerts/organizer/dashboard/seat-insights/options`,
   organizerSettlementReport: ({ days = 14, concertId = null, scheduleId = null } = {}) => {
     const p = new URLSearchParams()
