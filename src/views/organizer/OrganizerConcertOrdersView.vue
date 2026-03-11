@@ -54,6 +54,13 @@
         <span class="text-slate-600">{{ formatSeats(row.seatDetails) }}</span>
       </template>
 
+      <template #cell:seatMap="{ row }">
+      <!-- 주문의 회차 좌석맵으로 이동하고 현재 주문 좌석을 강조 표시 -->
+      <UiButton variant="ghost" class="h-8 px-2 text-sm" @click="openSeatMap(row)">
+        좌석맵 보기
+      </UiButton>
+      </template>
+
       <template #cell:detail="{ row }">
         <UiButton variant="ghost" class="h-8 px-2 text-sm" @click="openDetail(row.id)">
           상세
@@ -137,6 +144,7 @@ export default {
         { key: 'createdAt', label: '주문 시각' },
         { key: 'amount', label: '금액' },
         { key: 'seats', label: '좌석' },
+        { key: 'seatMap', label: '' },
         { key: 'detail', label: '' }
       ]
     }
@@ -185,6 +193,19 @@ export default {
         this.detailLoading = false
       }
     },
+    openSeatMap(row) {
+      // concertId / scheduleId / id 가 모두 있어야 상세 좌석맵 이동 가능
+      if (!row?.concertId || !row?.scheduleId || !row?.id) return
+
+      this.$router.push({
+        path: '/organizer/seat-insights',
+        query: {
+          concertId: String(row.concertId),
+          scheduleId: String(row.scheduleId),
+          orderId: String(row.id)
+        }
+      })
+    },  
     closeDetail() {
       this.detailModalOpen = false
       this.detailItem = null
