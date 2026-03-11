@@ -262,6 +262,7 @@
     `/venues/nearby?latitude=${latitude}&longitude=${longitude}&radiusKm=${radiusKm}&page=${page}&size=${size}`,
   venue: (venueId) => `/venues/${venueId}`,
   venueConcerts: (venueId) => `/venues/${venueId}/concerts`,
+  adminVenueConcerts: (venueId) => `/venues/admin/${venueId}/concerts`,
   venues: () => `/venues`,
   searchVenues: (params = {}) => {
     const p = new URLSearchParams()
