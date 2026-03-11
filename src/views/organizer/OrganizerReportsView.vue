@@ -51,7 +51,7 @@
     </div>
 
     <!-- 4개 카드를 한 grid 안의 직접 형제로 둬야 같은 행/같은 열 크기가 맞는다 -->
-    <div v-else class="grid gap-4 2xl:grid-cols-2">
+    <div v-else class="grid gap-4 xl:grid-cols-2">
       <div class="flex min-w-0 h-full flex-col rounded-xl border border-slate-200 bg-white p-5">
         <div class="flex items-start justify-between gap-3">
           <div>
@@ -101,7 +101,7 @@
 
         <!-- 테이블은 폭이 부족하면 내부 스크롤로 대응 -->
         <div class="mt-6 flex-1 overflow-x-auto">
-          <table class="min-w-[640px] w-full border-collapse text-left">
+          <table class="w-full min-w-0 xl:min-w-[480px] border-collapse text-left">
             <thead>
               <tr class="border-b border-slate-200 text-sm text-slate-500">
                 <th class="pb-3 font-medium">대표공연 누적 수익</th>
@@ -159,9 +159,9 @@
 
         <!-- 차트는 작은 폭에서 잘리지 않도록 내부만 가로 스크롤 -->
         <div class="mt-6 flex-1 overflow-x-auto">
-          <div class="min-w-[720px]">
+          <div class="w-full min-w-0 xl:min-w-[480px]">
             <!-- 날짜 라벨도 SVG 안에 같이 넣어서 점 위치와 정확히 맞춤 -->
-            <svg viewBox="0 0 720 290" class="h-80 w-full">
+            <svg viewBox="0 0 720 290" class="h-60 w-full">
               <line
                 v-for="line in chartGridLines"
                 :key="line"
