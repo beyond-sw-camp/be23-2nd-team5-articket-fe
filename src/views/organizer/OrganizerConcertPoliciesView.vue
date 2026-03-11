@@ -174,6 +174,7 @@
           <UiButton
             class="h-11 px-8 font-bold shadow-sm"
             :disabled="!hasBasePricePolicy"
+            @click="goToSchedulesStep"
           >
             다음: 회차 등록 ->
           </UiButton>
@@ -502,6 +503,12 @@ export default {
       } finally {
         this.submitting = false
       }
+    },
+    goToSchedulesStep() {
+      if (!this.hasBasePricePolicy) return
+      const concertId = this.$route.params.concertId
+      if (!concertId) return
+      this.$router.push(`/organizer/concerts/${concertId}/schedules?from=create`)
     },
   },
 }
