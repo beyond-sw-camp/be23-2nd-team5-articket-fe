@@ -275,7 +275,8 @@
                     <tr>
                       <th class="px-3 py-2 text-left text-xs font-semibold text-slate-500">공연명</th>
                       <th class="px-3 py-2 text-center text-xs font-semibold text-slate-500">상태</th>
-                      <th class="px-3 py-2 text-left text-xs font-semibold text-slate-500">주최자</th>
+                      <th class="px-3 py-2 text-left text-xs font-semibold text-slate-500">기간</th>
+                      <th class="px-3 py-2 text-center text-xs font-semibold text-slate-500">잔여석</th>
                       <th class="px-3 py-2 text-center text-xs font-semibold text-slate-500">일정</th>
                     </tr>
                   </thead>
@@ -296,7 +297,18 @@
                           :class="c.status === 'AVAILABLE' ? 'bg-red-100 text-red-700' : c.status === 'UPCOMING' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'"
                         >{{ { DRAFT: '초안', UPCOMING: '게시', AVAILABLE: '예매중', CLOSED: '마감' }[c.status] ?? c.status }}</span>
                       </td>
-                      <td class="px-3 py-2 text-xs text-slate-600">{{ c.organizerEmail || '-' }}</td>
+                      <td class="px-3 py-2 text-xs text-slate-600">
+                        <template v-if="concertDateRange(c)">
+                          <div>{{ concertDateRange(c).start }}</div>
+                          <div class="text-slate-400">~ {{ concertDateRange(c).end }}</div>
+                        </template>
+                        <span v-else class="text-slate-400">-</span>
+                      </td>
+                      <td class="px-3 py-2 text-center">
+                        <span class="text-xs font-semibold" :class="concertRemainingSeats(c) === 0 ? 'text-red-500' : 'text-emerald-600'">
+                          {{ concertRemainingSeats(c) }}석
+                        </span>
+                      </td>
                       <td class="px-3 py-2 text-center">
                         <button
                           class="h-6 rounded-lg border px-2 text-xs font-medium transition-colors"
@@ -318,7 +330,7 @@
                     <div class="text-xs font-semibold text-slate-700">공연 일정</div>
                     <div class="mt-0.5 text-xs text-slate-400">
                       <template v-if="detailSelectedConcertId">「{{ detailSelectedConcertTitle }}」</template>
-                      <template v-else>공연을 선택하면 일정이 표시됩니다</template>
+                      <template v-else>전체 공연 일정</template>
                     </div>
                   </div>
                   <ConcertCalendar
@@ -644,6 +656,8 @@ export default {
           }
         }
         this.detailConcerts = filtered
+        // 좌석맵의 전체 공연 일정 바로 표시
+        this.detailSchedules = filtered.flatMap(c => c._schedules ?? [])
       } catch {
         this.detailConcerts = []
       } finally {
@@ -653,14 +667,35 @@ export default {
 
     selectDetailConcert(concert) {
       if (this.detailSelectedConcertId === concert.id) {
+        // 선택 해제 → 전체 일정으로 복원
         this.detailSelectedConcertId = null
         this.detailSelectedConcertTitle = ''
-        this.detailSchedules = []
+        this.detailSchedules = this.detailConcerts.flatMap(c => c._schedules ?? [])
         return
       }
       this.detailSelectedConcertId = concert.id
       this.detailSelectedConcertTitle = concert.title || ''
       this.detailSchedules = concert._schedules ?? []
+    },
+
+    concertDateRange(concert) {
+      const schedules = concert._schedules ?? []
+      if (schedules.length === 0) return null
+      const times = schedules
+        .map(s => new Date(s.playTime ?? s.play_time))
+        .filter(d => !isNaN(d))
+        .sort((a, b) => a - b)
+      if (times.length === 0) return null
+      const fmt = d => `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`
+      return { start: fmt(times[0]), end: fmt(times[times.length - 1]) }
+    },
+
+    concertRemainingSeats(concert) {
+      const schedules = concert._schedules ?? []
+      return schedules.reduce((total, s) => {
+        const avail = s.availabilityByGrade ?? {}
+        return total + Object.values(avail).reduce((sum, v) => sum + (v ?? 0), 0)
+      }, 0)
     },
 
     async updateDetailStatus(status) {
