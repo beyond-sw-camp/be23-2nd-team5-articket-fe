@@ -1334,8 +1334,9 @@ const captureLayoutDataUrl = () => {
     const h = obj.height || (obj.rows * (SEAT_H + SEAT_GAP))
     const sx = obj.x * scale + stagePos.x
     const sy = obj.y * scale + stagePos.y
-    minX = Math.min(minX, sx)
-    minY = Math.min(minY, sy)
+    // 구역 이름 레이블(y: -20)과 행번호 레이블(x: -20) 포함
+    minX = Math.min(minX, sx - 20 * scale)
+    minY = Math.min(minY, sy - 20 * scale)
     maxX = Math.max(maxX, sx + w * scale)
     maxY = Math.max(maxY, sy + h * scale)
   })
@@ -1345,6 +1346,20 @@ const captureLayoutDataUrl = () => {
   const cropY = Math.max(0, minY - PAD)
   const cropW = Math.min(konvaStage.width(), maxX + PAD) - cropX
   const cropH = Math.min(konvaStage.height(), maxY + PAD) - cropY
+
+  // 흰색 배경 Rect 임시 삽입 (JPEG는 투명 미지원 → 검정 방지)
+  // cropX/Y는 스크린 픽셀 좌표 → Konva 월드 좌표로 변환 필요
+  const bgRect = new Konva.Rect({
+    x: (cropX - stagePos.x) / scale,
+    y: (cropY - stagePos.y) / scale,
+    width: cropW / scale,
+    height: cropH / scale,
+    fill: '#ffffff',
+    listening: false,
+  })
+  mainLayer.add(bgRect)
+  bgRect.moveToBottom()
+  mainLayer.draw()
 
   const dataUrl = konvaStage.toDataURL({
     mimeType: 'image/jpeg',
@@ -1356,9 +1371,10 @@ const captureLayoutDataUrl = () => {
     height: cropH
   })
 
-  // 복원
+  // 배경 Rect 제거 후 복원
+  bgRect.destroy()
   transformer.nodes(prevNodes)
-  if (selectionRect) selectionRect.visible(false) // Keep it hidden after capture
+  if (selectionRect) selectionRect.visible(false)
   mainLayer.draw()
 
   return dataUrl

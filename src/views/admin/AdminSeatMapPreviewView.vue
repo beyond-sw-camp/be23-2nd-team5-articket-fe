@@ -58,7 +58,7 @@
             </div>
             <div
               v-if="seatMap.thumbnailUrl"
-              class="relative bg-white"
+              class="relative bg-white overflow-hidden"
               :class="imgDragging ? 'cursor-grabbing' : 'cursor-grab'"
               style="height: 240px"
               @wheel.prevent="onImgWheel"
