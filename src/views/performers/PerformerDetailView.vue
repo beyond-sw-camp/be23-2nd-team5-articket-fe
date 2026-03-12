@@ -89,16 +89,27 @@
             class="group cursor-pointer rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm transition hover:border-red-300 hover:shadow"
             @click="c.concertId && $router.push(`/concerts/${c.concertId}`)"
           >
-            <!-- 포스터 플레이스홀더 -->
-            <div class="flex h-36 items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200">
-              <span class="text-xs text-slate-400">포스터 없음</span>
+            <!-- 포스터 -->
+            <div class="relative h-36 overflow-hidden bg-gradient-to-br from-slate-100 to-slate-200">
+              <img
+                v-if="c.thumImgUrl || c.posterUrl"
+                :src="c.thumImgUrl || c.posterUrl"
+                :alt="c.title || c.concertTitle"
+                class="h-full w-full object-cover"
+              />
+              <div v-else class="flex h-full items-center justify-center">
+                <span class="text-xs text-slate-400">포스터 없음</span>
+              </div>
             </div>
             <div class="p-3">
               <p class="font-semibold text-sm text-slate-900 line-clamp-2">
                 {{ c.title || c.concertTitle || '공연' }}
               </p>
               <p v-if="c.venueName" class="mt-1 text-xs text-slate-500">{{ c.venueName }}</p>
-              <p v-if="c.startDate || c.date" class="mt-0.5 text-xs text-slate-400">
+              <p v-if="c.scheduleStartDate || c.scheduleEndDate" class="mt-0.5 text-xs text-slate-400">
+                {{ formatConcertDateRange(c.scheduleStartDate, c.scheduleEndDate) }}
+              </p>
+              <p v-else-if="c.startDate || c.date" class="mt-0.5 text-xs text-slate-400">
                 {{ c.startDate || c.date }}
               </p>
               <span
@@ -224,6 +235,19 @@ export default {
       } else {
         this.$router.push('/performers')
       }
+    },
+    formatConcertDateRange(start, end) {
+      const fmt = (iso) => {
+        if (!iso) return ''
+        const d = new Date(iso)
+        return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`
+      }
+      if (start && end) {
+        const s = fmt(start)
+        const e = fmt(end)
+        return s === e ? s : `${s} ~ ${e}`
+      }
+      return fmt(start || end)
     },
     async toggleLike() {
       if (!this.item || !this.canLike) return

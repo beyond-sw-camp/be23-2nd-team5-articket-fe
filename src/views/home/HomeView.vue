@@ -145,7 +145,7 @@
 
       <!-- 카드 캐러셀 -->
       <div class="relative min-h-[260px]">
-        <Transition name="ranking-fade" mode="out-in">
+        <Transition name="ranking-fade" mode="out-in" @after-enter="updateRankingScrollState">
           <div
             v-if="loading && items.length === 0"
             key="loading"
@@ -180,7 +180,7 @@
               <ChevronRight class="h-4 w-4 text-slate-600" />
             </button>
 
-            <Transition name="ranking-fade" mode="out-in">
+            <Transition name="ranking-fade" mode="out-in" @after-enter="updateRankingScrollState">
               <div
                 :key="rankingCat"
                 ref="rankingScrollRef"
@@ -278,60 +278,100 @@
       </div>
     </section>
 
-    <!-- ───── ⑤ 추천 키워드 ───── -->
-    <section class="border-t border-slate-100 px-4 py-8">
-      <div class="flex items-center justify-center gap-2 mb-5">
+    <!-- ───── ⑤ 개인화 추천 섹션 (통합 API 연동) ───── -->
+    <section v-if="recommendSections.length" class="border-t border-slate-100 px-4 py-10">
+      <div class="flex flex-col items-center gap-2 mb-6 text-center">
         <h2 class="text-xl font-bold text-slate-900">추천 키워드</h2>
+        <p class="text-sm text-slate-500">
+          {{ isLoggedIn ? '회원님의 활동을 분석한 맞춤 추천입니다.' : '요즘 트렌디한 공연 추천입니다.' }}
+        </p>
       </div>
 
-      <!-- 키워드 태그 -->
-      <div class="flex gap-2 mb-6 flex-wrap justify-center">
+      <!-- 섹션 선택 버튼 (기존 키워드 UI) -->
+      <div class="flex gap-2 mb-8 flex-wrap justify-center">
         <button
-          v-for="kw in keywordOptions"
-          :key="kw.value"
+          v-for="(section, idx) in recommendSections"
+          :key="section.type + idx"
           type="button"
-          class="flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold transition border"
-          :class="selectedKeyword === kw.value
-            ? 'bg-slate-900 text-white border-slate-900'
-            : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'"
-          @click="setKeyword(kw.value)"
+          class="flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold transition border shadow-sm"
+          :class="selectedSectionIdx === idx
+            ? 'bg-red-600 text-white border-red-600'
+            : 'bg-white border-slate-200 text-slate-700 hover:border-red-200 hover:text-red-600'"
+          @click="selectedSectionIdx = idx"
         >
-          <span v-if="selectedKeyword === kw.value" class="text-xs">🔥</span>
-          {{ kw.label }}
+          <span v-if="selectedSectionIdx === idx" class="text-xs">🔥</span>
+          {{ section.title }}
         </button>
       </div>
 
-      <!-- 키워드 공연 카드 -->
-      <div v-if="keywordLoading" class="py-8 text-center text-sm text-slate-400">불러오는 중…</div>
+      <!-- 로딩 스켈레톤/상태 -->
+      <div v-if="sectionsLoading" class="flex min-h-[240px] items-center justify-center py-12">
+        <div class="flex flex-col items-center gap-3 text-slate-400">
+          <svg class="h-8 w-8 animate-spin" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" />
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+          </svg>
+          <span class="text-sm font-medium">추천 공연을 불러오는 중…</span>
+        </div>
+      </div>
+
+      <!-- 선택된 섹션의 공연 목록 -->
       <div
-        v-else-if="keywordItems.length === 0"
-        class="py-8 text-center text-sm text-slate-400"
-      >공연이 없습니다</div>
-      <div
-        v-else
-        class="flex gap-4 overflow-x-auto pb-2"
-        style="scrollbar-width:none;-ms-overflow-style:none"
+        v-else-if="!currentSectionConcerts || currentSectionConcerts.length === 0"
+        class="py-12 text-center text-sm text-slate-400"
       >
+        추천할 공연이 아직 없습니다.
+      </div>
+
+      <div v-else class="relative px-2">
+        <!-- 이전 버튼 -->
         <button
-          v-for="c in keywordItems"
-          :key="'kw-' + c.id"
           type="button"
-          class="flex-shrink-0 w-[155px] cursor-pointer group text-center"
-          @click="$router.push(`/concerts/${c.id}`)"
+          class="absolute left-0 top-[42%] z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-slate-200 bg-white shadow-sm hover:bg-slate-50 disabled:opacity-30 disabled:pointer-events-none transition"
+          :disabled="!canScrollSectionLeft"
+          @click="scrollSection('left')"
         >
-          <div class="overflow-hidden rounded-xl bg-slate-100 mb-2" style="aspect-ratio:3/4">
-            <img
-              :src="c.posterUrl"
-              :alt="c.title"
-              class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-            />
-          </div>
-          <p class="text-[10px] font-bold text-red-500">{{ getCategoryLabel(c.category) }}</p>
-          <p class="text-sm font-bold text-slate-900 line-clamp-2 leading-snug mt-0.5">{{ c.title }}</p>
-          <p class="text-[11px] text-slate-400 mt-0.5">
-            {{ formatDateRange(c.scheduleStartDate, c.scheduleEndDate) }}
-          </p>
+          <ChevronLeft class="h-4 w-4 text-slate-600" />
         </button>
+        <!-- 다음 버튼 -->
+        <button
+          type="button"
+          class="absolute right-0 top-[42%] z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-slate-200 bg-white shadow-sm hover:bg-slate-50 disabled:opacity-30 disabled:pointer-events-none transition"
+          :disabled="!canScrollSectionRight"
+          @click="scrollSection('right')"
+        >
+          <ChevronRight class="h-4 w-4 text-slate-600" />
+        </button>
+
+        <div
+          ref="sectionScrollRef"
+          class="flex gap-4 overflow-x-auto pb-4 px-10 scroll-smooth"
+          style="scrollbar-width:none;-ms-overflow-style:none"
+          @scroll="updateSectionScrollState"
+        >
+          <button
+            v-for="c in currentSectionConcerts"
+            :key="'section-' + selectedSectionIdx + '-' + c.id"
+            type="button"
+            class="flex-shrink-0 w-[155px] cursor-pointer group text-left"
+            @click="$router.push(`/concerts/${c.id}`)"
+          >
+            <div class="relative overflow-hidden rounded-xl bg-slate-100 mb-2" style="aspect-ratio:3/4">
+              <img
+                :src="c.posterUrl"
+                :alt="c.title"
+                class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+              />
+            </div>
+            <p class="text-[10px] font-bold text-red-500 uppercase tracking-wider">{{ getCategoryLabel(c.category) }}</p>
+            <h4 class="text-xs font-bold text-slate-900 line-clamp-2 leading-snug mt-0.5 group-hover:text-red-600 transition-colors">
+              {{ c.title }}
+            </h4>
+            <p class="text-[11px] text-slate-400 mt-0.5">
+              {{ formatDateRange(c.scheduleStartDate, c.scheduleEndDate) }}
+            </p>
+          </button>
+        </div>
       </div>
     </section>
 
@@ -411,9 +451,10 @@
 </template>
 
 <script>
-import { ChevronLeft, ChevronRight, Star, RefreshCw } from 'lucide-vue-next'
+import { ChevronLeft, ChevronRight, Star, RefreshCw, Clock } from 'lucide-vue-next'
 import EmptyState from '../../components/common/EmptyState.vue'
 import { useApi } from '../../composables/useApi'
+import { isAuthed } from '../../composables/useRole'
 import { ENDPOINTS } from '../../lib/api/endpoints'
 import { CONCERT_CATEGORY_OPTIONS, getCategoryLabel } from '../../lib/constants/concertCategory'
 import { maskNickname } from '../../lib/utils/maskNickname'
@@ -422,7 +463,7 @@ const DEFAULT_IMG = 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd
 
 export default {
   name: 'HomeView',
-  components: { ChevronLeft, ChevronRight, Star, RefreshCw, EmptyState },
+  components: { ChevronLeft, ChevronRight, Star, RefreshCw, EmptyState, Clock },
 
   data() {
     return {
@@ -436,15 +477,13 @@ export default {
       rankingScrollWidth: 0,
       rankingClientWidth: 0,
 
-      // 추천 키워드
-      keywordOptions: [
-        { value: 'MUSICAL', label: '재관람률 높은' },
-        { value: 'FAMILY', label: '아이와 함께' },
-        { value: 'THEATRE', label: '예매 연극 추천' },
-      ],
-      selectedKeyword: 'MUSICAL',
-      keywordItems: [],
-      keywordLoading: false,
+      // 통합 추천 섹션 (통합 API)
+      recommendSections: [],
+      sectionsLoading: false,
+      selectedSectionIdx: 0,
+      sectionScrollLeft: 0,
+      sectionScrollWidth: 0,
+      sectionClientWidth: 0,
 
       // 베스트 관람후기
       bestReviews: [],
@@ -470,6 +509,9 @@ export default {
   },
 
   computed: {
+    isLoggedIn() {
+      return isAuthed()
+    },
     heroItems() {
       return this.heroBanners
     },
@@ -504,11 +546,24 @@ export default {
       const max = this.rankingScrollWidth - this.rankingClientWidth
       return max > 2 && this.rankingScrollLeft < max - 2
     },
+    currentSectionConcerts() {
+      const section = this.recommendSections[this.selectedSectionIdx]
+      if (!section || !section.concerts) return []
+      return section.concerts.map(this.mapConcert)
+    },
+    canScrollSectionLeft() {
+      return this.sectionScrollLeft > 2
+    },
+    canScrollSectionRight() {
+      const max = this.sectionScrollWidth - this.sectionClientWidth
+      return max > 2 && this.sectionScrollLeft < max - 2
+    },
   },
 
   watch: {
     items() {
       this.$nextTick(this.updateRankingScrollState)
+      setTimeout(this.updateRankingScrollState, 350)
     },
     heroBanner(val) {
       if (!val) return
@@ -520,6 +575,17 @@ export default {
         this.extractBannerColors(val.imageUrl, val.id)
       }
     },
+    selectedSectionIdx() {
+      this.$nextTick(() => {
+        if (this.$refs.sectionScrollRef) {
+          this.$refs.sectionScrollRef.scrollLeft = 0
+        }
+        this.updateSectionScrollState()
+      })
+    },
+    recommendSections() {
+      this.$nextTick(this.updateSectionScrollState)
+    },
   },
 
   created() {
@@ -530,18 +596,23 @@ export default {
     this.loadHeroBanners()
     this.load()
     this.loadOpeningSoon()
-    this.loadKeywordItems()
-    window.addEventListener('resize', this.updateRankingScrollState)
+    this.loadRecommendSections()
+    window.addEventListener('resize', this.handleResize)
   },
 
   beforeUnmount() {
     this.stopHeroSlide()
-    window.removeEventListener('resize', this.updateRankingScrollState)
+    window.removeEventListener('resize', this.handleResize)
   },
 
   methods: {
     getCategoryLabel,
     maskNickname,
+
+    handleResize() {
+      this.updateRankingScrollState()
+      this.updateSectionScrollState()
+    },
 
     // ─── 히어로 슬라이드 제어 ────────────────────────────────
     startHeroSlide() {
@@ -721,29 +792,54 @@ export default {
       el.scrollBy({ left: dir === 'left' ? -step : step, behavior: 'smooth' })
     },
 
+    updateSectionScrollState() {
+      const el = this.$refs.sectionScrollRef
+      if (!el) return
+      this.sectionScrollLeft = el.scrollLeft
+      this.sectionScrollWidth = el.scrollWidth
+      this.sectionClientWidth = el.clientWidth
+    },
+
+    scrollSection(dir) {
+      const el = this.$refs.sectionScrollRef
+      if (!el) return
+      const step = Math.max(200, el.clientWidth * 0.8)
+      el.scrollBy({ left: dir === 'left' ? -step : step, behavior: 'smooth' })
+    },
+
     setRankingCat(value) {
       if (this.rankingCat === value) return
       this.rankingCat = value
       this.loadRanking()
     },
 
-    setKeyword(value) {
-      if (this.selectedKeyword === value) return
-      this.selectedKeyword = value
-      this.loadKeywordItems()
+    async loadRecommendSections() {
+      this.sectionsLoading = true
+      try {
+        const res = await this.api.get(ENDPOINTS.recommendationsSections())
+        this.recommendSections = res?.sections ?? []
+        this.$nextTick(this.updateSectionScrollState)
+      } catch (err) {
+        console.error('Failed to load recommend sections:', err)
+      } finally {
+        this.sectionsLoading = false
+      }
     },
 
     mapConcert(c) {
+      // API별로 id, concertId 필드명이 다를 수 있으므로 통합 처리
+      const id = c.concertId ?? c.id
+      
       return {
-        id: c.id,
-        title: c.title ?? c.name,
+        id,
+        title: c.concertTitle ?? c.title ?? c.name,
         category: c.category ?? '',
         status: c.status ?? '',
         posterUrl:
-          c.thumImgUrl ?? c.thum_img_url ?? c.posterUrl ?? c.thumbnailUrl ?? c.imageUrl ?? DEFAULT_IMG,
+          c.posterUrl ?? c.thumImgUrl ?? c.thum_img_url ?? c.thumbnailUrl ?? c.imageUrl ?? DEFAULT_IMG,
         venueName: c.venueName ?? c.venue?.name ?? null,
         scheduleCount: c.scheduleCount ?? c.schedule_count ?? null,
-        scheduleStartDate: c.scheduleStartDate ?? c.schedule_start_date ?? null,
+        scheduleStartDate: c.startAt ?? c.scheduleStartDate ?? c.schedule_start_date ?? null,
         scheduleEndDate: c.scheduleEndDate ?? c.schedule_end_date ?? null,
       }
     },
@@ -795,25 +891,6 @@ export default {
         this.openingSoon = list.map(this.mapConcert)
       } finally {
         this.openingSoonLoading = false
-      }
-    },
-
-    async loadKeywordItems() {
-      this.keywordLoading = true
-      try {
-        // 키워드별 정렬 기준 매핑
-        const sortMap = {
-          MUSICAL: 'reviewCount,desc',   // 재관람률 높은
-          FAMILY:  'bookingCount,desc',  // 아이와 함께
-          THEATRE: 'bookingCount,desc',  // 예매 연극 추천
-        }
-        const sort = sortMap[this.selectedKeyword] ?? 'bookingCount,desc'
-        const params = new URLSearchParams({ page: '0', size: '5', category: this.selectedKeyword, sort })
-        const res = await this.api.get(`${ENDPOINTS.concerts()}?${params.toString()}`)
-        const list = res.content ?? res.items ?? []
-        this.keywordItems = list.map(this.mapConcert)
-      } finally {
-        this.keywordLoading = false
       }
     },
 

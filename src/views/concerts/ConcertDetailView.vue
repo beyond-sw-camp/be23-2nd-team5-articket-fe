@@ -200,6 +200,35 @@
               </li>
             </ul>
           </div>
+          <!-- 메인 캐스트 -->
+          <div v-if="concertPerformers.length > 0" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <h3 class="mb-4 text-sm font-semibold text-slate-900">메인 캐스트</h3>
+            <div class="flex flex-wrap gap-3">
+              <RouterLink
+                v-for="p in concertPerformers"
+                :key="p.performerId"
+                :to="`/performers/${p.performerId}`"
+                class="flex items-center gap-2.5 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 transition hover:border-red-200 hover:bg-red-50"
+              >
+                <img
+                  v-if="p.profileImgUrl"
+                  :src="p.profileImgUrl"
+                  :alt="p.performerName"
+                  class="h-9 w-9 rounded-full object-cover border border-slate-200"
+                />
+                <div
+                  v-else
+                  class="flex h-9 w-9 items-center justify-center rounded-full bg-slate-200 text-xs font-bold text-slate-500"
+                >
+                  {{ (p.performerName || '?').charAt(0) }}
+                </div>
+                <div>
+                  <p class="text-sm font-semibold text-slate-900">{{ p.performerName }}</p>
+                  <p v-if="p.roleName" class="text-[10px] text-slate-400">{{ p.roleName }}</p>
+                </div>
+              </RouterLink>
+            </div>
+          </div>
           <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <h3 class="mb-3 text-sm font-semibold text-slate-900">공지사항</h3>
             <ul class="space-y-2 text-sm text-slate-600">
@@ -416,6 +445,7 @@ export default {
       isLiked: false,
       liking: false,
       schedules: [],
+      concertPerformers: [],
       priceRows: [],
       myReview: { rating: 0, reviewContent: '' },
       submittingReview: false,
@@ -597,6 +627,7 @@ export default {
           this.loadStats(concertId),
           this.loadSchedules(concertId),
           this.loadPolicies(concertId),
+          this.loadConcertPerformers(concertId),
           this.authed ? this.loadUserInteraction(concertId) : Promise.resolve(),
           this.loadReviews(0, concertId)
         ])
@@ -608,6 +639,15 @@ export default {
         this.item = null
       } finally {
         this.loading = false
+      }
+    },
+    async loadConcertPerformers(concertId) {
+      concertId = concertId ?? this.$route.params.concertId
+      try {
+        const res = await this.api.get(ENDPOINTS.concertPerformers(concertId))
+        this.concertPerformers = Array.isArray(res) ? res : []
+      } catch {
+        this.concertPerformers = []
       }
     },
     async loadSchedules(concertId) {

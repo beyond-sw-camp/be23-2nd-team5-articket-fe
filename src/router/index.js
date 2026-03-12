@@ -29,7 +29,6 @@ import SignupCompleteView from '../views/member/SignupCompleteView.vue'
 
 // user
 import ProfileView from '../views/me/ProfileView.vue'
-import ProfileEditView from '../views/me/ProfileEditView.vue'
 import IdentityVerificationView from '../views/me/IdentityVerificationView.vue'
 import MyOrdersView from '../views/orders/MyOrdersView.vue'
 import MyOrderDetailView from '../views/orders/MyOrderDetailView.vue'
@@ -59,6 +58,7 @@ import OrganizerOrderDetailView from '../views/organizer/OrganizerOrderDetailVie
 import OrganizerPriceHistoryView from '../views/organizer/OrganizerPriceHistoryView.vue'
 import OrganizerPolicyHistoryView from '../views/organizer/OrganizerPolicyHistoryView.vue'
 import OrganizerSchedulePerformersView from '../views/organizer/OrganizerSchedulePerformersView.vue'
+import OrganizerConcertPerformersView from '../views/organizer/OrganizerConcertPerformersView.vue'
 import OrganizerReportsView from '../views/organizer/OrganizerReportsView.vue'
 import OrganizerReportDetailsView from '../views/organizer/OrganizerReportDetailsView.vue'
 import OrganizerSeatInsightsView from '../views/organizer/OrganizerSeatInsightsView.vue'
@@ -130,7 +130,6 @@ const routes = [
       childRoute('oauth/kakao/redirect', KakaoRedirect, { roleScope: 'auth' }),
 
       childRoute('me', ProfileView, { requiresAuth: true }),
-      childRoute('me/edit', ProfileEditView, { requiresAuth: true }),
       childRoute('me/verify-identity', IdentityVerificationView, { requiresAuth: true }),
       childRoute('me/orders', MyOrdersView, { requiresAuth: true }),
       childRoute('me/orders/:orderId', MyOrderDetailView, { requiresAuth: true }),
@@ -189,6 +188,7 @@ const routes = [
       childRoute('performers', PerformersListView, {}, { canManage: true }),
       childRoute('performers/:performerId', PerformerDetailView, {}, { canManage: true }),
       childRoute('schedules/:scheduleId/performers', OrganizerSchedulePerformersView),
+      childRoute('concerts/:concertId/performers', OrganizerConcertPerformersView),
     ],
   },
   {

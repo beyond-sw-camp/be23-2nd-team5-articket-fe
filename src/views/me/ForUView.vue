@@ -1,15 +1,10 @@
 <template>
-  <div class="mx-auto space-y-6 pb-12">
+  <div class="mx-auto max-w-6xl pb-20 px-4">
     <!-- 헤더 -->
-    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-      <div class="flex items-center gap-3">
-        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-900 shadow-sm">
-          <Star class="h-5 w-5 text-white" />
-        </div>
-        <div>
-          <h1 class="text-xl font-bold text-slate-900 sm:text-2xl">For U</h1>
-          <p class="mt-0.5 text-sm text-slate-500">나를 위한 맞춤 공연 경험</p>
-        </div>
+    <div class="mb-8 mt-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div class="text-left">
+        <h1 class="text-2xl font-bold text-slate-900">For U</h1>
+        <p class="mt-1 text-sm text-slate-500">{{ userName }}님의 취향을 분석한 맞춤 공연 추천입니다.</p>
       </div>
       <RouterLink
         to="/me"
@@ -19,274 +14,214 @@
       </RouterLink>
     </div>
 
-    <div class="grid gap-6 lg:grid-cols-3">
-      <!-- 공연 플래너 (좌측 2/3) -->
-      <section class="content-start space-y-4 lg:col-span-2">
-        <div class="flex items-center justify-between">
-          <h2 class="text-base font-bold text-slate-900">공연 플래너</h2>
-          <span class="text-xs text-slate-400">{{ selectedIdx + 1 }} / {{ likedPerformers.length + 1 }}</span>
-        </div>
+    <div class="grid gap-8 lg:grid-cols-3">
+      <!-- 메인 콘텐츠 (좌측 2) -->
+      <div class="lg:col-span-2 space-y-6">
+        <!-- 관심 아티스트 필터 (Sticky) -->
+        <div class="sticky top-16 z-10 -mx-4 bg-white/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-white/80 sm:mx-0 sm:rounded-2xl sm:border sm:border-slate-100 sm:px-5">
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="text-xs font-bold text-slate-500 uppercase tracking-wider">My Artists</h2>
+          </div>
 
-        <!-- 아티스트 필터 -->
-        <div
-          class="flex gap-3 overflow-x-auto pb-2 foru-scroll-hide"
-        >
-          <button
-            type="button"
-            class="flex shrink-0 flex-col items-center gap-1.5"
-            @click="selectedId = null"
-          >
-            <div
-              class="flex h-14 w-14 items-center justify-center rounded-full border-2 transition"
+          <div class="flex gap-3 overflow-x-auto pb-1 foru-scroll-hide">
+            <button
+              type="button"
+              class="flex shrink-0 items-center gap-2 rounded-full px-4 py-2 text-sm font-bold transition-all"
               :class="selectedId === null
-                ? 'border-slate-900 bg-slate-100'
-                : 'border-slate-200 bg-slate-50 hover:border-slate-300'"
+                ? 'bg-slate-900 text-white shadow-md transform scale-105'
+                : 'bg-slate-100 text-slate-500 hover:bg-slate-200'"
+              @click="selectedId = null"
             >
-              <span
-                class="text-xs font-bold"
-                :class="selectedId === null ? 'text-slate-900' : 'text-slate-400'"
-              >ALL</span>
-            </div>
-            <span
-              class="whitespace-nowrap text-xs font-medium"
-              :class="selectedId === null ? 'text-slate-900' : 'text-slate-500'"
-            >나의 일정</span>
-          </button>
+              <span>ALL</span>
+            </button>
 
-          <button
-            v-for="p in likedPerformers"
-            :key="p.performerId"
-            type="button"
-            class="flex shrink-0 flex-col items-center gap-1.5"
-            @click="selectedId = p.performerId"
-          >
-            <div class="relative">
+            <button
+              v-for="p in likedPerformers"
+              :key="p.performerId"
+              type="button"
+              class="flex shrink-0 items-center gap-2 rounded-full border px-1.5 py-1.5 pr-4 transition-all"
+              :class="selectedId === p.performerId
+                ? 'border-red-600 bg-red-50 text-red-700 ring-2 ring-red-100'
+                : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'"
+              @click="selectedId = p.performerId"
+            >
               <img
                 v-if="p.performerProfileImgUrl"
                 :src="p.performerProfileImgUrl"
                 :alt="p.performerName"
-                class="h-14 w-14 rounded-full border-2 object-cover transition"
-                :class="selectedId === p.performerId
-                  ? 'border-slate-900 scale-105 shadow-md'
-                  : 'border-slate-200 hover:border-slate-300'"
+                class="h-7 w-7 rounded-full object-cover"
               />
-              <div
-                v-else
-                class="flex h-14 w-14 items-center justify-center rounded-full border-2 text-lg font-bold text-white transition"
-                :class="selectedId === p.performerId
-                  ? 'border-slate-900 scale-105 bg-slate-700 shadow-md'
-                  : 'border-slate-200 bg-slate-500'"
-              >
+              <div v-else class="flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-[10px] font-bold text-slate-400">
                 {{ (p.performerName || '?').charAt(0) }}
               </div>
-              <div
-                v-if="selectedId === p.performerId"
-                class="absolute -bottom-0.5 left-1/2 h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-slate-900"
-              />
-            </div>
-            <span
-              class="max-w-[56px] truncate whitespace-nowrap text-xs font-medium"
-              :class="selectedId === p.performerId ? 'text-slate-900' : 'text-slate-500'"
-            >{{ p.performerName }}</span>
-          </button>
-
-          <button
-            v-for="i in addSlots"
-            :key="`add-${i}`"
-            type="button"
-            class="flex shrink-0 flex-col items-center gap-1.5"
-            @click="$router.push('/performers')"
-          >
-            <div class="flex h-14 w-14 items-center justify-center rounded-full border-2 border-dashed border-slate-200 transition hover:border-slate-300">
-              <Plus class="h-4 w-4 text-slate-300" />
-            </div>
-            <span class="text-xs text-slate-400">추가</span>
-          </button>
-        </div>
-
-        <!-- 인사말 카드 -->
-        <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-          <p class="text-sm font-bold text-slate-800">{{ userName }}님을 위한 공연일정입니다.</p>
-          <p class="mt-0.5 text-xs text-slate-500">공연플래너에 담은 공연과 선호 아티스트의 공연스케줄을 타임라인으로 확인해보세요.</p>
-        </div>
-
-        <!-- 로딩 -->
-        <div
-          v-if="loading"
-          class="flex min-h-[180px] items-center justify-center rounded-2xl border border-slate-200 bg-white py-12"
-        >
-          <div class="flex flex-col items-center gap-3 text-slate-500">
-            <svg
-              class="h-8 w-8 animate-spin text-slate-400"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-            </svg>
-            <span class="text-sm">불러오는 중…</span>
+              <span class="text-sm font-bold">{{ p.performerName }}</span>
+            </button>
           </div>
         </div>
 
-        <!-- 빈 상태 -->
-        <div
-          v-else-if="filteredSchedules.length === 0"
-          class="rounded-2xl border border-slate-200 bg-white py-14 text-center"
-        >
-          <p class="text-sm font-medium text-slate-700">선호 아티스트와 매칭되는 공연이 없네요.</p>
-          <p class="mt-1 text-xs text-slate-400">곧 좋은 공연을 준비하여 알려드리겠습니다.</p>
-          <RouterLink
-            to="/"
-            class="mt-5 inline-flex h-11 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
-          >
-            테마/지역별 공연보기 <ChevronRight class="h-4 w-4" />
-          </RouterLink>
+        <!-- 로딩/빈 상태/공연 카드 목록 -->
+        <div v-if="loading" class="py-20 text-center">
+          <div class="inline-block animate-spin rounded-full border-4 border-slate-200 border-t-red-600 h-10 w-10 mb-4"></div>
+          <p class="text-sm font-bold text-slate-400">공연을 불러오는 중입니다...</p>
         </div>
 
-        <!-- 스케줄 목록 -->
-        <ul v-else class="grid gap-2">
-          <li
-            v-for="s in filteredSchedules"
-            :key="s.key"
-            class="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm transition hover:border-slate-300"
-          >
-            <div class="shrink-0">
-              <img
-                v-if="s.performerImg"
-                :src="s.performerImg"
-                :alt="s.performerName"
-                class="h-10 w-10 rounded-full border border-slate-200 object-cover"
-              />
-              <div
-                v-else
-                class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-500 text-sm font-bold text-white"
-              >
-                {{ s.performerName?.charAt(0) ?? '?' }}
-              </div>
-            </div>
-
-            <div class="min-w-0 flex-1">
-              <div class="flex items-center gap-1.5">
-                <span class="text-xs font-semibold text-slate-700">{{ s.performerName }}</span>
-                <span v-if="s.role" class="text-xs text-slate-400">· {{ s.role }}</span>
-              </div>
-              <div class="mt-0.5 truncate text-sm font-semibold text-slate-900">{{ s.title }}</div>
-              <div v-if="s.displayText" class="mt-0.5 text-xs text-slate-400">{{ s.displayText }}</div>
-            </div>
-
-            <RouterLink
-              v-if="s.scheduleId"
-              :to="`/schedules/${s.scheduleId}`"
-              class="shrink-0 rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white transition hover:bg-slate-800"
-            >
-              예매
-            </RouterLink>
-          </li>
-        </ul>
-      </section>
-
-      <!-- 맞춤 공연 (우측 1/3) -->
-      <section class="content-start space-y-4">
-        <h2 class="text-base font-bold text-slate-900">맞춤 공연</h2>
-
-        <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div v-if="likedPerformers.length === 0" class="text-center">
-            <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-slate-100">
-              <Heart class="h-6 w-6 text-slate-300" />
-            </div>
-            <p class="mt-3 text-sm leading-relaxed text-slate-500">
-              공연 준비중인 아티스트를 추가하고<br />공연을 추천받으세요.
-            </p>
+        <div v-else-if="filteredConcerts.length === 0" class="flex flex-col items-center justify-center py-20 text-center rounded-3xl border border-dashed border-slate-200 bg-slate-50/50">
+          <div class="mb-6 rounded-full bg-white p-6 shadow-sm ring-1 ring-slate-100">
+            <Heart class="h-10 w-10 text-slate-300" />
           </div>
-
-          <div v-else>
-            <p class="mb-3 text-xs font-semibold text-slate-500">좋아요한 아티스트</p>
-            <ul class="grid gap-1">
-              <RouterLink
-                v-for="p in likedPerformers.slice(0, 5)"
-                :key="p.performerId"
-                :to="`/performers/${p.performerId}`"
-                class="flex cursor-pointer items-center gap-3 rounded-xl px-2 py-2 transition hover:bg-slate-50"
-              >
-                <img
-                  v-if="p.performerProfileImgUrl"
-                  :src="p.performerProfileImgUrl"
-                  :alt="p.performerName"
-                  class="h-9 w-9 shrink-0 rounded-full border border-slate-200 object-cover"
-                />
-                <div
-                  v-else
-                  class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-500 text-sm font-bold text-white"
-                >
-                  {{ (p.performerName || '?').charAt(0) }}
-                </div>
-                <div class="min-w-0 flex-1">
-                  <div class="truncate text-sm font-semibold text-slate-800">{{ p.performerName }}</div>
-                  <div class="text-xs text-slate-400">좋아요한 아티스트</div>
-                </div>
-                <ChevronRight class="h-4 w-4 shrink-0 text-slate-300" />
-              </RouterLink>
-            </ul>
-            <p v-if="likedPerformers.length > 5" class="mt-1 text-center text-xs text-slate-400">
-              외 {{ likedPerformers.length - 5 }}명
-            </p>
-          </div>
-
-          <RouterLink
-            to="/performers"
-            class="mt-5 flex w-full items-center justify-center rounded-xl bg-slate-900 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-slate-800"
-          >
-            추천공연 확인하기
-          </RouterLink>
-        </div>
-
-        <div class="rounded-2xl border border-dashed border-slate-200 p-4 text-center">
-          <p class="text-xs leading-relaxed text-slate-400">
-            더 많은 아티스트를 좋아요하면<br />더 정확한 추천을 받을 수 있어요.
+          <h3 class="text-lg font-bold text-slate-900">추천 공연이 없어요</h3>
+          <p class="mt-2 max-w-xs text-sm text-slate-500">
+            {{ selectedId ? '선택하신 아티스트의 예정된 공연이 없습니다.' : '관심 아티스트를 팔로우하거나 공연을 찜해보세요!' }}
           </p>
-          <RouterLink
-            to="/performers"
-            class="mt-3 inline-block text-xs font-semibold text-slate-700 transition hover:underline"
+        </div>
+
+        <!-- 공연 카드 목록 -->
+        <div v-else class="space-y-4">
+          <div
+            v-for="c in filteredConcerts"
+            :key="c.concertId"
+            class="group relative flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-5 transition-all hover:border-red-200 hover:shadow-lg sm:flex-row sm:items-stretch"
           >
-            아티스트 탐색하기 →
+            <!-- 포스터 -->
+            <div class="shrink-0 cursor-pointer" @click="$router.push(`/concerts/${c.concertId}`)">
+              <img
+                :src="c.posterUrl || 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?auto=format&fit=crop&w=150&q=80'"
+                class="h-36 w-24 rounded-lg object-cover shadow-sm"
+                :alt="c.concertTitle"
+              />
+            </div>
+
+            <!-- 정보 영역 -->
+            <div class="flex flex-1 flex-col justify-between py-0.5">
+              <div>
+                <!-- 매칭 아티스트 태그 -->
+                <div v-if="c.matchedPerformers && c.matchedPerformers.length" class="mb-2 flex flex-wrap gap-1.5">
+                  <span
+                    v-for="p in c.matchedPerformers.slice(0, 3)"
+                    :key="p.id"
+                    class="inline-flex items-center gap-1 rounded-md bg-red-50 px-2 py-1 text-[10px] font-bold text-red-600 border border-red-100"
+                  >
+                    🎤 {{ p.name }}
+                    <span v-if="p.roleName" class="font-normal opacity-70">({{ p.roleName }})</span>
+                  </span>
+                </div>
+
+                <!-- 공연명 -->
+                <h3
+                  class="text-base font-bold text-slate-900 leading-tight group-hover:text-red-600 transition-colors cursor-pointer"
+                  @click="$router.push(`/concerts/${c.concertId}`)"
+                >
+                  {{ c.concertTitle }}
+                </h3>
+
+                <!-- 카테고리 -->
+                <p v-if="c.category" class="mt-0.5 text-xs font-medium text-slate-400">{{ c.category }}</p>
+
+                <!-- 공연 기간 -->
+                <p class="mt-1 text-xs font-semibold text-slate-600">
+                  {{ formatDateRange(c.scheduleStartDate, c.scheduleEndDate) }}
+                </p>
+              </div>
+
+              <!-- 하단: 상태 + 좋아요 + 버튼 -->
+              <div class="mt-4 flex items-center justify-between border-t border-slate-50 pt-3">
+                <div class="flex items-center gap-2">
+                  <UiBadge tone="outline" :color="getStatusColor(c.status)">{{ getStatusLabel(c.status) }}</UiBadge>
+                  <Heart
+                    v-if="c.liked"
+                    class="h-4 w-4 fill-red-500 text-red-500"
+                  />
+                </div>
+                <RouterLink
+                  :to="`/concerts/${c.concertId}`"
+                  class="rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-black"
+                >
+                  상세보기
+                </RouterLink>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 사이드바 (우측 1) -->
+      <aside class="space-y-6">
+        <!-- 인기 아티스트 Top 3 -->
+        <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div class="mb-5 flex items-center justify-between">
+            <h2 class="text-base font-bold text-slate-900">인기 아티스트</h2>
+            <span class="text-[10px] font-bold text-red-600 uppercase tracking-widest">Top 3</span>
+          </div>
+          <div v-if="topPerformers.length === 0" class="py-4 text-center text-xs text-slate-400">
+            데이터를 불러오는 중...
+          </div>
+          <div v-else class="space-y-4">
+            <div v-for="(p, idx) in topPerformers" :key="p.id" class="flex items-center gap-3 group cursor-pointer" @click="$router.push(`/performers/${p.id}`)">
+              <div class="relative">
+                <img :src="p.profileImgUrl || 'https://images.unsplash.com/photo-1511367461989-f85a21fda167?auto=format&fit=crop&w=100&q=80'" class="h-12 w-12 rounded-full border border-slate-100 object-cover" />
+                <div class="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-slate-900 text-[10px] font-black text-white ring-2 ring-white">
+                  {{ idx + 1 }}
+                </div>
+              </div>
+              <div class="min-w-0 flex-1">
+                <p class="truncate text-sm font-bold text-slate-800 group-hover:text-red-600 transition-colors">{{ p.name }}</p>
+                <p class="text-[10px] font-medium text-slate-400">{{ p.concertCount || 0 }}개의 공연 진행 중</p>
+              </div>
+            </div>
+          </div>
+          <RouterLink to="/performers" class="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-slate-50 py-3.5 text-xs font-bold text-slate-600 hover:bg-slate-100 transition">
+            아티스트 둘러보기 <ChevronRight class="h-3 w-3" />
           </RouterLink>
         </div>
-      </section>
+
+        <!-- 퀵 메뉴 -->
+        <div class="rounded-2xl bg-gradient-to-br from-slate-800 to-slate-900 p-6 text-white shadow-lg">
+          <h3 class="text-sm font-bold opacity-80 uppercase tracking-widest mb-4">Quick Menu</h3>
+          <ul class="space-y-3">
+            <li>
+              <RouterLink to="/concerts/ranking" class="flex items-center justify-between text-sm font-bold hover:text-red-400 transition">
+                실시간 랭킹 보기 <ChevronRight class="h-4 w-4 opacity-50" />
+              </RouterLink>
+            </li>
+            <li>
+              <RouterLink to="/nearby" class="flex items-center justify-between text-sm font-bold hover:text-red-400 transition">
+                내 주변 공연장 <ChevronRight class="h-4 w-4 opacity-50" />
+              </RouterLink>
+            </li>
+          </ul>
+        </div>
+      </aside>
     </div>
   </div>
 </template>
 
 <script>
-import { Star, Heart, ChevronRight, Plus } from 'lucide-vue-next'
+import { Heart, ChevronRight } from 'lucide-vue-next'
 import { useApi } from '../../composables/useApi'
 import { ENDPOINTS } from '../../lib/api/endpoints'
+import UiBadge from '../../components/common/UiBadge.vue'
 
 export default {
   name: 'ForUView',
-  components: { Star, Heart, ChevronRight, Plus },
+  components: { Heart, ChevronRight, UiBadge },
   data() {
     return {
       api: null,
       userName: '회원',
       likedPerformers: [],
-      allSchedules: [],
-      selectedId: null,
+      topPerformers: [],
+      allConcerts: [],
+      selectedId: null, // null = ALL, 또는 performerId
       loading: false,
     }
   },
   computed: {
-    selectedIdx() {
-      if (this.selectedId === null) return 0
-      const idx = this.likedPerformers.findIndex((p) => p.performerId === this.selectedId)
-      return idx === -1 ? 0 : idx + 1
-    },
-    filteredSchedules() {
-      if (this.selectedId === null) return this.allSchedules
-      return this.allSchedules.filter((s) => s.performerId === this.selectedId)
-    },
-    addSlots() {
-      return Math.max(0, 3 - this.likedPerformers.length)
+    filteredConcerts() {
+      if (this.selectedId === null) return this.allConcerts
+      return this.allConcerts.filter((c) =>
+        Array.isArray(c.matchedPerformers) &&
+        c.matchedPerformers.some((p) => String(p.id) === String(this.selectedId))
+      )
     },
   },
   created() {
@@ -299,52 +234,80 @@ export default {
     async load() {
       this.loading = true
       try {
-        const [profileRes, likedRes] = await Promise.all([
+        const [profileRes, likedRes, topRes, concertsRes] = await Promise.all([
           this.api.get(ENDPOINTS.me()).catch(() => null),
           this.api.get(ENDPOINTS.performerLikeList()).catch(() => []),
+          this.api.get(ENDPOINTS.performers({ size: 3 })).catch(() => []),
+          this.api.get(ENDPOINTS.interestConcerts({ size: 50 })).catch(() =>
+            this.api.get(ENDPOINTS.myInterestSchedules({ size: 50 })).catch(() => ({ content: [] }))
+          ),
         ])
 
         const profile = profileRes?.data ?? profileRes
-        this.userName = profile?.name ?? '회원'
+        this.userName = profile?.name ?? profile?.nickname ?? '회원'
 
         const likedArr = Array.isArray(likedRes) ? likedRes : likedRes?.content ?? []
         this.likedPerformers = likedArr.map((item) => ({
-          id: item.id,
           performerId: item.performerId,
           performerName: item.performerName ?? '-',
           performerProfileImgUrl: item.performerProfileImgUrl ?? null,
         }))
 
-        const withId = (this.likedPerformers || []).filter((p) => p?.performerId != null && p.performerId !== '')
-        if (withId.length > 0) {
-          const results = await Promise.all(
-            withId.map((p) =>
-              this.api.get(ENDPOINTS.performerSchedules(p.performerId)).catch(() => []),
-            ),
-          )
+        const topArr = Array.isArray(topRes) ? topRes : topRes?.content ?? []
+        this.topPerformers = topArr.map((p) => ({
+          id: p.id,
+          name: p.name,
+          profileImgUrl: p.profileImgUrl,
+          concertCount: p.concertCount,
+        }))
 
-          const allSchedules = []
-          results.forEach((res, idx) => {
-            const arr = Array.isArray(res) ? res : res?.content ?? []
-            const p = withId[idx]
-            arr.forEach((s) => {
-              allSchedules.push({
-                key: `${p.performerId}-${s.scheduleId ?? s.id}`,
-                scheduleId: s.scheduleId ?? s.id ?? null,
-                performerId: p.performerId,
-                performerName: p.performerName,
-                performerImg: p.performerProfileImgUrl,
-                title: s.concertTitle ?? s.title ?? '공연',
-                displayText: s.displayText ?? s.startAt ?? '',
-                role: s.role ?? null,
-              })
-            })
-          })
-          this.allSchedules = allSchedules
-        }
+        const rawConcerts = concertsRes?.content ?? []
+        this.allConcerts = rawConcerts.map((c) => ({
+          concertId: c.concertId,
+          concertTitle: c.concertTitle,
+          posterUrl: c.posterUrl ?? c.concertPosterUrl ?? null,
+          category: c.category ?? null,
+          scheduleStartDate: c.scheduleStartDate ?? null,
+          scheduleEndDate: c.scheduleEndDate ?? null,
+          status: c.status ?? 'AVAILABLE',
+          liked: c.liked ?? false,
+          matchedPerformers: Array.isArray(c.matchedPerformers) ? c.matchedPerformers : [],
+        }))
       } finally {
         this.loading = false
       }
+    },
+    formatDateRange(start, end) {
+      if (!start && !end) return '일정 미정'
+      const fmt = (iso) => {
+        if (!iso) return ''
+        const d = new Date(iso)
+        return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`
+      }
+      if (start && end) {
+        const s = fmt(start)
+        const e = fmt(end)
+        return s === e ? s : `${s} ~ ${e}`
+      }
+      return fmt(start || end)
+    },
+    getStatusLabel(status) {
+      const map = {
+        DRAFT: '준비중',
+        UPCOMING: '오픈 예정',
+        AVAILABLE: '예매 중',
+        CLOSED: '공연 종료',
+      }
+      return map[status] || status || '-'
+    },
+    getStatusColor(status) {
+      const map = {
+        DRAFT: 'slate',
+        UPCOMING: 'amber',
+        AVAILABLE: 'green',
+        CLOSED: 'slate',
+      }
+      return map[status] || 'slate'
     },
   },
 }
