@@ -1453,7 +1453,7 @@ const fitToView = () => {
 .sfe-root {
   display: flex; flex-direction: column;
   width: 100%; max-width: 100%;
-  height: calc(100vh - 112px);
+  height: calc(100vh - 64px);
   min-height: 0; min-width: 0;
   overflow: hidden;
   background: #f8fafc; color: #1e293b; font-family: 'Pretendard', sans-serif;
@@ -1495,7 +1495,8 @@ const fitToView = () => {
 /* ── Left panel ── */
 .sfe-left-panel {
   width: 100px; flex-shrink: 0; background: #ffffff; border-right: 1px solid #e2e8f0;
-  display: flex; flex-direction: column; align-items: center; padding-top: 20px;
+  display: flex; flex-direction: column; align-items: center; padding-top: 20px; padding-bottom: 20px;
+  overflow-y: auto; min-height: 0;
 }
 .sfe-tool-group { display: flex; flex-direction: column; gap: 8px; width: 100%; align-items: center; }
 .sfe-tool-label { font-size: 11px; color: #64748b; font-weight: 700; margin-bottom: 6px; letter-spacing: 0.08em; }
