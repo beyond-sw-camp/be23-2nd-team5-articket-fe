@@ -66,7 +66,15 @@ export const ENDPOINTS = {
     return `/users/me/activities/recent${q ? `?${q}` : ''}`
   },
   requestOrganizer: () => `/users/requestOrganizer`,
-  myOrders: (period) => period != null ? `/users/me/orders?period=${period}` : `/users/me/orders`,
+  myOrders: (params = {}) => {
+    const p = new URLSearchParams()
+    if (params.period != null && params.period !== 0 && params.period !== '') p.set('period', String(params.period))
+    if (params.page != null) p.set('page', String(params.page))
+    if (params.size != null) p.set('size', String(params.size))
+    if (params.sort) p.set('sort', params.sort)
+    const q = p.toString()
+    return `/users/me/orders${q ? `?${q}` : ''}`
+  },
   myOrder: (orderId) => `/order/${orderId}`,
   /** 리뷰 작성 가능한 예매만 반환 (결제 완료 + 관람일 경과) */
   myOrdersReviewable: () => `/users/me/orders/reviewable`,
