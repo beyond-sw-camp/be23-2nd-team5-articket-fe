@@ -66,7 +66,11 @@
       </header>
 
       <main
-        class="min-w-0 min-h-0 flex-1 p-6 overflow-x-auto":class="{ 'overflow-hidden': isSeatMapLayoutEditor }">
+        class="min-w-0 min-h-0 flex-1 overflow-x-auto"
+        :class="{
+          'p-6': !isSeatMapLayoutEditor,
+          'overflow-hidden': isSeatMapLayoutEditor,
+        }">
         <RouterView />
       </main>
     </div>
