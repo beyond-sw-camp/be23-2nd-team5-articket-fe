@@ -112,7 +112,7 @@
               class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
             />
           </div>
-          <p class="text-xs font-bold text-red-500">{{ formatOpenBadge(item.scheduleStartDate) }}</p>
+          <p class="text-xs font-bold text-red-500">{{ formatOpenBadge(item.ticketingOpenAt) }}</p>
           <p class="mt-0.5 line-clamp-2 text-sm font-semibold leading-snug text-slate-900">{{ item.title }}</p>
           <p class="mt-0.5 truncate text-xs text-slate-500">{{ item.venueName || '-' }}</p>
         </div>
@@ -123,6 +123,7 @@
         <button
           type="button"
           class="rounded-full border border-slate-300 px-8 py-2 text-sm text-slate-600 transition hover:bg-slate-50"
+          @click="$router.push('/concerts/upcoming')"
         >
           오픈 예정 공연 전체보기 &gt;
         </button>
@@ -248,6 +249,7 @@ function mapConcert(c) {
     venueName: c.venueName ?? c.venue?.name ?? null,
     scheduleStartDate: c.scheduleStartDate ?? c.schedule_start_date ?? null,
     scheduleEndDate: c.scheduleEndDate ?? c.schedule_end_date ?? null,
+    ticketingOpenAt: c.ticketingOpenAt ?? c.ticketing_open_at ?? null,
   }
 }
 
@@ -277,12 +279,14 @@ function formatOpenBadge(dateStr) {
   const d = new Date(date)
   d.setHours(0, 0, 0, 0)
   const diff = Math.round((d - today) / (1000 * 60 * 60 * 24))
-  if (diff <= 0) return '오늘'
-  if (diff === 1) return '내일'
   const days = ['일', '월', '화', '수', '목', '금', '토']
   const mm = String(date.getMonth() + 1).padStart(2, '0')
   const dd = String(date.getDate()).padStart(2, '0')
-  return `${mm}.${dd}(${days[date.getDay()]})`
+  const hh = String(date.getHours()).padStart(2, '0')
+  const min = String(date.getMinutes()).padStart(2, '0')
+  if (diff <= 0) return `오늘 ${hh}:${min}`
+  if (diff === 1) return `내일 ${hh}:${min}`
+  return `${mm}.${dd}(${days[date.getDay()]}) ${hh}:${min}`
 }
 
 // ── API ───────────────────────────────────────────────────
@@ -312,12 +316,11 @@ async function loadUpcoming() {
   upcomingLoading.value = true
   try {
     const res = await api.get(
-      ENDPOINTS.searchConcerts({
+      ENDPOINTS.concertsUpcoming({
         category: genre.value,
         page: 0,
         size: 5,
-        status: 'READY',
-        sort: 'scheduleStartDate,asc',
+        sort: 'ticketingOpenAt,asc',
       }),
     )
     const list = res.content ?? res.items ?? (Array.isArray(res) ? res : [])
