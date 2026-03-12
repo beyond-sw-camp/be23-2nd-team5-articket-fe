@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen overflow-x-hidden">
+  <div class="min-h-screen" style="overflow-x: clip">
     <header class="fixed inset-x-0 top-0 z-50 border-b border-slate-200 bg-white">
       <div class="mx-auto flex h-16 max-w-6xl items-center gap-4 px-4">
         <!-- Logo -->

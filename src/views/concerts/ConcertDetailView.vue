@@ -31,145 +31,94 @@
         </span>
       </div>
 
-      <!-- 메인: 포스터 | 상세정보 | 예매 위젯 -->
-      <div class="grid gap-6 lg:grid-cols-[280px_1fr_320px]">
-        <!-- 왼쪽: 포스터 + 좋아요 -->
-        <div class="flex flex-col">
-          <div class="overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 shadow-sm">
-            <img
-              class="aspect-[3/4] w-full object-cover"
-              :src="item.posterUrl"
-              :alt="item.title"
-            />
-          </div>
-          <button
-            type="button"
-            :disabled="liking"
-            class="mt-3 flex items-center justify-center gap-2 rounded-xl border py-2.5 text-sm font-semibold transition disabled:opacity-50"
-            :class="isLiked ? 'border-red-300 bg-red-50 text-red-600' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'"
-            @click="toggleLike"
-          >
-            <Heart
-              class="h-4 w-4"
-              :class="isLiked ? 'fill-red-500 text-red-500' : 'text-slate-400'"
-            />
-            {{ stats ? stats.likeCount : 0 }}
-          </button>
-        </div>
-
-        <!-- 가운데: 상세 정보 -->
-        <div class="space-y-5">
-          <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <dl class="grid gap-4 sm:grid-cols-1">
-              <div>
-                <dt class="text-xs font-semibold uppercase tracking-wider text-slate-400">장소</dt>
-                <dd class="mt-1">
-                  <button
-                    type="button"
-                    class="inline-flex items-center gap-1 text-sm font-semibold text-slate-900 hover:text-red-600 hover:underline"
-                    @click="venueModalOpen = true"
-                  >
-                    {{ item.venue?.name }}
-                    <ChevronRight class="h-4 w-4" />
-                  </button>
-                </dd>
+      <!-- 메인: 좌측 콘텐츠 | 우측 예매 위젯 -->
+      <div class="grid gap-6 lg:grid-cols-[1fr_320px]">
+        <!-- 좌측 -->
+        <div class="space-y-6">
+          <!-- 포스터 + 상세 정보 -->
+          <div class="flex gap-5">
+            <!-- 포스터 + 좋아요 -->
+            <div class="flex w-[220px] shrink-0 flex-col">
+              <div class="overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 shadow-sm">
+                <img
+                  class="aspect-[3/4] w-full object-cover"
+                  :src="item.posterUrl"
+                  :alt="item.title"
+                />
               </div>
-              <div>
-                <dt class="text-xs font-semibold uppercase tracking-wider text-slate-400">공연기간</dt>
-                <dd class="mt-1 text-sm font-semibold text-slate-900">{{ performancePeriod }}</dd>
-              </div>
-              <div>
-                <dt class="text-xs font-semibold uppercase tracking-wider text-slate-400">관람연령</dt>
-                <dd class="mt-1 text-sm font-semibold text-slate-900">{{ ageRestrictionLabel }}</dd>
-              </div>
-              <div>
-                <dt class="text-xs font-semibold uppercase tracking-wider text-slate-400">가격</dt>
-                <dd class="mt-1 text-sm">
-                  <template v-if="priceRows.length > 0">
-                    <div
-                      v-for="row in priceRows"
-                      :key="row.grade"
-                      class="font-semibold text-slate-900"
-                    >
-                      {{ row.grade }}석 {{ Number(row.price).toLocaleString() }}원
-                    </div>
-                  </template>
-                  <template v-else>
-                    <span class="font-semibold text-slate-900">{{ item.priceRange || priceSummary }}</span>
-                  </template>
-                </dd>
-              </div>
-            </dl>
-            <div v-if="(item.tags || []).length" class="mt-4 flex flex-wrap gap-2 border-t border-slate-100 pt-4">
-              <span
-                v-for="t in item.tags"
-                :key="t"
-                class="rounded-full border border-slate-200 bg-slate-50 px-3 py-0.5 text-xs font-medium text-slate-600"
-              >
-                {{ t }}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <!-- 오른쪽: 예매 위젯 -->
-        <div class="flex flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div class="mb-4">
-            <div class="mb-3 flex items-center justify-between">
-              <span class="text-sm font-semibold text-slate-900">관람일</span>
-            </div>
-            <ConcertCalendar
-              v-if="availableDates.length > 0"
-              v-model="selectedDateKey"
-              :available-dates="availableDates"
-              :schedules-by-date="schedulesByDate"
-              class="concert-calendar--detail"
-              @select-schedule="onSelectSchedule"
-            />
-            <div v-else class="rounded-xl border border-slate-200 bg-slate-50 py-8 text-center text-sm text-slate-500">
-              등록된 회차가 없습니다
-            </div>
-          </div>
-
-          <div v-if="selectedSlots.length > 0" class="mb-4">
-            <div class="mb-2 flex items-center justify-between">
-              <span class="text-sm font-semibold text-slate-900">회차</span>
-            </div>
-            <div class="flex flex-wrap gap-2">
               <button
-                v-for="(slot, idx) in selectedSlots"
-                :key="slot.scheduleId"
                 type="button"
-                :class="[
-                  'rounded-xl border px-4 py-2.5 text-sm font-semibold transition',
-                  selectedScheduleId === slot.scheduleId
-                    ? 'border-red-500 bg-red-600 text-white'
-                    : slot.status === 'OPEN'
-                      ? 'border-slate-200 bg-white text-slate-900 hover:border-red-300 hover:bg-red-50'
-                      : 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400'
-                ]"
-                :disabled="slot.status !== 'OPEN'"
-                @click="selectedScheduleId = slot.scheduleId"
+                :disabled="liking"
+                class="mt-3 flex items-center justify-center gap-2 rounded-xl border py-2.5 text-sm font-semibold transition disabled:opacity-50"
+                :class="isLiked ? 'border-red-300 bg-red-50 text-red-600' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'"
+                @click="toggleLike"
               >
-                {{ idx + 1 }}회 {{ formatSlotTime(slot.playTime) }}
+                <Heart
+                  class="h-4 w-4"
+                  :class="isLiked ? 'fill-red-500 text-red-500' : 'text-slate-400'"
+                />
+                {{ stats ? stats.likeCount : 0 }}
               </button>
             </div>
+
+            <!-- 상세 정보 -->
+            <div class="flex-1">
+              <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <dl class="grid gap-4 sm:grid-cols-1">
+                  <div>
+                    <dt class="text-xs font-semibold uppercase tracking-wider text-slate-400">장소</dt>
+                    <dd class="mt-1">
+                      <button
+                        type="button"
+                        class="inline-flex items-center gap-1 text-sm font-semibold text-slate-900 hover:text-red-600 hover:underline"
+                        @click="venueModalOpen = true"
+                      >
+                        {{ item.venue?.name }}
+                        <ChevronRight class="h-4 w-4" />
+                      </button>
+                    </dd>
+                  </div>
+                  <div>
+                    <dt class="text-xs font-semibold uppercase tracking-wider text-slate-400">공연기간</dt>
+                    <dd class="mt-1 text-sm font-semibold text-slate-900">{{ performancePeriod }}</dd>
+                  </div>
+                  <div>
+                    <dt class="text-xs font-semibold uppercase tracking-wider text-slate-400">관람연령</dt>
+                    <dd class="mt-1 text-sm font-semibold text-slate-900">{{ ageRestrictionLabel }}</dd>
+                  </div>
+                  <div>
+                    <dt class="text-xs font-semibold uppercase tracking-wider text-slate-400">가격</dt>
+                    <dd class="mt-1 text-sm">
+                      <template v-if="priceRows.length > 0">
+                        <div
+                          v-for="row in priceRows"
+                          :key="row.grade"
+                          class="font-semibold text-slate-900"
+                        >
+                          {{ row.grade }}석 {{ Number(row.price).toLocaleString() }}원
+                        </div>
+                      </template>
+                      <template v-else>
+                        <span class="font-semibold text-slate-900">{{ item.priceRange || priceSummary }}</span>
+                      </template>
+                    </dd>
+                  </div>
+                </dl>
+                <div v-if="(item.tags || []).length" class="mt-4 flex flex-wrap gap-2 border-t border-slate-100 pt-4">
+                  <span
+                    v-for="t in item.tags"
+                    :key="t"
+                    class="rounded-full border border-slate-200 bg-slate-50 px-3 py-0.5 text-xs font-medium text-slate-600"
+                  >
+                    {{ t }}
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <button
-            type="button"
-            class="mt-auto h-12 w-full rounded-xl text-base font-semibold text-white transition disabled:opacity-50"
-            :class="canBook ? 'bg-red-600 hover:bg-red-700' : 'cursor-not-allowed bg-slate-300'"
-            :disabled="!canBook"
-            @click="goToBooking"
-          >
-            예매하기
-          </button>
-        </div>
-      </div>
-
-      <!-- 탭: 공연정보 | 구매평 -->
-      <div class="space-y-4">
+          <!-- 탭: 공연정보 | 구매평 -->
+          <div class="space-y-4">
         <div class="flex items-center gap-2 overflow-x-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-sm">
           <button
             v-for="t in tabItems"
@@ -261,6 +210,7 @@
                 관람이 끝난 공연은 마이페이지 &gt; 리뷰 작성하기에서 확인할 수 있어요.
               </p>
             </div>
+            <template v-else>
             <!-- 저장 직후 토스트 (뷰 모드에서도 표시) -->
             <div
               v-if="reviewSuccess"
@@ -342,6 +292,7 @@
                 </button>
               </div>
             </form>
+            </template><!-- /canWriteReview -->
           </div>
 
           <!-- 관람 후기 목록 -->
@@ -394,8 +345,47 @@
               </button>
             </div>
           </div>
-        </div>
-      </div>
+        </div><!-- /구매평 탭 -->
+          </div><!-- /탭 space-y-4 -->
+        </div><!-- /좌측 space-y-6 -->
+
+        <!-- 우측: 예매 위젯 (sticky) -->
+        <div>
+          <div class="lg:sticky lg:top-[125px] flex flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div class="mb-4">
+              <div class="mb-3 flex items-center justify-between">
+                <span class="text-sm font-semibold text-slate-900">관람일</span>
+              </div>
+              <ConcertCalendar
+                v-if="availableDates.length > 0"
+                v-model="selectedDateKey"
+                :available-dates="availableDates"
+                :schedules-by-date="schedulesByDate"
+                class="concert-calendar--detail"
+                @select-schedule="onSelectSchedule"
+              />
+              <div v-else class="rounded-xl border border-slate-200 bg-slate-50 py-8 text-center text-sm text-slate-500">
+                등록된 회차가 없습니다
+              </div>
+            </div>
+
+            <button
+              type="button"
+              class="mt-auto w-full rounded-xl font-semibold text-white transition disabled:opacity-50"
+              :class="canBook ? 'bg-red-600 hover:bg-red-700' : 'cursor-not-allowed bg-slate-300'"
+              :disabled="!canBook"
+              style="min-height: 48px; padding: 10px 0;"
+              @click="goToBooking"
+            >
+              <template v-if="item && item.status === 'UPCOMING'">
+                <div class="text-xs font-semibold">오픈 예정</div>
+                <div v-if="item.ticketingOpenAt" class="mt-0.5 text-sm font-bold">{{ formatTicketingOpen(item.ticketingOpenAt) }}</div>
+              </template>
+              <template v-else><span class="text-base">예매하기</span></template>
+            </button>
+          </div>
+        </div><!-- /우측 -->
+      </div><!-- /메인 그리드 -->
     </template>
 
     <VenuePreviewModal
@@ -586,6 +576,17 @@ export default {
     formatSlotTime(playTime) {
       return playTime && playTime.length >= 5 ? playTime.slice(0, 5) : playTime || ''
     },
+    formatTicketingOpen(dateStr) {
+      if (!dateStr) return ''
+      const d = new Date(dateStr)
+      if (isNaN(d.getTime())) return dateStr
+      const days = ['일', '월', '화', '수', '목', '금', '토']
+      const mm = String(d.getMonth() + 1).padStart(2, '0')
+      const dd = String(d.getDate()).padStart(2, '0')
+      const hh = String(d.getHours()).padStart(2, '0')
+      const min = String(d.getMinutes()).padStart(2, '0')
+      return `${d.getFullYear()}.${mm}.${dd}(${days[d.getDay()]}) ${hh}:${min}`
+    },
     formatScheduleDateTime(iso) {
       if (!iso) return '-'
       const d = new Date(iso)
@@ -621,7 +622,9 @@ export default {
             'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?auto=format&fit=crop&w=800&q=60',
           tags: concert.tags ?? [],
           venue: concert.venue ?? { id: null, name: '공연장', address: '' },
-          ageLimit: concert.ageLimit ?? concert.age_limit ?? null
+          ageLimit: concert.ageLimit ?? concert.age_limit ?? null,
+          status: concert.status ?? null,
+          ticketingOpenAt: concert.ticketingOpenAt ?? concert.ticketing_open_at ?? null
         }
         await Promise.allSettled([
           this.loadStats(concertId),

@@ -20,10 +20,9 @@
 
     <!-- 날짜 그리드 -->
     <div class="grid grid-cols-7 gap-1 text-center">
+
       <div v-for="(cell, i) in calendarCells" :key="i">
-        <!-- 빈 셀 (월 시작 전) -->
         <div v-if="!cell" class="py-2" />
-        <!-- 날짜 셀 -->
         <button
           v-else
           type="button"
@@ -36,40 +35,34 @@
           @click="selectDate(cell)"
         >
           {{ cell.getDate() }}
-          <!-- 스케줄 있는 날짜 점 표시 -->
           <div v-if="hasSchedule(cell) && !isSelected(cell)" class="mx-auto mt-0.5 h-1 w-1 rounded-full bg-red-400" />
         </button>
       </div>
     </div>
 
-    <!-- 선택한 날짜의 회차 목록 -->
+    <!-- 선택한 날짜의 회차 정보 (표시 전용) -->
     <transition name="fade">
       <div v-if="selectedSlots.length > 0" class="border-t border-slate-100 pt-4">
-        <div class="mb-2 text-xs font-semibold text-slate-500">
-          {{ selectedDateLabel }} 회차 선택
-        </div>
-        <div class="grid gap-2">
-          <button
+        <div class="mb-2 text-xs font-semibold text-slate-500">{{ selectedDateLabel }} 회차</div>
+        <div class="grid gap-1.5">
+          <div
             v-for="slot in selectedSlots"
             :key="slot.scheduleId"
-            type="button"
-            :class="[
-              'flex items-center justify-between rounded-xl border px-4 py-3 text-left transition',
-              slot.status === 'OPEN'
-                ? 'border-red-200 bg-red-50 hover:border-red-400'
-                : adminMode ? 'border-slate-200 bg-slate-50 hover:border-slate-400' : 'cursor-not-allowed border-slate-200 bg-slate-50 opacity-60'
-            ]"
-            :disabled="!adminMode && slot.status !== 'OPEN'"
-            @click="$emit('select-schedule', slot.scheduleId)"
+            class="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 px-4 py-2.5"
           >
-            <span class="flex flex-col gap-0.5">
-              <span v-if="slot.concertTitle" class="text-xs font-medium text-slate-500">{{ slot.concertTitle }}</span>
+            <span class="flex items-center gap-2">
+              <span v-if="slot.concertTitle" class="text-xs text-slate-400">{{ slot.concertTitle }}</span>
               <span class="text-sm font-semibold text-slate-900">{{ formatTime(slot.playTime) }}</span>
             </span>
-            <span :class="['text-xs font-semibold', slot.status === 'OPEN' ? 'text-red-500' : 'text-slate-400']">
-              {{ slot.status === 'OPEN' ? '예매 가능' : slot.status }}
+            <span
+              :class="[
+                'rounded-full px-2 py-0.5 text-xs font-semibold',
+                slot.status === 'OPEN' ? 'bg-red-100 text-red-600' : 'bg-slate-200 text-slate-500'
+              ]"
+            >
+              {{ statusLabel(slot.status) }}
             </span>
-          </button>
+          </div>
         </div>
       </div>
     </transition>
@@ -83,23 +76,30 @@ export default {
   name: 'ConcertCalendar',
   components: { ChevronLeft, ChevronRight },
   props: {
-    // availableDates: ['2026-03-21', '2026-03-22']
     availableDates: { type: Array, default: () => [] },
-    // schedulesByDate: { '2026-03-21': [{scheduleId, playTime, status}] }
     schedulesByDate: { type: Object, default: () => ({}) },
-    // 초기 선택 날짜 (부모와 동기화용)
     modelValue: { type: String, default: null },
-    // 어드민 모드: 상태에 관계없이 모든 슬롯 클릭 가능, 공연명 표시
     adminMode: { type: Boolean, default: false }
   },
   emits: ['select-schedule', 'update:selectedDate', 'update:modelValue'],
   data() {
-    const now = new Date()
+    const init = this._firstAvailableDate()
     return {
-      currentYear: now.getFullYear(),
-      currentMonth: now.getMonth(),
+      currentYear: init.getFullYear(),
+      currentMonth: init.getMonth(),
       selectedDate: null,
       weekDays: ['일', '월', '화', '수', '목', '금', '토']
+    }
+  },
+  watch: {
+    availableDates(val) {
+      if (val && val.length > 0) {
+        const d = new Date(val[0])
+        if (!isNaN(d.getTime())) {
+          this.currentYear = d.getFullYear()
+          this.currentMonth = d.getMonth()
+        }
+      }
     }
   },
   computed: {
@@ -118,12 +118,20 @@ export default {
       return this.schedulesByDate[key] ?? []
     },
     selectedDateLabel() {
-      if (!this.selectedDate) return ''
-      const [, m, d] = this.selectedDate.split('-')
+      const key = this.selectedDate || this.modelValue
+      if (!key) return ''
+      const [, m, d] = key.split('-')
       return `${parseInt(m)}월 ${parseInt(d)}일`
-    }
+    },
   },
   methods: {
+    _firstAvailableDate() {
+      if (this.availableDates && this.availableDates.length > 0) {
+        const d = new Date(this.availableDates[0])
+        if (!isNaN(d.getTime())) return d
+      }
+      return new Date()
+    },
     prevMonth() {
       if (this.currentMonth === 0) { this.currentYear--; this.currentMonth = 11 }
       else this.currentMonth--
@@ -148,10 +156,22 @@ export default {
       this.selectedDate = key
       this.$emit('update:selectedDate', key)
       this.$emit('update:modelValue', key)
+
+      // 해당 날짜의 첫 번째 예매 가능 회차 자동 선택
+      const slots = this.schedulesByDate[key] ?? []
+      const target = this.adminMode
+        ? slots[0]
+        : slots.find(s => s.status === 'OPEN') ?? slots[0]
+      if (target) {
+        this.$emit('select-schedule', target.scheduleId)
+      }
     },
     formatTime(playTime) {
-      // playTime: "18:00:00" or "18:00"
       return playTime ? playTime.slice(0, 5) : ''
+    },
+    statusLabel(status) {
+      const map = { OPEN: '예매 가능', CLOSED: '마감', CANCELED: '취소' }
+      return map[status] ?? status
     }
   }
 }
