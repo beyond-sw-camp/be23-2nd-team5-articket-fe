@@ -123,53 +123,59 @@
 
     <section class="grid gap-4 xl:grid-cols-2">
       <UiCard>
-        <div class="text-sm font-semibold text-slate-900">오픈 예정 회차</div>
-        <div class="mt-1 text-sm text-slate-500">예매 오픈을 앞둔 회차를 확인합니다.</div>
+        <div class="text-sm font-semibold text-slate-900">오픈 예정 공연</div>
+        <div class="mt-1 text-sm text-slate-500">예매 오픈을 앞둔 공연을 확인합니다.</div>
 
         <div v-if="loading" class="mt-4 text-sm text-slate-500">불러오는 중...</div>
 
         <div v-else class="mt-4 space-y-3">
           <div
-            v-for="item in overview?.upcomingSchedules || []"
-            :key="item.scheduleId"
+            v-for="item in overview?.upcomingConcerts || []"
+            :key="item.concertId"
             class="rounded-xl border border-slate-100 bg-slate-50 p-4"
           >
             <div class="text-sm font-semibold text-slate-900">{{ item.concertTitle }}</div>
-            <div class="mt-1 text-sm text-slate-500">{{ formatDateTime(item.playTime) }}</div>
+            <div class="mt-1 text-sm text-slate-500">{{ formatDateTime(item.nextPlayTime) }}</div>
             <div class="mt-2 flex items-center justify-between text-sm text-slate-600">
               <span>예매율 {{ formatPercent(item.bookingRate) }}</span>
               <span>잔여 {{ formatCount(item.remainingSeats) }} / {{ formatCount(item.totalSeats) }}</span>
             </div>
+            <div class="mt-1 text-xs text-slate-400">
+              대상 회차 {{ formatCount(item.scheduleCount) }}개
+            </div>
           </div>
 
           <div v-if="!(overview?.upcomingSchedules || []).length" class="text-sm text-slate-400">
-            표시할 오픈 예정 회차가 없습니다.
+            표시할 오픈 예정 공연이 없습니다.
           </div>
         </div>
       </UiCard>
 
       <UiCard>
-        <div class="text-sm font-semibold text-slate-900">마감 임박 회차</div>
-        <div class="mt-1 text-sm text-slate-500">운영 체크가 필요한 오픈 중 회차를 확인합니다.</div>
+        <div class="text-sm font-semibold text-slate-900">마감 임박 공연</div>
+        <div class="mt-1 text-sm text-slate-500">운영 체크가 필요한 오픈 중 공연을 확인합니다.</div>
 
         <div v-if="loading" class="mt-4 text-sm text-slate-500">불러오는 중...</div>
 
         <div v-else class="mt-4 space-y-3">
           <div
-            v-for="item in overview?.closingSoonSchedules || []"
-            :key="item.scheduleId"
+            v-for="item in overview?.closingSoonConcerts || []"
+            :key="item.concertId"
             class="rounded-xl border border-slate-100 bg-slate-50 p-4"
           >
             <div class="text-sm font-semibold text-slate-900">{{ item.concertTitle }}</div>
-            <div class="mt-1 text-sm text-slate-500">{{ formatDateTime(item.playTime) }}</div>
+            <div class="mt-1 text-sm text-slate-500">{{ formatDateTime(item.nextPlayTime) }}</div>
             <div class="mt-2 flex items-center justify-between text-sm text-slate-600">
               <span>예매율 {{ formatPercent(item.bookingRate) }}</span>
               <span>잔여 {{ formatCount(item.remainingSeats) }} / {{ formatCount(item.totalSeats) }}</span>
             </div>
+            <div class="mt-1 text-xs text-slate-400">
+              대상 회차 {{ formatCount(item.scheduleCount) }}개
+            </div>
           </div>
 
           <div v-if="!(overview?.closingSoonSchedules || []).length" class="text-sm text-slate-400">
-            표시할 마감 임박 회차가 없습니다.
+            표시할 마감 임박 공연이 없습니다.
           </div>
         </div>
       </UiCard>
