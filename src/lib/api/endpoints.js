@@ -111,16 +111,16 @@
     const q = p.toString()
     return `/concerts/organizer/dashboard/seat-insights${q ? `?${q}` : ''}`
   },
-    organizerSeatMapInsights: ({ concertId = null, scheduleId = null, orderId = null } = {}) => {
+  /**
+   * 주문별 좌석 강조가 가능한 주최자 좌석맵 인사이트 조회.
+   * 성능 고려:
+   * - 목록 진입 시 전체를 미리 불러오지 않고,
+   *   모달 오픈 시 1건만 lazy fetch 하도록 설계
+   */
+  organizerSeatMapInsight: ({ concertId, scheduleId, orderId } = {}) => {
     const p = new URLSearchParams()
-
-    // 공연 선택값
     if (concertId != null) p.set('concertId', String(concertId))
-
-    // 회차 선택값
     if (scheduleId != null) p.set('scheduleId', String(scheduleId))
-
-    // 특정 주문 좌석 강조 표시용
     if (orderId != null) p.set('orderId', String(orderId))
 
     const q = p.toString()

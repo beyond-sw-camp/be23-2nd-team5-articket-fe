@@ -43,7 +43,7 @@
       <div class="flex items-center justify-between gap-3">
         <div>
           <div class="text-sm font-semibold text-slate-900">공연별 매출 TOP 3</div>
-          <div class="mt-1 text-sm text-slate-500">예매율, 매출, 잔여 좌석을 함께 표시합니다.</div>
+          <div class="mt-1 text-sm text-slate-500">공연 및 관람일시, 공연 장소, 관람 연령, 매출, 잔여 좌석을 함께 표시합니다.</div>
         </div>
         <UiBadge tone="soft">실시간 집계</UiBadge>
       </div>
@@ -53,12 +53,47 @@
         <UiTable :columns="topColumns" :rows="topRows">
           <template #cell:title="{ row }">
             <button
-              class="font-semibold text-slate-900 hover:underline"
+              class="flex w-full items-center gap-4 text-left"
               type="button"
               @click="$router.push(`/organizer/concerts/${row.concertId}`)"
             >
-              {{ row.title }}
+              <!--
+                - TOP 3만 렌더링하므로 img 3개는 부담되지 않음
+              -->
+              <div class="h-24 w-16 shrink-0 overflow-hidden rounded-lg border border-slate-200 bg-slate-100">
+                <img
+                  v-if="row.thumImgUrl"
+                  :src="row.thumImgUrl"
+                  alt="공연 썸네일"
+                  class="h-full w-full object-cover"
+                  loading="lazy"
+                />
+                <div v-else class="flex h-full w-full items-center justify-center text-[10px] text-slate-400">
+                  NO IMG
+                </div>
+              </div>
+
+              <div class="min-w-0">
+                <div class="truncate font-semibold text-slate-900">
+                  {{ row.title }}
+                </div>
+                <div class="mt-1 text-sm text-slate-500">
+                  {{ formatDateTime(row.playTime) }}
+                </div>
+              </div>
             </button>
+          </template>
+
+          <template #cell:venueName="{ row }">
+            <span class="text-sm text-slate-700">
+              {{ row.venueName || '-' }}
+            </span>
+          </template>
+
+          <template #cell:ageLimit="{ row }">
+            <span class="text-sm text-slate-700">
+              {{ ageLabel(row.ageLimit) }}
+            </span>
           </template>
 
           <template #cell:status="{ row }">
@@ -176,7 +211,9 @@ export default {
       overview: { ...EMPTY_OVERVIEW },
       api: null,
       topColumns: [
-        { key: 'title', label: '공연명' },
+        { key: 'title', label: '공연 및 관람일시' },
+        { key: 'venueName', label: '공연 장소' },
+        { key: 'ageLimit', label: '관람 연령' },
         { key: 'bookingRate', label: '예매율' },
         { key: 'revenue', label: '매출' },
         { key: 'status', label: '상태' },
@@ -200,14 +237,25 @@ export default {
     topRows() {
       const topConcerts = this.overview.topConcerts ?? this.overview.top_concerts
       if (!Array.isArray(topConcerts)) return []
+
+      /**
+       * 성능 고려:
+       * - overview 응답을 화면에서 여러 번 가공하지 않도록 computed에서 한 번 normalize 한다.
+       * - TOP 3라서 가공 비용은 사실상 매우 작다.
+       */
       return topConcerts.map((row) => ({
         concertId: row.concertId ?? row.concert_id,
+        scheduleId: row.scheduleId ?? row.schedule_id,
         title: row.title ?? '-',
+        playTime: row.playTime ?? row.play_time ?? null,
         status: row.status ?? '-',
         revenue: Number(row.revenue ?? 0),
         remainingSeats: Number(row.remainingSeats ?? row.remaining_seats ?? 0),
         totalSeats: Number(row.totalSeats ?? row.total_seats ?? 0),
-        bookingRate: Number(row.bookingRate ?? row.booking_rate ?? 0)
+        bookingRate: Number(row.bookingRate ?? row.booking_rate ?? 0),
+        thumImgUrl: row.thumImgUrl ?? row.thum_img_url ?? '',
+        venueName: row.venueName ?? row.venue_name ?? '',
+        ageLimit: row.ageLimit ?? row.age_limit ?? 0
       }))
     },
     dailySales() {
@@ -289,6 +337,17 @@ export default {
 
       return `${yyyy}.${mm}.${dd} ${hh}:${mi}`
     },
+
+    /**
+     * 관람 연령 표기 통일.
+     * 0 또는 null은 전체관람가, 그 외는 "만 xx세 이상"으로 표기한다.
+     */
+    ageLabel(age) {
+      const num = Number(age ?? 0)
+      if (!Number.isFinite(num) || num <= 0) return '전체관람가'
+      return `만 ${num}세 이상`
+    },
+
     chartHeight(amount) {
       if (this.maxDailySales <= 0) return 6
       return Math.max(8, Math.round((Number(amount || 0) / this.maxDailySales) * 100))
