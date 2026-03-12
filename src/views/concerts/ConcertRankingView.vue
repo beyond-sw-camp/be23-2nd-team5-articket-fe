@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div class="mx-auto max-w-6xl px-4 py-8">
+    <div class="mx-auto max-w-6xl px-4 pt-8 pb-12">
       <!-- 페이지 타이틀 -->
       <header class="mb-6 text-center">
         <h1 class="text-2xl font-bold text-slate-900">장르별 랭킹</h1>

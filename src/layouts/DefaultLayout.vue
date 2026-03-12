@@ -1,7 +1,7 @@
 <template>
   <div class="min-h-screen overflow-x-hidden">
     <header class="fixed inset-x-0 top-0 z-50 border-b border-slate-200 bg-white">
-      <div class="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4">
+      <div class="mx-auto flex h-16 max-w-6xl items-center gap-4 px-4">
         <!-- Logo -->
         <RouterLink to="/" class="flex shrink-0 items-center gap-2">
           <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-red-600">
@@ -11,7 +11,7 @@
         </RouterLink>
 
         <!-- Search -->
-        <form class="flex flex-1 max-w-xl items-center" @submit.prevent="submitSearch">
+        <form class="flex flex-1 max-w-xl items-center ml-2" @submit.prevent="submitSearch">
           <div
             class="flex w-full items-center gap-2 rounded-full bg-slate-100 px-4 py-2.5"
           >
@@ -26,21 +26,23 @@
         </form>
 
         <!-- Right: 내 주변, 알림, 구분선, 사용자 -->
-        <div class="flex shrink-0 items-center gap-4">
+        <div class="ml-auto flex shrink-0 items-center gap-4">
+          <!-- 예매내역 (일반 사용자 전용) -->
           <button
+            v-if="isLoggedIn && roleValue === 'USER'"
             type="button"
-            class="flex items-center gap-1.5 text-sm font-medium text-slate-600 hover:text-slate-900"
-            @click="$router.push('/nearby')"
+            class="flex items-center justify-center rounded-full p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+            title="예매내역"
+            @click="$router.push('/me/orders')"
           >
-            <Navigation class="h-4 w-4 text-slate-400" />
-            <span>내 주변</span>
+            <Ticket class="h-5 w-5" />
           </button>
 
           <!-- 알림 (로그인 시) -->
           <NotificationPanel v-if="isLoggedIn" />
 
           <!-- 구분선 -->
-          <div class="h-6 w-px bg-slate-200" />
+          <div v-if="isLoggedIn" class="h-6 w-px bg-slate-200" />
 
           <!-- 사용자 영역 -->
           <template v-if="!isLoggedIn">
@@ -70,21 +72,43 @@
         </div>
       </div>
 
-      <nav class="border-t border-slate-100 py-3">
+      <Transition name="nav-slide">
+      <nav v-if="showNav" class="border-t border-slate-100 pt-3">
         <div class="mx-auto flex max-w-6xl items-center gap-2 overflow-x-auto px-4">
           <RouterLink
             v-for="c in categories"
             :key="c.key"
             :to="c.to"
-            class="whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold transition"
+            class="relative whitespace-nowrap px-4 pb-3 pt-2 text-[16px] transition-colors after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-full after:origin-center after:bg-red-600 after:transition-transform after:duration-300"
             :class="currentCat === c.key
-              ? 'bg-red-50 text-red-600'
-              : 'text-slate-600 hover:bg-slate-100'"
+              ? 'font-extrabold text-red-600 after:scale-x-100'
+              : 'font-medium text-slate-600 after:scale-x-0 hover:text-slate-900 hover:after:scale-x-100'"
           >
             {{ c.label }}
           </RouterLink>
+
+          <!-- 구분선 -->
+          <div class="mx-2 h-4 w-px shrink-0 bg-slate-300" />
+
+          <!-- 특별 메뉴 -->
+          <RouterLink
+            to="/concerts/ranking"
+            class="relative whitespace-nowrap px-4 pb-3 pt-2 text-[16px] text-red-600 transition-colors after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-full after:origin-center after:bg-red-600 after:transition-transform after:duration-300"
+            :class="currentSpecial === 'ranking' ? 'font-extrabold after:scale-x-100' : 'font-normal after:scale-x-0 hover:text-red-700 hover:after:scale-x-100'"
+          >랭킹</RouterLink>
+          <RouterLink
+            to="/concerts/upcoming"
+            class="relative whitespace-nowrap px-4 pb-3 pt-2 text-[16px] text-red-600 transition-colors after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-full after:origin-center after:bg-red-600 after:transition-transform after:duration-300"
+            :class="currentSpecial === 'upcoming' ? 'font-extrabold after:scale-x-100' : 'font-normal after:scale-x-0 hover:text-red-700 hover:after:scale-x-100'"
+          >오픈예정</RouterLink>
+          <RouterLink
+            to="/nearby"
+            class="relative whitespace-nowrap px-4 pb-3 pt-2 text-[16px] text-red-600 transition-colors after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-full after:origin-center after:bg-red-600 after:transition-transform after:duration-300"
+            :class="currentSpecial === 'nearby' ? 'font-extrabold after:scale-x-100' : 'font-normal after:scale-x-0 hover:text-red-700 hover:after:scale-x-100'"
+          >내 주변</RouterLink>
         </div>
       </nav>
+      </Transition>
     </header>
 
     <!-- 주최자 신청 검토 중 배너 (오늘 하루 닫기) -->
@@ -107,8 +131,8 @@
     </div>
 
     <main
-      class="mx-auto max-w-6xl px-4 pb-16 transition-[padding]"
-      :class="showOrganizerBanner ? 'pt-40' : 'pt-32'"
+      class="mx-auto min-h-screen max-w-6xl px-4 pb-16"
+      :class="showOrganizerBanner ? 'pt-40' : showNav ? 'pt-[122px]' : 'pt-24'"
     >
       <RouterView />
     </main>
@@ -190,7 +214,7 @@
 </template>
 
 <script>
-import { Search, Bell, LogIn, Ticket, Navigation } from 'lucide-vue-next'
+import { Search, Bell, LogIn, Ticket } from 'lucide-vue-next'
 import UiButton from '../components/common/UiButton.vue'
 import UiBadge from '../components/common/UiBadge.vue'
 import UiModal from '../components/common/UiModal.vue'
@@ -209,7 +233,6 @@ export default {
     Bell,
     LogIn,
     Ticket,
-    Navigation,
     UiButton,
     UiBadge,
     UiModal,
@@ -243,9 +266,29 @@ export default {
   },
   computed: {
     currentCat() {
-      if (this.$route.path === '/') return 'all'
-      const m = this.$route.path.match(/^\/genre\/(\w+)$/)
+      if (this.currentSpecial) return null
+      const p = this.$route.path
+      if (/^\/concerts\/[^/]+$/.test(p)) return null
+      if (p === '/') return 'all'
+      const m = p.match(/^\/genre\/(\w+)$/)
       return m ? m[1] : 'all'
+    },
+    currentSpecial() {
+      const p = this.$route.path
+      if (p === '/concerts/ranking') return 'ranking'
+      if (p === '/concerts/upcoming') return 'upcoming'
+      if (p === '/nearby') return 'nearby'
+      return null
+    },
+    showNav() {
+      const p = this.$route.path
+      if (p === '/') return true
+      if (/^\/genre\/\w+$/.test(p)) return true
+      if (p === '/concerts/ranking') return true
+      if (p === '/concerts/upcoming') return true
+      if (p === '/nearby') return true
+      if (/^\/concerts\/[^/]+$/.test(p)) return true
+      return false
     },
     accessToken() {
       this.tokenVersion
@@ -428,3 +471,16 @@ export default {
   }
 }
 </script>
+
+<style scoped>
+.nav-slide-enter-active {
+  transition: opacity 0.2s ease-out;
+}
+.nav-slide-leave-active {
+  transition: opacity 0.15s ease-in;
+}
+.nav-slide-enter-from,
+.nav-slide-leave-to {
+  opacity: 0;
+}
+</style>
