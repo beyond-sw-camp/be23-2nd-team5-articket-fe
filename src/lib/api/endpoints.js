@@ -91,13 +91,23 @@ export const ENDPOINTS = {
   recommendationKeywords: () => `/recommendations/keywords`,
   /** GET: 개인화 추천 통합 섹션 (Auth 선택) */
   recommendationsSections: () => `/recommendations/sections`,
-  /** GET: 관심 정보 기반 통합 스케줄 (Auth 필요) */
+  /** GET: 관심 정보 기반 통합 스케줄 (Auth 필요) - 하위 호환 URL */
   myInterestSchedules: (params = {}) => {
     const p = new URLSearchParams()
     if (params.page != null) p.set('page', String(params.page))
     if (params.size != null) p.set('size', String(params.size))
+    if (params.sort) p.set('sort', params.sort)
     const q = p.toString()
     return `/users/me/interests/schedules${q ? `?${q}` : ''}`
+  },
+  /** GET: 공연 단위 관심 공연 목록 (Auth 필요) - InterestConcertResDto 반환 */
+  interestConcerts: (params = {}) => {
+    const p = new URLSearchParams()
+    if (params.page != null) p.set('page', String(params.page))
+    if (params.size != null) p.set('size', String(params.size))
+    if (params.sort) p.set('sort', params.sort)
+    const q = p.toString()
+    return `/recommendations/interest-concerts${q ? `?${q}` : ''}`
   },
   concertReview: (concertId) => `/user-concerts/${concertId}/review`,
   concertUserInteraction: (concertId) => `/user-concerts/${concertId}/user-interaction`,
@@ -301,6 +311,15 @@ export const ENDPOINTS = {
   performerDeleteLike: (performerId) => `/performers/deleteLike${performerId != null ? `?id=${performerId}` : ''}`,
   performerLikeList: () => `/performers/likeList`,
   performerCreate: () => `/performers/create`,
+
+  /** GET: 공연 레벨 메인 캐스트 목록 (비인증) → [{ performerId, performerName, profileImgUrl, roleName }] */
+  concertPerformers: (concertId) => `/concerts/${concertId}/performers`,
+  /** POST: 공연 레벨 메인 캐스트 추가 (ORGANIZER) → { performerId, roleName } */
+  organizerConcertAddPerformer: (concertId) => `/concerts/organizer/${concertId}/performers`,
+  /** PUT: 공연 레벨 메인 캐스트 역할명 수정 (ORGANIZER) */
+  organizerConcertUpdatePerformer: (concertId, performerId) => `/concerts/organizer/${concertId}/performers/${performerId}`,
+  /** DELETE: 공연 레벨 메인 캐스트 삭제 (ORGANIZER) */
+  organizerConcertDeletePerformer: (concertId, performerId) => `/concerts/organizer/${concertId}/performers/${performerId}`,
 
   // SCHEDULE CASTINGS (COMMON read / ORGANIZER write)
   schedulePerformers: (scheduleId) => `/schedules/${scheduleId}/performers`,

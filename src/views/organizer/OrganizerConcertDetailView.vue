@@ -115,6 +115,21 @@
         </button>
 
         <button
+          type="button"
+          class="flex items-center gap-4 rounded-xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:border-red-200 hover:bg-red-50/50 hover:shadow"
+          @click="$router.push(`/organizer/concerts/${item.id}/performers`)"
+        >
+          <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-100">
+            <Users class="h-5 w-5 text-slate-600" />
+          </div>
+          <div>
+            <div class="text-sm font-semibold text-slate-900">메인 캐스트</div>
+            <div class="text-xs text-slate-500">공연 레벨 출연진 관리</div>
+          </div>
+          <ChevronRight class="ml-auto h-5 w-5 shrink-0 text-slate-400" />
+        </button>
+
+        <button
           v-if="item.status === 'DRAFT'"
           type="button"
           class="flex items-center gap-4 rounded-xl border-2 border-red-200 bg-red-50/50 p-4 text-left shadow-sm transition hover:bg-red-50 hover:shadow"
@@ -272,7 +287,7 @@
 </template>
 
 <script>
-import { ChevronLeft, ChevronRight, MapPin, Ticket, Settings, CalendarDays, Send, Receipt, Pencil } from 'lucide-vue-next'
+import { ChevronLeft, ChevronRight, MapPin, Ticket, Settings, CalendarDays, Send, Receipt, Pencil, Users } from 'lucide-vue-next'
 import UiCard from '../../components/common/UiCard.vue'
 import UiButton from '../../components/common/UiButton.vue'
 import UiBadge from '../../components/common/UiBadge.vue'
@@ -294,6 +309,7 @@ export default {
     Send,
     Receipt,
     Pencil,
+    Users,
     UiCard,
     UiButton,
     UiBadge,

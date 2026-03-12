@@ -58,6 +58,7 @@ import OrganizerOrderDetailView from '../views/organizer/OrganizerOrderDetailVie
 import OrganizerPriceHistoryView from '../views/organizer/OrganizerPriceHistoryView.vue'
 import OrganizerPolicyHistoryView from '../views/organizer/OrganizerPolicyHistoryView.vue'
 import OrganizerSchedulePerformersView from '../views/organizer/OrganizerSchedulePerformersView.vue'
+import OrganizerConcertPerformersView from '../views/organizer/OrganizerConcertPerformersView.vue'
 import OrganizerReportsView from '../views/organizer/OrganizerReportsView.vue'
 import OrganizerReportDetailsView from '../views/organizer/OrganizerReportDetailsView.vue'
 import OrganizerSeatInsightsView from '../views/organizer/OrganizerSeatInsightsView.vue'
@@ -187,6 +188,7 @@ const routes = [
       childRoute('performers', PerformersListView, {}, { canManage: true }),
       childRoute('performers/:performerId', PerformerDetailView, {}, { canManage: true }),
       childRoute('schedules/:scheduleId/performers', OrganizerSchedulePerformersView),
+      childRoute('concerts/:concertId/performers', OrganizerConcertPerformersView),
     ],
   },
   {
