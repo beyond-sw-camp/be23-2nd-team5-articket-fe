@@ -1,4 +1,4 @@
-﻿export const ENDPOINTS = {
+export const ENDPOINTS = {
   // GUEST
   concerts: () => `/concerts`,
   /** 오픈 예정 공연 전용 목록 (예매 오픈 기준 정렬) */
@@ -86,6 +86,18 @@
     if (params.size != null) p.set('size', String(params.size))
     const q = p.toString()
     return `/user-concerts/likes${q ? `?${q}` : ''}`
+  },
+  /** GET: 개인화 추천 키워드 (Auth 선택) */
+  recommendationKeywords: () => `/recommendations/keywords`,
+  /** GET: 개인화 추천 통합 섹션 (Auth 선택) */
+  recommendationsSections: () => `/recommendations/sections`,
+  /** GET: 관심 정보 기반 통합 스케줄 (Auth 필요) */
+  myInterestSchedules: (params = {}) => {
+    const p = new URLSearchParams()
+    if (params.page != null) p.set('page', String(params.page))
+    if (params.size != null) p.set('size', String(params.size))
+    const q = p.toString()
+    return `/users/me/interests/schedules${q ? `?${q}` : ''}`
   },
   concertReview: (concertId) => `/user-concerts/${concertId}/review`,
   concertUserInteraction: (concertId) => `/user-concerts/${concertId}/user-interaction`,
@@ -301,4 +313,3 @@
   paymentCancelPreview: () => `/payment/cancel/preview`,
   paymentCancel: () => `/payment/cancel`,
 }
-
