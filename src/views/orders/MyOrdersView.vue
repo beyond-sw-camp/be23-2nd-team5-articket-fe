@@ -116,13 +116,14 @@
             </span>
 
             <div class="mt-2 flex flex-wrap justify-end gap-2">
-              <RouterLink
+              <button
                 v-if="order.orderId"
-                :to="`/me/orders/${order.orderId}`"
+                type="button"
                 class="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                @click="openDetail(order)"
               >
                 상세보기
-              </RouterLink>
+              </button>
 
               <RouterLink
                 v-if="canCancel(order)"
@@ -136,10 +137,102 @@
         </div>
       </div>
     </div>
+    <!-- 주문 상세 모달 -->
+    <UiModal
+      :open="detailOpen"
+      max-width-class="max-w-xl"
+      title="주문 상세"
+      @close="detailOpen = false"
+    >
+      <div v-if="detailLoading" class="py-10 text-center text-sm text-slate-500">
+        불러오는 중...
+      </div>
+      <div v-else-if="detailItem" class="space-y-6">
+        <!-- 상단 요약 (이미지와 동일한 구조로 구성) -->
+        <div class="grid gap-3 sm:grid-cols-2">
+          <div class="flex flex-col gap-1">
+            <label class="text-[11px] font-medium text-slate-500">예매일 (date)</label>
+            <div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900">
+              {{ formatDate(detailItem.createdAt) }}
+            </div>
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-[11px] font-medium text-slate-500">결제 금액 (amount)</label>
+            <div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900">
+              {{ formatWon(detailItem.amount) }}
+            </div>
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-[11px] font-medium text-slate-500">공연명 (name)</label>
+            <div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900">
+              {{ detailItem.concertName || '-' }}
+            </div>
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-[11px] font-medium text-slate-500">공연일시 (date)</label>
+            <div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900">
+              {{ detailItem.scheduleDate || '-' }}
+            </div>
+          </div>
+        </div>
+
+        <!-- 모바일 티켓 영역 (간단화 버전: 첫 티켓만 카드 형식으로 표시) -->
+        <div v-if="detailItem.seatDetails && detailItem.seatDetails.length" class="space-y-2">
+          <p class="text-xs font-semibold text-slate-500">모바일 티켓 (Mobile Ticket)</p>
+          <div class="overflow-hidden rounded-2xl border border-slate-200 bg-slate-900 text-white">
+            <div class="flex items-center justify-between px-4 py-3">
+              <div>
+                <p class="text-[11px] font-semibold tracking-[0.12em] text-slate-300">SEAT INFO</p>
+                <p class="mt-1 text-sm font-bold">
+                  {{ detailItem.seatDetails[0].seatDefName || '좌석 정보' }}
+                </p>
+              </div>
+              <span class="rounded-full bg-emerald-500 px-3 py-1 text-[11px] font-semibold text-white">
+                사용 가능
+              </span>
+            </div>
+            <div class="bg-slate-900 px-4 pb-4">
+              <div class="rounded-xl bg-white px-6 py-8 text-center">
+                <div class="mx-auto mb-4 h-24 w-24 rounded-lg bg-slate-900/90 flex items-center justify-center overflow-hidden">
+                  <img
+                    v-if="detailItem.seatDetails[0].qrCodeUrl"
+                    :src="detailItem.seatDetails[0].qrCodeUrl"
+                    alt="모바일 티켓 QR"
+                    class="h-full w-full object-contain"
+                  />
+                </div>
+                <p class="text-[11px] font-mono text-slate-500">
+                  {{ detailItem.seatDetails[0].ticketNumber || 'TICKET' }}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <template #footer>
+        <div class="flex justify-end gap-2">
+          <button
+            type="button"
+            class="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+            @click="detailOpen = false"
+          >
+            닫기
+          </button>
+          <RouterLink
+            v-if="detailItem && canCancel(detailItem)"
+            :to="`/orders/${detailItem.id}/cancel`"
+            class="inline-flex h-10 items-center justify-center rounded-xl border border-red-200 bg-red-600 px-4 text-sm font-semibold text-white transition hover:bg-red-700"
+          >
+            예매 취소
+          </RouterLink>
+        </div>
+      </template>
+    </UiModal>
   </div>
 </template>
 
 <script>
+import UiModal from '../../components/common/UiModal.vue'
 import { useApi } from '../../composables/useApi'
 import { ENDPOINTS } from '../../lib/api/endpoints'
 
@@ -170,6 +263,7 @@ const PERIOD_MAP = {
 
 export default {
   name: 'MyOrdersView',
+  components: { UiModal },
   data() {
     return {
       filters: ['전체', '1개월', '3개월', '6개월'],
@@ -177,6 +271,9 @@ export default {
       orders: [],
       loading: false,
       api: null,
+      detailOpen: false,
+      detailLoading: false,
+      detailItem: null,
     }
   },
   watch: {
@@ -222,6 +319,30 @@ export default {
         this.orders = []
       } finally {
         this.loading = false
+      }
+    },
+    formatWon(value) {
+      const amount = Number(value || 0)
+      return `${amount.toLocaleString()}원`
+    },
+    formatDate(value) {
+      if (!value) return '-'
+      const d = new Date(value)
+      if (Number.isNaN(d.getTime())) return value
+      return d.toLocaleString()
+    },
+    async openDetail(orderSummary) {
+      if (!orderSummary?.orderId) return
+      this.detailOpen = true
+      this.detailLoading = true
+      this.detailItem = null
+      try {
+        const full = await this.api.get(ENDPOINTS.myOrder(orderSummary.orderId))
+        this.detailItem = full
+      } catch (_) {
+        this.detailItem = null
+      } finally {
+        this.detailLoading = false
       }
     },
   },

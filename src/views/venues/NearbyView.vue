@@ -1,16 +1,9 @@
 <template>
-  <div class="mx-auto space-y-6 pb-12">
+  <div class="mx-auto space-y-6 pb-12 pt-8">
     <!-- 헤더 -->
     <div class="flex flex-col gap-1">
-      <div class="flex items-center gap-3">
-        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-900 text-white shadow-sm">
-          <MapPin class="h-5 w-5" />
-        </span>
-        <div>
-          <h1 class="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">내 주변 공연장</h1>
-          <p class="mt-0.5 text-sm text-slate-500">현재 위치 기준 거리순 · 공연장을 선택하면 공연 목록을 볼 수 있어요</p>
-        </div>
-      </div>
+      <h1 class="text-2xl font-bold text-slate-900">내 주변 공연장</h1>
+      <p class="mt-0.5 text-sm text-slate-500">현재 위치 기준 거리순 · 공연장을 선택하면 공연 목록을 볼 수 있어요</p>
     </div>
 
     <!-- 지역 검색 -->

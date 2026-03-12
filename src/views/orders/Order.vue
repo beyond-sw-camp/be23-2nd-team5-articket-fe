@@ -53,39 +53,22 @@
             <User class="h-5 w-5 text-slate-500" />
             <span class="text-base font-semibold text-slate-900">예매자 정보</span>
           </div>
-          <div class="space-y-0">
-            <div class="flex items-center gap-4 border-b border-slate-100 py-4">
-              <span class="w-20 shrink-0 text-sm font-medium text-slate-500">예매자</span>
-              <input
-                v-model="buyer.name"
-                type="text"
-                class="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 transition focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
-              />
+          <div class="space-y-0 text-sm">
+            <div class="flex items-center gap-4 border-b border-slate-100 py-3">
+              <span class="w-20 shrink-0 font-medium text-slate-500">예매자</span>
+              <span class="flex-1 font-semibold text-slate-900">{{ buyerName }}</span>
             </div>
-            <div class="flex items-center gap-4 border-b border-slate-100 py-4">
-              <span class="w-20 shrink-0 text-sm font-medium text-slate-500">생년월일</span>
-              <input
-                v-model="buyer.birth"
-                type="text"
-                placeholder="YYYY-MM-DD"
-                class="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 transition focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
-              />
+            <div class="flex items-center gap-4 border-b border-slate-100 py-3">
+              <span class="w-20 shrink-0 font-medium text-slate-500">생년월일</span>
+              <span class="flex-1 text-slate-900">{{ buyerBirthLabel }}</span>
             </div>
-            <div class="flex items-center gap-4 border-b border-slate-100 py-4">
-              <span class="w-20 shrink-0 text-sm font-medium text-slate-500">이메일</span>
-              <input
-                v-model="buyer.email"
-                type="email"
-                class="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 transition focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
-              />
+            <div class="flex items-center gap-4 border-b border-slate-100 py-3">
+              <span class="w-20 shrink-0 font-medium text-slate-500">이메일</span>
+              <span class="flex-1 text-slate-900 break-all">{{ buyerEmail }}</span>
             </div>
-            <div class="flex items-center gap-4 py-4">
-              <span class="w-20 shrink-0 text-sm font-medium text-slate-500">휴대폰</span>
-              <input
-                v-model="buyer.phone"
-                type="tel"
-                class="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 transition focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
-              />
+            <div class="flex items-center gap-4 py-3">
+              <span class="w-20 shrink-0 font-medium text-slate-500">휴대폰</span>
+              <span class="flex-1 text-slate-900 break-all">{{ buyerPhone }}</span>
             </div>
           </div>
         </div>
@@ -96,13 +79,14 @@
             <span class="text-base font-semibold text-slate-900">결제수단</span>
           </div>
           <div class="space-y-0">
-            <label class="flex cursor-pointer items-center gap-3 border-b border-slate-100 py-4 text-sm font-medium text-slate-700">
-              <input v-model="payMethod" type="radio" value="CARD" class="h-4 w-4 border-slate-300 text-red-600 focus:ring-red-500" />
-              신용카드, 간편결제
-            </label>
-            <label class="flex cursor-pointer items-center gap-3 py-4 text-sm font-medium text-slate-700">
-              <input v-model="payMethod" type="radio" value="VIRTUAL_ACCOUNT" class="h-4 w-4 border-slate-300 text-red-600 focus:ring-red-500" />
-              무통장입금
+            <label class="flex items-center gap-3 py-4 text-sm font-medium text-slate-700">
+              <input
+                type="radio"
+                checked
+                disabled
+                class="h-4 w-4 border-slate-300 text-red-600 focus:ring-red-500"
+              />
+              신용카드, 간편결제만 지원됩니다.
             </label>
           </div>
         </div>
@@ -220,6 +204,7 @@ import { Clock, Ticket, User, CreditCard, Receipt } from 'lucide-vue-next'
 import PortOne from '@portone/browser-sdk/v2'
 import { useApi } from '../../composables/useApi'
 import { useSeatHoldMock } from '../../composables/useSeatHoldMock'
+import { useMe } from '../../composables/useMe'
 import { ENDPOINTS } from '../../lib/api/endpoints'
 
 export default {
@@ -229,21 +214,15 @@ export default {
     return {
       api: null,
       seatHoldMock: null,
+      me: null,
       holdExpiresAt: null,
       now: Date.now(),
       timerInterval: null,
-      payMethod: "CARD",
       agreements: {
         cancelFee: false,
         kakaoFinance: false,
         privacy: false,
         thirdParty: false
-      },
-      buyer: {
-        name: "김진경",
-        birth: "2000-01-25",
-        email: "example@gmail.com",
-        phone: "010-1234-5678"
       },
       order: null,
       cancelPolicy: [
@@ -257,7 +236,7 @@ export default {
   },
   computed: {
     allAgreed() {
-      return Object.values(this.agreements).every(v => v)
+      return Object.values(this.agreements).every((v) => v)
     },
     orderId() {
       return String(this.$route.query.orderId || '')
@@ -274,19 +253,49 @@ export default {
       const mm = String(Math.floor(s / 60)).padStart(2, '0')
       const ss = String(s % 60).padStart(2, '0')
       return `${mm}:${ss}`
-    }
+    },
+    meProfile() {
+      const me = this.me
+      return me?.profile?.value ?? me?.profile ?? null
+    },
+    buyerName() {
+      const p = this.meProfile
+      return p?.name || p?.nickname || '-'
+    },
+    buyerEmail() {
+      const p = this.meProfile
+      return p?.email || '-'
+    },
+    buyerPhone() {
+      const p = this.meProfile
+      return p?.phoneNumber || p?.phone || '-'
+    },
+    buyerBirthLabel() {
+      const p = this.meProfile
+      const raw = p?.verifiedBirthDate ?? p?.birthDate ?? p?.ageVerifiedAt ?? null
+      if (!raw) return '-'
+      const d = new Date(raw)
+      if (Number.isNaN(d.getTime())) return '-'
+      return d.toLocaleDateString('ko-KR', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      })
+    },
   },
   created() {
     this.api = useApi()
     this.seatHoldMock = useSeatHoldMock()
+    this.me = useMe()
   },
   async mounted() {
     try {
-      const result = await this.api.get(ENDPOINTS.order(this.orderId));
-      this.order = result;
+      const result = await this.api.get(ENDPOINTS.order(this.orderId))
+      this.order = result
     } catch (error) {
-      console.error("주문 정보를 불러오는데 실패했습니다.", error);
+      console.error('주문 정보를 불러오는데 실패했습니다.', error)
     }
+
     if (this.holdId) {
       try {
         const hold = await this.seatHoldMock.getHold(this.holdId)
@@ -308,7 +317,7 @@ export default {
   methods: {
     toggleAllAgreed(e) {
       const checked = e.target.checked
-      Object.keys(this.agreements).forEach(key => {
+      Object.keys(this.agreements).forEach((key) => {
         this.agreements[key] = checked
       })
     },
@@ -318,67 +327,55 @@ export default {
         return
       }
 
-      if (!this.payMethod) {
-        alert('결제 수단을 선택해주세요!');
-        return;
-      }
-
       if (!this.order) {
-        alert('주문 정보를 불러오는 중입니다. 잠시 후 다시 시도해주세요.');
-        return;
+        alert('주문 정보를 불러오는 중입니다. 잠시 후 다시 시도해주세요.')
+        return
       }
 
-      if (this.payMethod === 'CARD') {
-        console.log('신용카드, 간편결제 로직 실행');
-        let seatDefNames = "";
-        for (let i = 0; i < this.order.seatDetails.length; i++) {
-          seatDefNames += this.order.seatDetails[i].seatDefName + "\n";
+      console.log('신용카드, 간편결제 로직 실행')
+      let seatDefNames = ''
+      for (let i = 0; i < this.order.seatDetails.length; i++) {
+        seatDefNames += this.order.seatDetails[i].seatDefName + '\n'
+      }
+      try {
+        if (this.order.status !== 'PENDING') {
+          alert('이미 처리된 주문입니다.')
+          return
         }
-        try {
-          if (this.order.status !== 'PENDING') {
-            alert('이미 처리된 주문입니다.');
-            return;
-          }
-          const response = await PortOne.requestPayment({
-            storeId: "store-6ac42987-375b-44fc-bbc9-d9650b676666",
-            channelKey: "channel-key-cec20f2e-a187-41b7-9956-308d32850cc3",
-            paymentId: `payment-${crypto.randomUUID()}`,
-            orderName: this.order.scheduleDate + "\n"
-              + this.order.concertName + "\n"
-              + seatDefNames,
-            totalAmount: parseInt(this.order.amount) + 2000 * this.order.seatDetails.length,
-            // totalAmount: Number(this.order.amount) + 2000 * this.order.seatDetails.length,
-            currency: "CURRENCY_KRW",
-            payMethod: "CARD",
-          });
-          if (response.code !== undefined) {
-            return alert(response.message);
-          }
-          const verificationResult = await this.api.post(ENDPOINTS.payment(), {
-            // const verificationResult = await axios.post("http://localhost:8082/payment", {
-            orderId: this.orderId,
-            paymentId: response.paymentId,
-          });
-          console.log('결제 검증 완료', verificationResult);
-          localStorage.setItem('orderData', JSON.stringify({
-            order: this.order,
-            payMethod: this.payMethod
-          }))
-          //결제완료화면으로 이동
-          this.$router.push("/orderComplete");
-        } catch (error) {
-          console.error('결제 중 오류 발생:', error);
-          alert('결제 처리 중 오류가 발생했습니다.');
+        const response = await PortOne.requestPayment({
+          storeId: 'store-6ac42987-375b-44fc-bbc9-d9650b676666',
+          channelKey: 'channel-key-cec20f2e-a187-41b7-9956-308d32850cc3',
+          paymentId: `payment-${crypto.randomUUID()}`,
+          orderName:
+            this.order.scheduleDate +
+            '\n' +
+            this.order.concertName +
+            '\n' +
+            seatDefNames,
+          totalAmount:
+            parseInt(this.order.amount) + 2000 * this.order.seatDetails.length,
+          currency: 'CURRENCY_KRW',
+          payMethod: 'CARD'
+        })
+        if (response.code !== undefined) {
+          return alert(response.message)
         }
-      } else if (this.payMethod === 'VIRTUAL_ACCOUNT') {
-        console.log('무통장 입금 로직 실행');
-         localStorage.setItem('orderData', JSON.stringify({
+        const verificationResult = await this.api.post(ENDPOINTS.payment(), {
+          orderId: this.orderId,
+          paymentId: response.paymentId
+        })
+        console.log('결제 검증 완료', verificationResult)
+        localStorage.setItem(
+          'orderData',
+          JSON.stringify({
             order: this.order,
-            payMethod: this.payMethod
-          }))
-        this.$router.push("/orderComplete");
-      } else {
-        console.log('기타 결제 방식');
+            payMethod: 'CARD'
+          })
+        )
+        this.$router.push('/orderComplete')
+      } catch (error) {
+        console.error('결제 중 오류 발생:', error)
+        alert('결제 처리 중 오류가 발생했습니다.')
       }
     }
   }
