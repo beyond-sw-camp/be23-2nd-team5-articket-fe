@@ -3,18 +3,18 @@
     <!-- Page Title -->
     <div>
       <h1 class="text-xl font-bold text-slate-900">가격 정책</h1>
-      <p class="mt-1 text-sm text-slate-500">공연 생성 후 정책(가격) 설정 -> 회차 추가 순서로 진행됩니다</p>
+      <p class="mt-1 text-sm text-slate-500">공연 생성 후 가격 정책 설정 -> 구매 수량 정책 설정 -> 회차 등록 순서로 진행됩니다.</p>
     </div>
 
     <!-- Step Indicator Container -->
     <div v-if="fromCreate" class="rounded-2xl border border-slate-100 bg-white px-6 pb-12 pt-6 shadow-sm">
-      <StepIndicator :steps="['기본 정보', '가격 정책', '회차 등록']" :active="1" />
+      <StepIndicator :steps="['기본 정보', '가격 정책', '구매 수량 정책', '회차 등록']" :active="currentStepIndex" />
     </div>
 
     <!-- Info Alert -->
     <div v-if="fromCreate" class="rounded-xl border border-green-200 bg-green-50 px-4 py-3">
       <p class="text-sm font-medium text-green-800">공연이 생성되었습니다.</p>
-      <p class="mt-0.5 text-sm text-green-700">가격 정책을 먼저 설정한 뒤 회차를 추가하세요.</p>
+      <p class="mt-0.5 text-sm text-green-700">가격 정책과 구매 수량 정책을 설정한 뒤 회차를 등록하세요.</p>
     </div>
 
     <!-- Header + Policy List Card -->
@@ -27,13 +27,13 @@
             <UiBadge tone="soft" class="mt-0.5">ORGANIZER</UiBadge>
           </div>
           <div class="mt-1 text-sm text-slate-500">
-            기본 가격, 선예매, 할인, 구매 제한 정책을 설정합니다.
+            기본 가격, 구매 제한 정책을 설정합니다.
           </div>
         </div>
         <div class="shrink-0">
           <UiButton
             class="h-11 px-5 text-sm font-semibold"
-            :disabled="!availableTypes.length"
+            :disabled="policyLocked || !availableTypes.length"
             @click="openCreateModal"
           >
             + 정책 추가
@@ -41,14 +41,25 @@
         </div>
       </div>
 
-      <!-- Base price required notice -->
+      <!-- 정책 잠금 안내 -->
       <div
-        v-if="!loading && !hasBasePricePolicy"
+        v-if="policyLocked"
+        class="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3"
+      >
+        <div class="text-xs font-semibold text-slate-700">정책 수정 불가</div>
+        <div class="mt-0.5 text-xs text-slate-600">
+          이미 게시되었거나 회차가 생성된 공연은 가격 정책과 구매 수량 제한 정책을 수정할 수 없습니다.
+        </div>
+      </div>
+
+      <!-- 필수 정책 안내 -->
+      <div
+        v-if="!loading && requiredPolicyMessage"
         class="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3"
       >
         <div class="text-xs font-semibold text-amber-700">필수 설정 필요</div>
         <div class="mt-0.5 text-xs text-amber-600">
-          회차를 생성하려면 <strong>BASE_PRICE</strong>를 먼저 등록해야 합니다.
+          {{ requiredPolicyMessage }}
         </div>
       </div>
 
@@ -60,7 +71,7 @@
           {{ errorMessage }}
         </div>
         <div v-else-if="!items.length" class="py-3 text-sm text-slate-500">
-          등록된 정책이 없습니다. <strong>BASE_PRICE</strong>를 먼저 등록하세요.
+          등록된 정책이 없습니다. <strong>기본 가격 정책</strong>과 <strong>구매 수량 제한</strong>을 먼저 등록하세요.
         </div>
 
         <!-- Policies -->
@@ -82,17 +93,6 @@
                     {{ firstBasePriceEntry(item.config).grade || '-' }}
                   </span>
                 </template>
-                <template v-else-if="item.type === 'PRESALE'">
-                  <span class="text-sm font-medium text-slate-800">
-                    {{ fmtDate(parseConfig(item.config).startAt) }} ~
-                    {{ fmtDate(parseConfig(item.config).endAt) }}
-                  </span>
-                </template>
-                <template v-else-if="item.type === 'DISCOUNT'">
-                  <span class="text-sm font-medium text-slate-800">
-                    {{ parseConfig(item.config).discountName || '할인 정책' }}
-                  </span>
-                </template>
                 <template v-else-if="item.type === 'PURCHASE_LIMIT'">
                   <span class="text-sm font-medium text-slate-800">
                     1인당 최대 {{ parseConfig(item.config).limit }}매
@@ -104,12 +104,6 @@
               <div class="mt-1 text-xs text-slate-500">
                 <template v-if="item.type === 'BASE_PRICE'">
                   좌석 등급별 기본 가격을 설정합니다.
-                </template>
-                <template v-else-if="item.type === 'PRESALE'">
-                  인증 여부, 선예매 기간을 관리합니다.
-                </template>
-                <template v-else-if="item.type === 'DISCOUNT'">
-                  할인율과 대상 좌석 등급을 설정합니다.
                 </template>
                 <template v-else-if="item.type === 'PURCHASE_LIMIT'">
                   회원당 구매 제한 수량을 설정합니다.
@@ -123,21 +117,23 @@
                 <template v-if="item.type === 'BASE_PRICE'">
                   {{ firstBasePriceEntry(item.config).price.toLocaleString() }}원
                 </template>
-                <template v-else-if="item.type === 'DISCOUNT'">
-                  {{ Math.round((parseConfig(item.config).discountRate || 0) * 100) }}%
+                <template v-else-if="item.type === 'PURCHASE_LIMIT'">
+                  {{ parseConfig(item.config).limit }}매
                 </template>
               </div>
               <div class="flex gap-2">
                 <UiButton
-                  variant="ghost"
-                  class="h-8 px-3 text-xs font-semibold"
-                  @click="openEditModal(item)"
-                >
+                variant="ghost"
+                class="h-8 px-3 text-xs font-semibold"
+                :disabled="policyLocked"
+                @click="openEditModal(item)"
+              >
                   수정
                 </UiButton>
                 <UiButton
                   variant="ghost"
                   class="h-8 px-3 text-xs font-semibold text-red-600 hover:text-red-700"
+                  :disabled="policyLocked"
                   @click="openDeleteModal(item)"
                 >
                   삭제
@@ -164,19 +160,20 @@
         >
           <- 이전 (기본 정보)
         </UiButton>
+
         <div class="flex items-center gap-4">
           <p
-            v-if="!hasBasePricePolicy"
+            v-if="requiredPolicyMessage"
             class="hidden text-xs font-medium text-amber-600 sm:block"
           >
-            기본 가격(BASE_PRICE)을 먼저 등록해 주세요
+            {{ requiredPolicyMessage }}
           </p>
           <UiButton
             class="h-11 px-8 font-bold shadow-sm"
-            :disabled="!hasBasePricePolicy"
-            @click="goToSchedulesStep"
+            :disabled="isBottomActionDisabled"
+            @click="handleBottomAction"
           >
-            다음: 회차 등록 ->
+            {{ bottomActionLabel }}
           </UiButton>
         </div>
       </div>
@@ -199,14 +196,10 @@
           :type="form.type"
           :seat-grades="seatGrades"
           :price-rows="priceRows"
-          :presale="presale"
-          :discount="discount"
           :purchase-limit="purchaseLimit"
           @update-price-rows="priceRows = $event"
           @add-price-row="priceRows.push($event || { grade: '', price: 0 })"
           @remove-price-row="removePriceRow"
-          @update-presale="presale = $event"
-          @update-discount="discount = $event"
           @update-purchase-limit="purchaseLimit = $event"
         />
         <p v-if="submitError" class="text-sm text-red-600">{{ submitError }}</p>
@@ -231,14 +224,10 @@
           :type="form.type"
           :seat-grades="seatGrades"
           :price-rows="priceRows"
-          :presale="presale"
-          :discount="discount"
           :purchase-limit="purchaseLimit"
           @update-price-rows="priceRows = $event"
           @add-price-row="priceRows.push($event || { grade: '', price: 0 })"
           @remove-price-row="removePriceRow"
-          @update-presale="presale = $event"
-          @update-discount="discount = $event"
           @update-purchase-limit="purchaseLimit = $event"
         />
         <p v-if="submitError" class="text-sm text-red-600">{{ submitError }}</p>
@@ -279,16 +268,12 @@ import { ENDPOINTS } from '../../lib/api/endpoints'
 
 const ALL_POLICY_TYPES = [
   { value: 'BASE_PRICE', label: 'BASE_PRICE' },
-  { value: 'PRESALE', label: 'PRESALE' },
-  { value: 'DISCOUNT', label: 'DISCOUNT' },
   { value: 'PURCHASE_LIMIT', label: 'PURCHASE_LIMIT' },
 ]
 
 export const TYPE_LABEL = {
   BASE_PRICE: '기본 가격',
-  PRESALE: '선예매',
-  DISCOUNT: '할인',
-  PURCHASE_LIMIT: '구매 제한',
+  PURCHASE_LIMIT: '구매 수량 제한',
 }
 
 export default {
@@ -309,18 +294,69 @@ export default {
       form: { type: 'BASE_PRICE' },
       seatGrades: [],
       priceRows: [{ grade: '', price: 0 }],
-      presale: { startAt: '', endAt: '', authRequired: false, authType: '' },
-      discount: { discountName: '', discountRate: 0, targetGrades: [], validUntil: '' },
-      purchaseLimit: { limit: 4, message: '' },
+      purchaseLimit: { limit: 10, message: '' },
       submitting: false,
       submitError: '',
+      concertDetail: null,
+      hasSchedules: false,
+      policyLocked: false,
     }
   },
   computed: {
-    registeredTypes() { return this.items.map((i) => i.type) },
-    availableTypes() { return ALL_POLICY_TYPES.filter((t) => !this.registeredTypes.includes(t.value)) },
-    hasBasePricePolicy() { return this.registeredTypes.includes('BASE_PRICE') },
-    fromCreate() { return this.$route.query?.from === 'create' },
+    registeredTypes() {
+      return this.items.map((i) => i.type)
+    },
+    availableTypes() {
+      return ALL_POLICY_TYPES.filter((t) => !this.registeredTypes.includes(t.value))
+    },
+    hasBasePricePolicy() {
+      return this.registeredTypes.includes('BASE_PRICE')
+    },
+    hasPurchaseLimitPolicy() {
+      return this.registeredTypes.includes('PURCHASE_LIMIT')
+    },
+    policyStep() {
+      return this.$route.query?.policyStep === 'limit' ? 'limit' : 'price'
+    },
+    currentStepIndex() {
+      if (this.policyStep === 'limit') return 2
+      return 1
+    },
+    canGoToLimitStep() {
+      return this.hasBasePricePolicy
+    },
+    canProceedToSchedules() {
+      return this.hasBasePricePolicy && this.hasPurchaseLimitPolicy
+    },
+    requiredPolicyMessage() {
+      if (this.policyStep === 'price' && !this.hasBasePricePolicy) {
+        return '2단계 가격 정책(BASE_PRICE)을 먼저 등록해 주세요.'
+      }
+      if (this.policyStep === 'limit' && !this.hasPurchaseLimitPolicy) {
+        return '3단계 구매 수량 제한(PURCHASE_LIMIT) 정책을 먼저 등록해 주세요.'
+      }
+      return ''
+    },
+    bottomActionLabel() {
+      if (this.policyStep === 'price') {
+        return '다음: 구매 수량 정책 등록 ->'
+      }
+
+      if (!this.hasPurchaseLimitPolicy) {
+        return '구매 수량 정책 등록 필요'
+      }
+
+      return '다음: 회차 등록 ->'
+    },
+    fromCreate() {
+      return this.$route.query?.from === 'create'
+    },
+    isBottomActionDisabled() {
+      if (this.policyStep === 'price') {
+        return !this.hasBasePricePolicy
+      }
+      return !this.hasPurchaseLimitPolicy
+    },
   },
   created() { this.api = useApi() },
   mounted() {
@@ -354,11 +390,36 @@ export default {
     async load() {
       const concertId = this.$route.params.concertId
       if (!concertId) return
+
       this.loading = true
       this.errorMessage = ''
+
       try {
-        const res = await this.api.get(ENDPOINTS.concertPolicies(concertId))
-        this.items = Array.isArray(res) ? res : (res.content ?? res.items ?? [])
+        const [policiesRes, concertRes, schedulesRes] = await Promise.all([
+          this.api.get(ENDPOINTS.concertPolicies(concertId)),
+          this.api.get(ENDPOINTS.concert(concertId)),
+          this.api.get(ENDPOINTS.concertSchedules(concertId)),
+        ])
+
+        this.items = Array.isArray(policiesRes)
+          ? policiesRes
+          : (policiesRes.content ?? policiesRes.items ?? [])
+
+        this.concertDetail = concertRes
+
+        const schedules = Array.isArray(schedulesRes)
+          ? schedulesRes
+          : (schedulesRes.content ?? schedulesRes.items ?? [])
+
+        this.hasSchedules = schedules.length > 0
+
+        const concertStatus =
+          concertRes?.status ??
+          concertRes?.concertStatus ??
+          concertRes?.concert_status ??
+          'DRAFT'
+
+        this.policyLocked = concertStatus !== 'DRAFT' || this.hasSchedules
       } catch (err) {
         this.errorMessage = err.message || '정책 목록을 불러오지 못했습니다.'
       } finally {
@@ -375,7 +436,9 @@ export default {
     },
     resetEditorState(type, parsed = {}) {
       if (type === 'BASE_PRICE') {
-        const map = Object.fromEntries(Object.entries(parsed).map(([grade, price]) => [String(grade), Number(price) || 0]))
+        const map = Object.fromEntries(
+          Object.entries(parsed).map(([grade, price]) => [String(grade), Number(price) || 0])
+        )
         if (this.seatGrades.length) {
           this.priceRows = this.seatGrades.map((grade) => ({ grade, price: map[grade] ?? 0 }))
         } else if (Object.entries(map).length) {
@@ -383,12 +446,8 @@ export default {
         } else {
           this.priceRows = [{ grade: '', price: 0 }]
         }
-      } else if (type === 'PRESALE') {
-        this.presale = { startAt: parsed.startAt ?? '', endAt: parsed.endAt ?? '', authRequired: parsed.authRequired ?? false, authType: parsed.authType ?? '' }
-      } else if (type === 'DISCOUNT') {
-        this.discount = { discountName: parsed.discountName ?? '', discountRate: parsed.discountRate ?? 0, targetGrades: parsed.targetGrades ?? [], validUntil: parsed.validUntil ?? '' }
       } else if (type === 'PURCHASE_LIMIT') {
-        this.purchaseLimit = { limit: parsed.limit ?? 4, message: parsed.message ?? '' }
+        this.purchaseLimit = { limit: parsed.limit ?? 10, message: parsed.message ?? '' }
       }
     },
     removePriceRow(idx) {
@@ -420,21 +479,29 @@ export default {
           }
           return JSON.stringify(obj)
         }
-        case 'PRESALE':
-          return JSON.stringify({ startAt: this.presale.startAt, endAt: this.presale.endAt, authRequired: this.presale.authRequired, ...(this.presale.authRequired ? { authType: this.presale.authType } : {}) })
-        case 'DISCOUNT':
-          return JSON.stringify({ discountName: this.discount.discountName, discountRate: this.discount.discountRate, targetGrades: this.discount.targetGrades, ...(this.discount.validUntil ? { validUntil: this.discount.validUntil } : {}) })
         case 'PURCHASE_LIMIT':
-          return JSON.stringify({ limit: Number(this.purchaseLimit.limit) || 1, ...(this.purchaseLimit.message ? { message: this.purchaseLimit.message } : {}) })
+          return JSON.stringify({
+            limit: Number(this.purchaseLimit.limit) || 10,
+            ...(this.purchaseLimit.message ? { message: this.purchaseLimit.message } : {}),
+          })
         default:
           return '{}'
       }
     },
     openCreateModal() {
-      const first = this.availableTypes[0]
-      if (!first) return
-      this.form = { type: first.value }
-      this.resetEditorState(first.value)
+      if (this.policyLocked) return
+
+      let targetType = 'BASE_PRICE'
+
+      if (this.policyStep === 'limit') {
+        targetType = 'PURCHASE_LIMIT'
+      }
+
+      const exists = this.registeredTypes.includes(targetType)
+      if (exists) return
+
+      this.form = { type: targetType }
+      this.resetEditorState(targetType)
       this.submitError = ''
       this.createModalOpen = true
     },
@@ -442,13 +509,30 @@ export default {
     async submitCreate() {
       const concertId = this.$route.params.concertId
       if (!concertId) return
+
       this.submitError = ''
       if (this.form.type === 'BASE_PRICE' && !this.validateBasePriceRows()) return
+
       this.submitting = true
       try {
-        await this.api.post(ENDPOINTS.organizerCreatePolicy(concertId), { type: this.form.type, config: this.buildConfig() })
+        await this.api.post(ENDPOINTS.organizerCreatePolicy(concertId), {
+          type: this.form.type,
+          config: this.buildConfig(),
+        })
+
         this.closeCreateModal()
         await this.load()
+
+        /**
+         * 생성 플로우에서는 가격 정책 등록 직후 자동으로 3단계(구매 수량 정책)로 넘긴다.
+         * 별도 페이지 이동 없이 query만 바꿔 같은 화면에서 단계만 전환한다.
+         */
+        if (this.fromCreate && this.form.type === 'BASE_PRICE') {
+          this.$router.replace({
+            path: this.$route.path,
+            query: { ...this.$route.query, policyStep: 'limit' },
+          })
+        }
       } catch (err) {
         this.submitError = err.message || '정책 등록에 실패했습니다.'
       } finally {
@@ -456,6 +540,8 @@ export default {
       }
     },
     openEditModal(item) {
+      if (this.policyLocked) return
+
       this.editTarget = item
       this.form = { type: item.type }
       this.resetEditorState(item.type, this.parseConfig(item.config))
@@ -482,6 +568,8 @@ export default {
       }
     },
     openDeleteModal(item) {
+      if (this.policyLocked) return
+
       this.deleteTarget = item
       this.submitError = ''
       this.deleteModalOpen = true
@@ -505,9 +593,27 @@ export default {
       }
     },
     goToSchedulesStep() {
-      if (!this.hasBasePricePolicy) return
+      if (!this.canProceedToSchedules) return
       const concertId = this.$route.params.concertId
       if (!concertId) return
+      this.$router.push(`/organizer/concerts/${concertId}/schedules?from=create`)
+    },
+    handleBottomAction() {
+      const concertId = this.$route.params.concertId
+      if (!concertId) return
+
+      if (this.policyStep === 'price') {
+        if (!this.hasBasePricePolicy) return
+
+        this.$router.replace({
+          path: this.$route.path,
+          query: { ...this.$route.query, policyStep: 'limit' },
+        })
+        return
+      }
+
+      if (!this.hasPurchaseLimitPolicy) return
+
       this.$router.push(`/organizer/concerts/${concertId}/schedules?from=create`)
     },
   },

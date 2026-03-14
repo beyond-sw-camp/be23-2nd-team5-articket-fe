@@ -158,6 +158,7 @@
           required
           class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
         />
+        <div class="mt-1 text-xs text-slate-400">권장 기본값은 10매입니다.</div>
       </div>
       <div>
         <label class="block text-xs font-semibold text-slate-500">안내 메시지</label>
@@ -165,7 +166,7 @@
           :value="purchaseLimit.message"
           @input="updatePurchaseLimit('message', $event.target.value)"
           type="text"
-          placeholder="예: 1인당 최대 4매까지 예매 가능합니다."
+          placeholder="예: 1인당 최대 10매까지 예매 가능합니다."
           class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
         />
       </div>
@@ -180,22 +181,15 @@ export default {
     type: { type: String, required: true },
     seatGrades: { type: Array, default: () => [] },
     priceRows: { type: Array, default: () => [] },
-    presale: { type: Object, default: () => ({}) },
-    discount: { type: Object, default: () => ({}) },
     purchaseLimit: { type: Object, default: () => ({}) },
   },
   emits: [
     'update-price-rows',
     'add-price-row',
     'remove-price-row',
-    'update-presale',
-    'update-discount',
     'update-purchase-limit',
   ],
   computed: {
-    discountRateDisplay() {
-      return Math.round((this.discount.discountRate || 0) * 100 * 10) / 10
-    },
     selectedSeatGrades() {
       if (!this.seatGrades.length) return []
       return this.priceRows
@@ -232,12 +226,6 @@ export default {
         i === idx ? { ...r, [key]: key === 'price' ? Number(value) || 0 : value } : r
       )
       this.$emit('update-price-rows', rows)
-    },
-    updatePresale(key, value) {
-      this.$emit('update-presale', { ...this.presale, [key]: value })
-    },
-    updateDiscount(key, value) {
-      this.$emit('update-discount', { ...this.discount, [key]: value })
     },
     updatePurchaseLimit(key, value) {
       this.$emit('update-purchase-limit', { ...this.purchaseLimit, [key]: value })
