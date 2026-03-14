@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="flex flex-col gap-3">
 
     <!-- 등급 범례 -->
@@ -144,6 +144,11 @@
               {{ selectedTotalPrice > 0 ? selectedTotalPrice.toLocaleString() + '원' : '—' }}
             </span>
           </div>
+
+          <div class="text-xs text-slate-500">
+            최대 {{ maxSeats }}개까지 선택할 수 있습니다.
+          </div>
+
           <div v-if="holdError" class="text-xs text-red-500">{{ holdError }}</div>
           <button
             class="w-full h-12 rounded-xl text-sm font-semibold transition-colors"
@@ -224,7 +229,9 @@ export default {
       seatNodeMap:        new Map(),
       seatToggling:        false,  // 좌석 선점/해제 API 호출 중 (중복 클릭 방지)
       proceedingToCheckout: false, // 결제 페이지로 이동 중이면 true (이탈 시 해제 스킵)
-      MAX_SEATS:    2,             // 1인 최대 선택 가능 좌석 수
+      // 구매 제한 정책 기본값.
+      // 정책 조회 실패 시에도 화면이 동작하도록 안전한 fallback 값으로 설정.
+      maxSeats:     10,          // 1인 최대 선택 가능 좌석 수
       holdExpiresAt:    null,      // 선점 만료 시각 (ms timestamp)
       holdCountdown:    '',        // "04:32" 형식 카운트다운 표시
       holdTimerInterval: null,     // setInterval ID
@@ -393,61 +400,96 @@ export default {
     async load() {
       const scheduleId = this.$route.params.scheduleId
       if (!scheduleId) return
-      this.loading   = true
+
+      this.loading = true
       this.loadError = null
-      this.seats     = []
-      this.selected  = []
+      this.seats = []
+      this.selected = []
+      this.holdError = null
+
       if (this.konvaStageInstance) {
         this.konvaStageInstance.destroy()
         this.konvaStageInstance = null
       }
+
       try {
-        const [res, seatMapRes, scheduleRes] = await Promise.allSettled([
+        /**
+         * 성능 고려:
+         * 좌석, 좌석맵, 회차 정보는 동시에 가져온다.
+         * 이 3개는 화면 초기 렌더링에 모두 필요하므로 병렬 조회가 가장 효율적이다.
+         */
+        const [seatsRes, seatMapRes, scheduleRes] = await Promise.allSettled([
           this.api.get(ENDPOINTS.seats(scheduleId), { skipErrorAlert: true }),
           this.api.get(ENDPOINTS.seatMap(scheduleId)),
-          this.api.get(ENDPOINTS.schedule(scheduleId))
+          this.api.get(ENDPOINTS.schedule(scheduleId)),
         ])
-        // seatMap API 응답 저장 (stage 정보 추출용)
+
         if (seatMapRes.status === 'fulfilled' && seatMapRes.value) {
           this.seatMapData = seatMapRes.value
           this.stageListJson = seatMapRes.value.stageListJson ?? null
         }
+
+        let concertId = null
         if (scheduleRes.status === 'fulfilled' && scheduleRes.value) {
           this.applyScheduleMeta(scheduleRes.value)
+          concertId =
+            scheduleRes.value.concertId ??
+            scheduleRes.value.concert_id ??
+            scheduleRes.value.concert?.id ??
+            null
         }
-        const seatsData = res.status === 'fulfilled' ? res.value : []
-        const raw = Array.isArray(seatsData) ? seatsData : seatsData?.content ?? seatsData?.items ?? []
-        // 백엔드 응답 확인용 (isVisible 필드 존재 여부 체크)
-        if (raw.length > 0) {
-          console.log('[SeatsView] 첫 번째 좌석 데이터:', raw[0])
-          console.log('[SeatsView] isVisible 관련 필드:', {
-            isVisible: raw[0].isVisible,
-            is_visible: raw[0].is_visible,
-            visible: raw[0].visible,
-          })
+
+        /**
+         * 구매 제한 정책은 화면 진입 시 1번만 조회한다.
+         * 좌석 클릭마다 정책 API를 부르면 불필요한 네트워크/서버 부하가 생긴다.
+         */
+        if (concertId) {
+          try {
+            const policiesRes = await this.api.get(ENDPOINTS.concertPolicies(concertId))
+            const policies = Array.isArray(policiesRes)
+              ? policiesRes
+              : (policiesRes?.content ?? policiesRes?.items ?? [])
+
+            const purchaseLimitPolicy = policies.find((p) => p.type === 'PURCHASE_LIMIT')
+
+            if (purchaseLimitPolicy?.config) {
+              const parsed = JSON.parse(purchaseLimitPolicy.config)
+              this.maxSeats = Number(parsed.limit ?? 10) || 10
+            } else {
+              this.maxSeats = 10
+            }
+          } catch {
+            /**
+             * 정책 조회 실패가 좌석 화면 전체를 깨뜨리면 안 되므로
+             * 기본값 10으로 fallback 한다.
+             */
+            this.maxSeats = 10
+          }
+        } else {
+          this.maxSeats = 10
         }
-        console.log('[SeatsView] seatMapRes 상태:', seatMapRes.status, seatMapRes.status === 'fulfilled' ? seatMapRes.value : seatMapRes.reason)
-        console.log('[SeatsView] seatMapData:', this.seatMapData)
-        console.log('[SeatsView] stageListJson:', this.stageListJson)
-        // 백엔드 필드명 다양성 대응
-        this.seats = raw.map(s => ({
+
+        const seatsData = seatsRes.status === 'fulfilled' ? seatsRes.value : []
+        const raw = Array.isArray(seatsData) ? seatsData : (seatsData?.content ?? seatsData?.items ?? [])
+
+        this.seats = raw.map((s) => ({
           ...s,
-          isVisible:       resolveVisible(s),
-          sectionX:        s.sectionX        ?? s.sectionXpos      ?? s.section_x       ?? 0,
-          sectionY:        s.sectionY        ?? s.sectionYpos      ?? s.section_y       ?? 0,
+          isVisible: resolveVisible(s),
+          sectionX: s.sectionX ?? s.sectionXpos ?? s.section_x ?? 0,
+          sectionY: s.sectionY ?? s.sectionYpos ?? s.section_y ?? 0,
           sectionRotation: s.sectionRotation ?? s.section_rotation ?? 0,
-          rowLabelType:    s.rowLabelType    ?? s.row_label_type   ?? s.sectionRowLabelType ?? 'left',
-          stageX:          s.stageX          ?? s.stage_x          ?? s.stagex          ?? 0,
-          stageY:          s.stageY          ?? s.stage_y          ?? s.stagey          ?? 0,
-          stageWidth:      s.stageWidth      ?? s.stage_width      ?? s.stagewidth      ?? null,
-          stageHeight:     s.stageHeight     ?? s.stage_height     ?? s.stageheight     ?? 100,
-          stageRotation:   s.stageRotation   ?? s.stage_rotation   ?? 0,
-        })).filter(s => s.isVisible !== false)
+          rowLabelType: s.rowLabelType ?? s.row_label_type ?? s.sectionRowLabelType ?? 'left',
+          stageX: s.stageX ?? s.stage_x ?? s.stagex ?? 0,
+          stageY: s.stageY ?? s.stage_y ?? s.stagey ?? 0,
+          stageWidth: s.stageWidth ?? s.stage_width ?? s.stagewidth ?? null,
+          stageHeight: s.stageHeight ?? s.stage_height ?? s.stageheight ?? 100,
+          stageRotation: s.stageRotation ?? s.stage_rotation ?? 0,
+        })).filter((s) => s.isVisible !== false)
+
         if (this.seats.length > 0) {
           this.$nextTick(() => this.initKonva())
         }
       } catch (err) {
-        // 연령 제한/권한 관련 403은 가이드에 맞게 분기 처리
         if (err?.status === 403) {
           const data = err.responseData || {}
           const msg =
@@ -791,8 +833,8 @@ export default {
           }
         } else {
           // ── 선점 추가 ──
-          if (this.selected.length >= this.MAX_SEATS) {
-            this.holdError = `좌석은 최대 ${this.MAX_SEATS}개까지 선택할 수 있습니다.`
+          if (this.selected.length >= this.maxSeats) {
+            this.holdError = `좌석은 최대 ${this.maxSeats}개까지 선택할 수 있습니다.`
             return
           }
           await this.api.post(ENDPOINTS.seatHold(seat.seatId))
