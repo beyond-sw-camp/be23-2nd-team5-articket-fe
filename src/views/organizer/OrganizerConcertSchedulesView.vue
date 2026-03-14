@@ -7,7 +7,7 @@
     </div>
 
     <div v-if="fromCreate" class="rounded-2xl border border-slate-100 bg-white px-6 pb-12 pt-6 shadow-sm">
-      <StepIndicator :steps="['기본 정보', '가격 정책', '회차 등록']" :active="2" />
+      <StepIndicator :steps="['기본 정보', '가격 정책', '구매 수량 정책', '회차 등록']" :active="3" />
     </div>
 
     <!-- Header -->
