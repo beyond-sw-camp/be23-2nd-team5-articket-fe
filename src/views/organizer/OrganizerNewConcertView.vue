@@ -84,6 +84,32 @@
                 />
               </div>
             </div>
+
+            <div class="sm:col-span-2">
+              <label class="block text-sm font-medium text-slate-700">상세 설명 이미지 (다중)</label>
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                class="mt-1.5 block w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 shadow-sm file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-1 file:text-xs file:font-semibold file:text-slate-600 hover:file:bg-slate-200"
+                @change="onDetailFilesChange"
+              />
+              <p class="mt-1 text-xs text-slate-400">공연 상세 설명에 들어갈 이미지들을 업로드해 주세요 (여러 장 선택 가능).</p>
+              <div v-if="detailPreviews.length > 0" class="mt-3 flex flex-wrap gap-3">
+                <div v-for="(p, idx) in detailPreviews" :key="idx" class="relative group">
+                  <div class="overflow-hidden rounded-xl border border-slate-100 bg-slate-50">
+                    <img :src="p" class="h-24 w-40 object-cover" />
+                  </div>
+                  <button
+                    type="button"
+                    class="absolute -right-2 -top-2 hidden h-6 w-6 items-center justify-center rounded-full bg-slate-900 text-white shadow-lg group-hover:flex"
+                    @click="removeDetailFile(idx)"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -301,6 +327,8 @@ export default {
       previewDragStartY: 0,
       thumbFile: null,
       thumbPreview: null,
+      detailFiles: [],
+      detailPreviews: [],
     }
   },
   created() {
@@ -314,6 +342,9 @@ export default {
     if (this.thumbPreview && this.thumbPreview.startsWith('blob:')) {
       URL.revokeObjectURL(this.thumbPreview)
     }
+    this.detailPreviews.forEach(p => {
+      if (p.startsWith('blob:')) URL.revokeObjectURL(p)
+    })
   },
   methods: {
     onThumbFileChange(e) {
@@ -328,6 +359,21 @@ export default {
         URL.revokeObjectURL(this.thumbPreview)
       }
       this.thumbPreview = URL.createObjectURL(file)
+    },
+    onDetailFilesChange(e) {
+      const files = Array.from(e.target.files || [])
+      if (!files.length) return
+
+      files.forEach(file => {
+        this.detailFiles.push(file)
+        this.detailPreviews.push(URL.createObjectURL(file))
+      })
+    },
+    removeDetailFile(idx) {
+      const p = this.detailPreviews[idx]
+      if (p && p.startsWith('blob:')) URL.revokeObjectURL(p)
+      this.detailFiles.splice(idx, 1)
+      this.detailPreviews.splice(idx, 1)
     },
     onVenueQueryInput() {
       if (this.venueSearchTimer) clearTimeout(this.venueSearchTimer)
@@ -434,6 +480,12 @@ export default {
 
       if (this.thumbFile) {
         fd.append('thumImg', this.thumbFile)
+      }
+
+      if (this.detailFiles.length > 0) {
+        this.detailFiles.forEach(file => {
+          fd.append('detailImgs', file)
+        })
       }
 
       try {

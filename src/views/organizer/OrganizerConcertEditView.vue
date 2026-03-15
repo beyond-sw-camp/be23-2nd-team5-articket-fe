@@ -76,6 +76,64 @@
               </div>
             </div>
           </div>
+          <div class="sm:col-span-2 space-y-2">
+            <label class="block text-sm font-medium text-slate-700">상세 이미지 (다중)</label>
+            <div class="space-y-4">
+              <!-- 기존 상세 이미지 목록 -->
+              <div v-if="existingDetailImgUrls.length > 0" class="flex flex-wrap gap-3">
+                <div v-for="(url, idx) in existingDetailImgUrls" :key="url" class="relative group">
+                  <div class="overflow-hidden rounded-xl border border-slate-100 bg-slate-50">
+                    <img :src="url" class="h-24 w-40 object-cover" />
+                  </div>
+                  <button
+                    type="button"
+                    class="absolute -right-2 -top-2 hidden h-6 w-6 items-center justify-center rounded-full bg-slate-900 text-white shadow-lg group-hover:flex"
+                    @click="removeExistingDetailImg(idx)"
+                  >
+                    ✕
+                  </button>
+                  <div class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl pointer-events-none">
+                    <span class="text-[10px] text-white font-bold">기존 이미지</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 새 상세 이미지 업로드 -->
+              <div class="flex flex-col gap-2 sm:flex-row sm:items-start">
+                <div class="flex-1">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    class="block w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 shadow-sm file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-1 file:text-xs file:font-semibold file:text-slate-600 hover:file:bg-slate-200"
+                    @change="onDetailFilesChange"
+                  />
+                  <p class="mt-1 text-xs text-slate-400">
+                    추가할 상세 이미지를 선택해 주세요.
+                  </p>
+                </div>
+              </div>
+
+              <!-- 새 상세 이미지 미리보기 -->
+              <div v-if="detailPreviews.length > 0" class="flex flex-wrap gap-3">
+                <div v-for="(p, idx) in detailPreviews" :key="idx" class="relative group">
+                  <div class="overflow-hidden rounded-xl border border-blue-100 bg-blue-50">
+                    <img :src="p" class="h-24 w-40 object-cover" />
+                  </div>
+                  <button
+                    type="button"
+                    class="absolute -right-2 -top-2 hidden h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg group-hover:flex"
+                    @click="removeDetailFile(idx)"
+                  >
+                    ✕
+                  </button>
+                  <div class="absolute inset-0 flex items-center justify-center bg-blue-600/20 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl pointer-events-none">
+                    <span class="text-[10px] text-white font-bold">새 이미지</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
           <div>
             <label class="block text-sm font-medium text-slate-700">카테고리</label>
             <select
@@ -189,6 +247,9 @@ export default {
       api: null,
       thumbFile: null,
       thumbPreview: null,
+      detailFiles: [],
+      detailPreviews: [],
+      existingDetailImgUrls: [],
     }
   },
   created() {
@@ -201,6 +262,9 @@ export default {
     if (this.thumbPreview && this.thumbPreview.startsWith('blob:')) {
       URL.revokeObjectURL(this.thumbPreview)
     }
+    this.detailPreviews.forEach(p => {
+      if (p.startsWith('blob:')) URL.revokeObjectURL(p)
+    })
   },
   methods: {
     goBack() {
@@ -226,6 +290,7 @@ export default {
           thumImgUrl: detail.thumImgUrl ?? detail.thum_img_url ?? ''
         }
         this.thumbPreview = this.form.thumImgUrl || null
+        this.existingDetailImgUrls = detail.detailImgUrls ?? []
       } catch {
         this.item = null
       } finally {
@@ -246,6 +311,24 @@ export default {
       }
       this.thumbPreview = URL.createObjectURL(file)
     },
+    onDetailFilesChange(e) {
+      const files = Array.from(e.target.files || [])
+      if (!files.length) return
+
+      files.forEach(file => {
+        this.detailFiles.push(file)
+        this.detailPreviews.push(URL.createObjectURL(file))
+      })
+    },
+    removeDetailFile(idx) {
+      const p = this.detailPreviews[idx]
+      if (p && p.startsWith('blob:')) URL.revokeObjectURL(p)
+      this.detailFiles.splice(idx, 1)
+      this.detailPreviews.splice(idx, 1)
+    },
+    removeExistingDetailImg(idx) {
+      this.existingDetailImgUrls.splice(idx, 1)
+    },
     async submitUpdate() {
       const concertId = this.$route.params.concertId
       if (concertId == null || concertId === '' || !this.item) return
@@ -261,7 +344,8 @@ export default {
           : 0,
         seatMapId: (this.form.seatMapId != null && this.form.seatMapId !== '')
           ? Number(this.form.seatMapId)
-          : null
+          : null,
+        detailImgUrls: this.existingDetailImgUrls // 기존에 유지할 이미지 URL 리스트
       }
 
       try {
@@ -272,6 +356,13 @@ export default {
         // 새 파일을 선택한 경우에만 'newThumImg'로 교체
         if (this.thumbFile) {
           fd.append('newThumImg', this.thumbFile)
+        }
+
+        // 새 상세 이미지들 추가
+        if (this.detailFiles.length > 0) {
+          this.detailFiles.forEach(file => {
+            fd.append('detailImgs', file)
+          })
         }
 
         await this.api.put(ENDPOINTS.organizerUpdateConcert(concertId), fd)

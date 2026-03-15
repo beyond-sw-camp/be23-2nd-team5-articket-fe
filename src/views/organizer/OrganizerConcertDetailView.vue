@@ -66,6 +66,21 @@
         </div>
       </div>
 
+      <!-- 상세 이미지 (추가) -->
+      <UiCard v-if="item.detailImgUrls && item.detailImgUrls.length > 0">
+        <h2 class="text-base font-semibold text-slate-900">상세 설명 이미지</h2>
+        <p class="mt-0.5 text-xs text-slate-500">사용자 앱의 공연 정보 탭에 노출되는 이미지입니다.</p>
+        <div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div
+            v-for="(url, idx) in item.detailImgUrls"
+            :key="idx"
+            class="overflow-hidden rounded-xl border border-slate-100 bg-slate-50"
+          >
+            <img :src="url" class="aspect-video w-full object-cover" alt="상세 이미지" />
+          </div>
+        </div>
+      </UiCard>
+
       <!-- 액션 카드 -->
       <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <button
