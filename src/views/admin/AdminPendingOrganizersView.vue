@@ -2,7 +2,7 @@
   <div class="grid gap-4">
     <div class="flex items-end justify-between gap-3">
       <div>
-        <div class="text-sm font-semibold text-slate-900">주최자 신청 승인</div>
+        <div class="mgmt-page-title">주최자 신청 승인</div>
         <div class="mt-1 text-sm text-slate-500">GET /admin/pending-organizers · 승인/거절</div>
       </div>
       <UiBadge tone="soft">ADMIN</UiBadge>

@@ -9,7 +9,7 @@
       <div class="flex flex-wrap items-start justify-between gap-4">
         <div>
           <div class="flex items-center gap-2">
-            <h1 class="text-xl font-bold text-slate-900">{{ seatMap.name || '좌석맵' }}</h1>
+            <h1 class="mgmt-page-title">{{ seatMap.name || '좌석맵' }}</h1>
             <UiBadge
               :tone="seatMap.status === 'PUBLISHED' ? 'solid' : 'soft'"
               :color="seatMap.status === 'PUBLISHED' ? 'green' : 'slate'"
@@ -17,7 +17,7 @@
               {{ seatMap.status || 'DRAFT' }}
             </UiBadge>
           </div>
-          <p class="mt-1 text-sm text-slate-500">ID {{ seatMap.id }} · v{{ seatMap.version ?? '-' }}</p>
+          <p class="mgmt-page-subtitle">ID {{ seatMap.id }} · v{{ seatMap.version ?? '-' }}</p>
         </div>
         <div class="flex items-center gap-2">
           <UiBadge tone="soft">ADMIN</UiBadge>

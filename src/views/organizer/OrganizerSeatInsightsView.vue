@@ -1,12 +1,16 @@
 <template>
-  <div class="grid gap-4">
-    <div class="min-w-0 rounded-xl border border-slate-200 bg-white p-5">
-      <h1 class="text-lg font-semibold text-slate-900">좌석 인사이트</h1>
-      <p class="mt-2 text-sm text-slate-600">
-        전체 공연 합산, 공연별, 회차별 좌석 판매 현황을 확인합니다.
-      </p>
+  <div class="grid gap-5">
+    <div class="flex items-end justify-between gap-3">
+      <div>
+        <h1 class="mgmt-page-title">좌석 인사이트</h1>
+        <p class="mgmt-page-subtitle">
+          전체 공연 합산, 공연별, 회차별 좌석 판매 현황을 확인합니다.
+        </p>
+      </div>
+    </div>
 
-      <div class="mt-4 grid gap-3 md:grid-cols-2">
+    <div class="min-w-0 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div class="grid gap-3 md:grid-cols-2">
         <div>
           <label class="mb-1 block text-sm font-medium text-slate-700">공연 선택</label>
           <select
@@ -45,16 +49,16 @@
 
     <div
       v-if="loading"
-      class="rounded-xl border border-slate-200 bg-white p-5 text-sm text-slate-500"
+      class="rounded-2xl border border-slate-200 bg-white p-5 text-sm text-slate-500 shadow-sm"
     >
       데이터를 불러오는 중입니다.
     </div>
 
     <template v-else>
       <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        <div class="min-w-0 rounded-xl border border-slate-200 bg-white p-5">
-          <h2 class="text-base font-semibold text-slate-900">구역별 판매 동향</h2>
-          <p class="mt-1 text-sm text-slate-500">어떤 구역이 가장 잘 팔리는지 비교합니다.</p>
+        <div class="min-w-0 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h2 class="mgmt-section-title">구역별 판매 동향</h2>
+          <p class="mgmt-section-subtitle">어떤 구역이 가장 잘 팔리는지 비교합니다.</p>
 
           <div class="mt-6 space-y-4">
             <div
@@ -65,7 +69,7 @@
               <div class="text-sm font-medium text-slate-700">{{ item.sectionName }}</div>
               <div class="h-3 overflow-hidden rounded-full bg-slate-200">
                 <div
-                  class="h-full rounded-full bg-gradient-to-r from-rose-500 to-orange-500"
+                  class="h-full rounded-full bg-red-500"
                   :style="{ width: `${item.soldRate}%` }"
                 ></div>
               </div>
@@ -80,13 +84,13 @@
           </div>
         </div>
 
-        <div class="min-w-0 rounded-xl border border-slate-200 bg-white p-5">
-          <h2 class="text-base font-semibold text-slate-900">등급별 판매율</h2>
-          <p class="mt-1 text-sm text-slate-500">좌석 등급별 판매 비율입니다.</p>
+        <div class="min-w-0 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h2 class="mgmt-section-title">등급별 판매율</h2>
+          <p class="mgmt-section-subtitle">좌석 등급별 판매 비율입니다.</p>
 
           <div class="mt-6 grid justify-items-center gap-4">
             <div class="grid h-44 w-44 place-items-center rounded-full" :style="{ background: donutGradient }">
-              <div class="grid h-24 w-24 place-items-center rounded-full bg-white text-3xl font-bold text-slate-900">
+              <div class="grid h-24 w-24 place-items-center rounded-full bg-white text-2xl font-bold text-slate-900">
                 {{ overallSoldRate }}%
               </div>
             </div>
@@ -109,30 +113,30 @@
           </div>
         </div>
 
-        <div class="min-w-0 rounded-xl border border-slate-200 bg-white p-5">
-          <h2 class="text-base font-semibold text-slate-900">잔여석 시각화</h2>
-          <p class="mt-1 text-sm text-slate-500">전체 좌석 대비 예매 완료/잔여 좌석 현황입니다.</p>
+        <div class="min-w-0 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h2 class="mgmt-section-title">잔여석 시각화</h2>
+          <p class="mgmt-section-subtitle">전체 좌석 대비 예매 완료/잔여 좌석 현황입니다.</p>
 
-          <div class="mt-8 flex items-start justify-between">
+          <div class="mt-6 flex items-start justify-between">
             <div>
-              <div class="text-xs text-slate-500">예매 완료</div>
-              <div class="mt-1 text-4xl font-bold text-slate-900">{{ soldSeats }}석</div>
+              <div class="text-xs font-medium text-slate-500">예매 완료</div>
+              <div class="mt-1.5 text-2xl font-bold text-slate-900">{{ soldSeats }}석</div>
             </div>
 
             <div class="text-right">
-              <div class="text-xs text-slate-500">잔여 좌석</div>
-              <div class="mt-1 text-4xl font-bold text-slate-900">{{ remainingSeats }}석</div>
+              <div class="text-xs font-medium text-slate-500">잔여 좌석</div>
+              <div class="mt-1.5 text-2xl font-bold text-slate-900">{{ remainingSeats }}석</div>
             </div>
           </div>
 
           <div class="mt-6 h-4 overflow-hidden rounded-full bg-slate-200">
             <div
-              class="h-full rounded-full bg-gradient-to-r from-emerald-400 to-emerald-600"
+              class="h-full rounded-full bg-red-500"
               :style="{ width: `${soldRate}%` }"
             ></div>
           </div>
 
-          <div class="mt-3 flex items-center justify-between text-sm text-slate-500">
+          <div class="mt-3 flex items-center justify-between text-xs text-slate-500">
             <span>총 {{ totalSeats }}석</span>
             <span>{{ formatPercent(soldRate) }} 판매</span>
           </div>
@@ -140,9 +144,9 @@
       </div>
 
       <div class="grid gap-4 xl:grid-cols-2">
-        <div class="min-w-0 rounded-xl border border-slate-200 bg-white p-5">
-          <h2 class="text-base font-semibold text-slate-900">구역별 상세 현황</h2>
-          <p class="mt-1 text-sm text-slate-500">구역별 판매/잔여 좌석을 숫자로 확인합니다.</p>
+        <div class="min-w-0 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h2 class="mgmt-section-title">구역별 상세 현황</h2>
+          <p class="mgmt-section-subtitle">구역별 판매/잔여 좌석을 숫자로 확인합니다.</p>
 
           <table class="mt-5 w-full border-collapse text-left">
             <thead>
@@ -172,9 +176,9 @@
           </table>
         </div>
 
-        <div class="min-w-0 rounded-xl border border-slate-200 bg-white p-5">
-          <h2 class="text-base font-semibold text-slate-900">등급별 상세 현황</h2>
-          <p class="mt-1 text-sm text-slate-500">등급별 판매/잔여 좌석을 숫자로 확인합니다.</p>
+        <div class="min-w-0 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h2 class="mgmt-section-title">등급별 상세 현황</h2>
+          <p class="mgmt-section-subtitle">등급별 판매/잔여 좌석을 숫자로 확인합니다.</p>
 
           <table class="mt-5 w-full border-collapse text-left">
             <thead>
@@ -205,11 +209,11 @@
         </div>
       </div>
 
-      <div v-if="seatMapInsight" class="min-w-0 rounded-xl border border-slate-200 bg-white p-5">
+      <div v-if="seatMapInsight" class="min-w-0 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <div class="flex items-start justify-between gap-3">
           <div>
-            <h2 class="text-base font-semibold text-slate-900">좌석맵 인사이트</h2>
-            <p class="mt-1 text-sm text-slate-500">
+            <h2 class="mgmt-section-title">좌석맵 인사이트</h2>
+            <p class="mgmt-section-subtitle">
               회차별 좌석 상태와 선택 주문 좌석을 좌석맵으로 확인합니다.
             </p>
           </div>
@@ -223,38 +227,38 @@
         </div>
 
         <div class="mt-4 grid gap-3 sm:grid-cols-4">
-          <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
-            <div class="text-xs text-slate-500">총 좌석</div>
-            <div class="mt-1 text-2xl font-bold text-slate-900">{{ seatMapInsight.totalSeatCount }}석</div>
+          <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <div class="text-xs font-medium text-slate-500">총 좌석</div>
+            <div class="mt-1.5 text-2xl font-bold text-slate-900">{{ seatMapInsight.totalSeatCount }}석</div>
           </div>
 
-          <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
-            <div class="text-xs text-emerald-700">예매 완료</div>
-            <div class="mt-1 text-2xl font-bold text-emerald-700">{{ seatMapInsight.soldSeatCount }}석</div>
+          <div class="rounded-2xl border border-red-200 bg-red-50 p-4">
+            <div class="text-xs font-medium text-red-600">예매 완료</div>
+            <div class="mt-1.5 text-2xl font-bold text-red-700">{{ seatMapInsight.soldSeatCount }}석</div>
           </div>
 
-          <div class="rounded-xl border border-rose-200 bg-rose-50 p-4">
-            <div class="text-xs text-rose-700">취소 좌석</div>
-            <div class="mt-1 text-2xl font-bold text-rose-700">{{ seatMapInsight.canceledSeatCount }}석</div>
+          <div class="rounded-2xl border border-rose-200 bg-rose-50 p-4">
+            <div class="text-xs font-medium text-rose-700">취소 좌석</div>
+            <div class="mt-1.5 text-2xl font-bold text-rose-700">{{ seatMapInsight.canceledSeatCount }}석</div>
           </div>
 
-          <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
-            <div class="text-xs text-slate-500">점유율</div>
-            <div class="mt-1 text-2xl font-bold text-slate-900">{{ formatPercent(seatMapInsight.occupancyRate) }}</div>
+          <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <div class="text-xs font-medium text-slate-500">점유율</div>
+            <div class="mt-1.5 text-2xl font-bold text-slate-900">{{ formatPercent(seatMapInsight.occupancyRate) }}</div>
           </div>
         </div>
 
-        <div class="mt-5 flex flex-wrap gap-4 text-sm text-slate-600">
+        <div class="mt-5 flex flex-wrap gap-4 text-xs text-slate-600">
           <div class="flex items-center gap-2">
-            <span class="h-3 w-3 rounded bg-emerald-500"></span>
+            <span class="h-2.5 w-2.5 rounded-full bg-red-500"></span>
             <span>예매 완료</span>
           </div>
           <div class="flex items-center gap-2">
-            <span class="h-3 w-3 rounded bg-rose-500"></span>
+            <span class="h-2.5 w-2.5 rounded-full bg-rose-500"></span>
             <span>취소</span>
           </div>
           <div class="flex items-center gap-2">
-            <span class="h-3 w-3 rounded bg-slate-300"></span>
+            <span class="h-2.5 w-2.5 rounded-full bg-slate-300"></span>
             <span>예매 가능</span>
           </div>
           <div class="flex items-center gap-2">
@@ -322,7 +326,7 @@ export default {
       selectedScheduleId: null,
       highlightedOrderId: null,
       seatMapInsight: null,
-      gradeColors: ['#e76f51', '#f4a261', '#2a9d8f', '#457b9d', '#7c3aed']
+      gradeColors: ['#ef4444', '#f97316', '#eab308', '#64748b', '#94a3b8']
     }
   },
   computed: {
@@ -692,13 +696,13 @@ export default {
       )
     },
 
-    // 좌석 색상만 메서드로 유지
+    // 좌석 색상만 메서드로 유지 (포인트 컬러: 예매완료=red, 취소=rose)
     seatClass(seat) {
       if (seat.highlighted) {
         return 'border-2 border-blue-600 bg-blue-200 shadow-sm'
       }
       if (seat.status === 'SOLD') {
-        return 'bg-emerald-500'
+        return 'bg-red-500'
       }
       if (seat.status === 'CANCELED') {
         return 'bg-rose-500'

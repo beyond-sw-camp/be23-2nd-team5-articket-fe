@@ -2,7 +2,7 @@
   <div class="grid gap-4">
     <div class="flex items-end justify-between gap-3">
       <div>
-        <h1 class="text-xl font-bold text-slate-900">공연장 관리</h1>
+        <h1 class="mgmt-page-title">공연장 관리</h1>
         <p class="mt-1 text-sm text-slate-500">공연장을 등록하고 목록을 관리합니다.</p>
       </div>
       <div class="flex items-center gap-2">

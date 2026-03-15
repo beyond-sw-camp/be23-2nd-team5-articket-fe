@@ -2,7 +2,7 @@
   <div class="space-y-6 pb-24">
     <!-- Page Title -->
     <div>
-      <h1 class="text-xl font-bold text-slate-900">가격 정책</h1>
+      <h1 class="mgmt-page-title">가격 정책</h1>
       <p class="mt-1 text-sm text-slate-500">공연 생성 후 가격 정책 설정 → 구매 수량 정책 설정 순으로 진행됩니다. 회차 등록은 공연 상세 페이지에서 진행합니다.</p>
     </div>
 
@@ -23,7 +23,7 @@
       <div class="flex items-start justify-between gap-6">
         <div>
           <div class="flex items-center gap-2">
-            <div class="text-sm font-semibold text-slate-900">공연 정책 관리</div>
+            <div class="mgmt-section-title">공연 정책 관리</div>
             <UiBadge tone="soft" class="mt-0.5">ORGANIZER</UiBadge>
           </div>
           <div class="mt-1 text-sm text-slate-500">

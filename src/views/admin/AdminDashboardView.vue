@@ -4,45 +4,45 @@
     <!-- ── 헤더 ── -->
     <div class="flex items-end justify-between">
       <div>
-        <div class="text-sm font-semibold text-slate-900">ADMIN 운영 대시보드</div>
-        <div class="mt-0.5 text-xs text-slate-400">{{ currentDateDisplay }}</div>
+        <div class="mgmt-page-title">ADMIN 운영 대시보드</div>
+        <div class="mgmt-page-subtitle">{{ currentDateDisplay }}</div>
       </div>
       <UiBadge tone="soft">ADMIN</UiBadge>
     </div>
 
     <!-- ── KPI 5종 ── -->
     <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-      <div class="rounded-2xl border border-slate-200 bg-white px-5 py-4">
-        <p class="text-[11px] font-medium text-slate-400">총 가입 회원</p>
-        <p class="mt-1.5 text-3xl font-black text-slate-900">{{ summaryLoading ? '…' : totalUsers.toLocaleString() }}</p>
-        <p class="mt-1 text-[10px] text-slate-300">누적</p>
+      <div class="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+        <p class="text-xs font-medium text-slate-500">총 가입 회원</p>
+        <p class="mt-1.5 text-2xl font-bold text-slate-900">{{ summaryLoading ? '…' : totalUsers.toLocaleString() }}</p>
+        <p class="mt-1 text-xs text-slate-400">누적</p>
       </div>
-      <div class="rounded-2xl border border-slate-200 bg-white px-5 py-4">
-        <p class="text-[11px] font-medium text-slate-400">오늘 신규 회원</p>
-        <p class="mt-1.5 text-3xl font-black text-slate-900">{{ chartLoading ? '…' : todayNewUsers }}</p>
-        <p class="mt-1 text-[10px] text-slate-300">오늘 가입</p>
+      <div class="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+        <p class="text-xs font-medium text-slate-500">오늘 신규 회원</p>
+        <p class="mt-1.5 text-2xl font-bold text-slate-900">{{ chartLoading ? '…' : todayNewUsers }}</p>
+        <p class="mt-1 text-xs text-slate-400">오늘 가입</p>
       </div>
-      <div class="rounded-2xl border border-slate-200 bg-white px-5 py-4">
-        <p class="text-[11px] font-medium text-slate-400">활성 공연</p>
-        <p class="mt-1.5 text-3xl font-black text-slate-900">{{ summaryLoading ? '…' : activeConcertCount }}</p>
-        <p class="mt-1 text-[10px] text-slate-300">예매 가능</p>
+      <div class="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+        <p class="text-xs font-medium text-slate-500">활성 공연</p>
+        <p class="mt-1.5 text-2xl font-bold text-slate-900">{{ summaryLoading ? '…' : activeConcertCount }}</p>
+        <p class="mt-1 text-xs text-slate-400">예매 가능</p>
       </div>
-      <div class="rounded-2xl border border-slate-200 bg-white px-5 py-4">
-        <p class="text-[11px] font-medium text-slate-400">활성 공연장</p>
-        <p class="mt-1.5 text-3xl font-black text-slate-900">{{ summaryLoading ? '…' : activeVenues }}</p>
-        <p class="mt-1 text-[10px] text-slate-300">운영 중</p>
+      <div class="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+        <p class="text-xs font-medium text-slate-500">활성 공연장</p>
+        <p class="mt-1.5 text-2xl font-bold text-slate-900">{{ summaryLoading ? '…' : activeVenues }}</p>
+        <p class="mt-1 text-xs text-slate-400">운영 중</p>
       </div>
       <div
-        class="cursor-pointer rounded-2xl border bg-white px-5 py-4 transition-colors hover:bg-slate-50"
-        :class="pendingCount > 0 ? 'border-amber-300' : 'border-slate-200'"
+        class="cursor-pointer rounded-2xl border bg-white px-5 py-4 shadow-sm transition-colors hover:bg-slate-50"
+        :class="pendingCount > 0 ? 'border-red-300' : 'border-slate-200'"
         @click="$router.push('/admin/pending-organizers')"
       >
-        <p class="text-[11px] font-medium text-slate-400">주최자 승인 대기</p>
-        <p class="mt-1.5 text-3xl font-black" :class="pendingCount > 0 ? 'text-amber-500' : 'text-slate-900'">
+        <p class="text-xs font-medium text-slate-500">주최자 승인 대기</p>
+        <p class="mt-1.5 text-2xl font-bold" :class="pendingCount > 0 ? 'text-red-600' : 'text-slate-900'">
           {{ summaryLoading ? '…' : pendingCount }}
         </p>
-        <p v-if="pendingCount > 0" class="mt-1 text-[10px] font-semibold text-amber-400">처리 필요 →</p>
-        <p v-else class="mt-1 text-[10px] text-slate-300">대기 없음</p>
+        <p v-if="pendingCount > 0" class="mt-1 text-xs font-semibold text-red-500">처리 필요 →</p>
+        <p v-else class="mt-1 text-xs text-slate-400">대기 없음</p>
       </div>
     </div>
 
@@ -50,10 +50,10 @@
     <div class="grid gap-5 lg:grid-cols-3">
 
       <!-- 회원가입 추이 차트 -->
-      <div class="lg:col-span-2 overflow-hidden rounded-2xl border border-slate-200 bg-white flex flex-col">
-        <div class="flex items-center justify-between border-b border-slate-100 bg-slate-50 px-4 py-3 shrink-0">
+      <div class="lg:col-span-2 flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div class="flex shrink-0 items-center justify-between border-b border-slate-100 bg-slate-50 px-4 py-3">
           <div class="flex items-center gap-3">
-            <span class="text-sm font-semibold text-slate-700">회원가입 추이</span>
+            <span class="mgmt-section-title">회원가입 추이</span>
             <div class="flex gap-0.5 rounded-lg bg-slate-100 p-0.5">
               <button
                 v-for="opt in chartRoleOptions" :key="opt.value"
@@ -72,40 +72,40 @@
             >{{ opt.label }}</button>
           </div>
         </div>
-        <div v-if="chartLoading" class="flex flex-1 items-center justify-center text-sm text-slate-400">불러오는 중…</div>
-        <div v-else class="flex-1 min-h-0 px-2 pt-2 pb-1">
-          <svg viewBox="0 0 600 200" class="w-full h-full" style="min-height:170px">
+        <div v-if="chartLoading" class="flex flex-1 items-center justify-center text-sm text-slate-500">불러오는 중…</div>
+        <div v-else class="min-h-0 flex-1 px-4 pt-3 pb-2">
+          <svg viewBox="0 0 600 200" class="h-full w-full" style="min-height:170px">
             <g v-for="(tick, i) in chartYTicks" :key="'y'+i">
-              <line :x1="38" :y1="chartY(tick)" :x2="592" :y2="chartY(tick)" stroke="#f1f5f9" stroke-width="1" />
-              <text :x="34" :y="chartY(tick) + 4" text-anchor="end" font-size="9" fill="#94a3b8">{{ tick }}</text>
+              <line :x1="38" :y1="chartY(tick)" :x2="592" :y2="chartY(tick)" stroke="#e2e8f0" stroke-width="1" />
+              <text :x="34" :y="chartY(tick) + 4" text-anchor="end" font-size="10" fill="#64748b">{{ tick }}</text>
             </g>
             <rect
               v-for="(p, i) in chartPoints" :key="'bar'+i"
               :x="p.x - p.barW / 2" :y="p.y"
               :width="p.barW" :height="chartBottom - p.y"
               :fill="tooltip.i === i ? '#dc2626' : '#ef4444'"
-              opacity="0.85" rx="2" style="cursor:pointer"
+              opacity="0.9" rx="2" style="cursor:pointer"
               @mouseenter="showTooltip(p, i, $event)"
               @mouseleave="tooltip.visible = false"
             />
             <g v-if="tooltip.visible">
               <rect :x="tooltip.x - 36" :y="tooltip.rectTop" width="72" height="22" rx="4" fill="#1e293b" />
-              <text :x="tooltip.x" :y="tooltip.rectTop + 15" text-anchor="middle" font-size="9" fill="white">{{ tooltip.label }} · {{ tooltip.count }}명</text>
+              <text :x="tooltip.x" :y="tooltip.rectTop + 15" text-anchor="middle" font-size="10" fill="white">{{ tooltip.label }} · {{ tooltip.count }}명</text>
             </g>
             <g v-for="(p, i) in chartPoints" :key="'lx'+i">
-              <text v-if="i % chartLabelStep === 0" :x="p.x" :y="195" text-anchor="middle" font-size="9" fill="#94a3b8">{{ p.label }}</text>
+              <text v-if="i % chartLabelStep === 0" :x="p.x" :y="195" text-anchor="middle" font-size="10" fill="#64748b">{{ p.label }}</text>
             </g>
           </svg>
         </div>
       </div>
 
       <!-- 주최자 승인 대기 미리보기 -->
-      <div class="flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white">
-        <div class="flex items-center justify-between border-b border-slate-100 bg-slate-50 px-4 py-3 shrink-0">
+      <div class="flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div class="flex shrink-0 items-center justify-between border-b border-slate-100 bg-slate-50 px-4 py-3">
           <div class="flex items-center gap-2">
-            <span class="text-sm font-semibold text-slate-700">승인 대기</span>
+            <span class="mgmt-section-title">승인 대기</span>
             <span v-if="pendingCount > 0"
-              class="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-600">
+              class="rounded-full bg-red-100 px-2 py-0.5 text-xs font-bold text-red-600">
               {{ pendingCount }}
             </span>
           </div>
@@ -165,24 +165,24 @@
 
       <!-- 공연장 인사이트 -->
       <div
-        class="flex cursor-pointer items-center justify-between rounded-2xl border border-slate-200 bg-white px-5 py-4 transition-colors hover:bg-slate-50"
+        class="flex cursor-pointer items-center justify-between rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm transition-colors hover:bg-slate-50"
         @click="$router.push('/admin/venue-insights')"
       >
         <div class="flex items-center gap-4">
-          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-50">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
               <path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
             </svg>
           </div>
           <div>
-            <p class="text-sm font-semibold text-slate-900">공연장 · 좌석맵 인사이트</p>
-            <p class="mt-0.5 text-xs text-slate-400">
+            <p class="mgmt-section-title">공연장 · 좌석맵 인사이트</p>
+            <p class="mgmt-section-subtitle">
               {{ summaryLoading ? '…' : activeVenues }}개 공연장 · 월별 점유율 및 공연 일정 분석
             </p>
           </div>
         </div>
         <div class="flex shrink-0 items-center gap-1.5">
-          <span class="rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-600">인사이트</span>
+          <span class="rounded-full bg-red-100 px-2.5 py-1 text-xs font-semibold text-red-600">인사이트</span>
           <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="9 18 15 12 9 6"/>
           </svg>
@@ -191,7 +191,7 @@
 
       <!-- 프로모션 배너 -->
       <div
-        class="flex cursor-pointer items-center justify-between rounded-2xl border border-slate-200 bg-white px-5 py-4 transition-colors hover:bg-slate-50"
+        class="flex cursor-pointer items-center justify-between rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm transition-colors hover:bg-slate-50"
         @click="$router.push('/admin/promotions')"
       >
         <div class="flex items-center gap-4">
@@ -201,8 +201,8 @@
             </svg>
           </div>
           <div>
-            <p class="text-sm font-semibold text-slate-900">프로모션 배너 관리</p>
-            <p class="mt-0.5 text-xs text-slate-400">
+            <p class="mgmt-section-title">프로모션 배너 관리</p>
+            <p class="mgmt-section-subtitle">
               {{ summaryLoading ? '…' : `${promotionCount}개 배너 등록됨 · 홈 히어로 배너 관리` }}
             </p>
           </div>

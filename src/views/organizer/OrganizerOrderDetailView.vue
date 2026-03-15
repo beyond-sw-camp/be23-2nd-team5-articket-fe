@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="grid gap-4">
     <UiCard v-if="loading">
       <div class="text-sm text-slate-500">불러오는 중...</div>
@@ -12,8 +12,8 @@
     <UiCard v-else>
       <div class="flex items-start justify-between gap-3">
         <div>
-          <div class="text-sm font-semibold text-slate-900">주문 상세 (ORGANIZER)</div>
-          <div class="mt-1 text-sm text-slate-500">{{ item.id }}</div>
+          <div class="mgmt-page-title">주문 상세 (ORGANIZER)</div>
+          <div class="mgmt-page-subtitle">{{ item.id }}</div>
         </div>
         <UiBadge :tone="item.status === 'SUCCESS' || item.status === 'PAID' ? 'solid' : 'soft'" :color="item.status === 'SUCCESS' || item.status === 'PAID' ? 'green' : 'slate'">
           {{ item.status }}

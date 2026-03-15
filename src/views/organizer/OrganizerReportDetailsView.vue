@@ -1,9 +1,9 @@
-﻿<template>
+<template>
   <div class="grid gap-4">
     <UiCard>
       <div class="flex items-start justify-between gap-3">
         <div>
-          <div class="text-sm font-semibold text-slate-900">매출/환불 상세 조회</div>
+          <div class="mgmt-page-title">매출/환불 상세 조회</div>
           <div class="mt-1 text-sm text-slate-500">공연, 회차, 상태, 검색어로 정산 관련 주문을 조회합니다.</div>
         </div>
         <UiButton variant="ghost" class="h-10 px-4" @click="$router.push('/organizer/reports')">리포트로 돌아가기</UiButton>
@@ -66,7 +66,7 @@
     <UiCard v-else>
       <div class="flex items-center justify-between gap-3">
         <div>
-          <div class="text-sm font-semibold text-slate-900">조회 결과</div>
+          <div class="mgmt-section-title">조회 결과</div>
           <div class="mt-1 text-sm text-slate-500">총 {{ totalElements.toLocaleString() }}건</div>
         </div>
       </div>
@@ -138,7 +138,7 @@
       <div class="flex h-[94vh] w-full max-w-[1480px] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
         <div class="flex items-center justify-between border-b border-slate-200 px-5 py-3">
           <div>
-            <div class="text-base font-semibold text-slate-900">주문 좌석맵 보기</div>
+            <div class="mgmt-section-title">주문 좌석맵 보기</div>
             <div class="mt-1 text-sm text-slate-500">
               주문 ID {{ selectedSeatMapRow?.id }} · {{ selectedSeatMapRow?.concertName }} · {{ formatDateTime(selectedSeatMapRow?.scheduleDate) }}
             </div>

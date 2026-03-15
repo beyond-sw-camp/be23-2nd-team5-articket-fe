@@ -1,14 +1,14 @@
-﻿<template>
-  <div class="grid gap-4">
+<template>
+  <div class="grid gap-5">
     <div class="flex items-end justify-between gap-3">
       <div>
-        <div class="text-sm font-semibold text-slate-900">ORGANIZER 대시보드</div>
-        <div class="mt-1 text-sm text-slate-500">오늘/월간/전체 매출과 상위 공연 성과를 확인합니다.</div>
+        <div class="mgmt-page-title">ORGANIZER 대시보드</div>
+        <div class="mgmt-page-subtitle">오늘/월간/전체 매출과 상위 공연 성과를 확인합니다.</div>
       </div>
       <UiBadge tone="soft">ORGANIZER</UiBadge>
     </div>
 
-    <div v-if="errorMessage" class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+    <div v-if="errorMessage" class="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
       {{ errorMessage }}
     </div>
 
@@ -28,8 +28,8 @@
     <UiCard>
       <div class="flex items-center justify-between gap-3">
         <div>
-          <div class="text-sm font-semibold text-slate-900">빠른 이동</div>
-          <div class="mt-1 text-sm text-slate-500">공연 생성과 공연 목록으로 바로 이동합니다.</div>
+          <div class="mgmt-section-title">빠른 이동</div>
+          <div class="mgmt-section-subtitle">공연 생성과 공연 목록으로 바로 이동합니다.</div>
         </div>
         <div class="flex gap-2">
           <UiButton variant="ghost" class="h-11 px-4" @click="$router.push('/organizer/concerts')">내 공연</UiButton>
@@ -42,8 +42,8 @@
     <UiCard>
       <div class="flex items-center justify-between gap-3">
         <div>
-          <div class="text-sm font-semibold text-slate-900">공연별 매출 TOP 3</div>
-          <div class="mt-1 text-sm text-slate-500">공연 및 관람일시, 공연 장소, 관람 연령, 매출, 잔여 좌석을 함께 표시합니다.</div>
+          <div class="mgmt-section-title">공연별 매출 TOP 3</div>
+          <div class="mgmt-section-subtitle">공연 및 관람일시, 공연 장소, 관람 연령, 매출, 잔여 좌석을 함께 표시합니다.</div>
         </div>
         <UiBadge tone="soft">실시간 집계</UiBadge>
       </div>
@@ -123,8 +123,8 @@
 
     <section class="grid gap-4 xl:grid-cols-2">
       <UiCard>
-        <div class="text-sm font-semibold text-slate-900">오픈 예정 공연</div>
-        <div class="mt-1 text-sm text-slate-500">예매 오픈을 앞둔 공연을 확인합니다.</div>
+        <div class="mgmt-section-title">오픈 예정 공연</div>
+        <div class="mgmt-section-subtitle">예매 오픈을 앞둔 공연을 확인합니다.</div>
 
         <div v-if="loading" class="mt-4 text-sm text-slate-500">불러오는 중...</div>
 
@@ -132,10 +132,10 @@
           <div
             v-for="item in overview?.upcomingConcerts || []"
             :key="item.concertId"
-            class="rounded-xl border border-slate-100 bg-slate-50 p-4"
+            class="rounded-2xl border border-slate-200 bg-slate-50 p-4"
           >
             <div class="text-sm font-semibold text-slate-900">{{ item.concertTitle }}</div>
-            <div class="mt-1 text-sm text-slate-500">{{ formatDateTime(item.nextPlayTime) }}</div>
+            <div class="mt-0.5 text-xs text-slate-500">{{ formatDateTime(item.nextPlayTime) }}</div>
             <div class="mt-2 flex items-center justify-between text-sm text-slate-600">
               <span>예매율 {{ formatPercent(item.bookingRate) }}</span>
               <span>잔여 {{ formatCount(item.remainingSeats) }} / {{ formatCount(item.totalSeats) }}</span>
@@ -152,8 +152,8 @@
       </UiCard>
 
       <UiCard>
-        <div class="text-sm font-semibold text-slate-900">마감 임박 공연</div>
-        <div class="mt-1 text-sm text-slate-500">운영 체크가 필요한 오픈 중 공연을 확인합니다.</div>
+        <div class="mgmt-section-title">마감 임박 공연</div>
+        <div class="mgmt-section-subtitle">운영 체크가 필요한 오픈 중 공연을 확인합니다.</div>
 
         <div v-if="loading" class="mt-4 text-sm text-slate-500">불러오는 중...</div>
 
@@ -161,10 +161,10 @@
           <div
             v-for="item in overview?.closingSoonConcerts || []"
             :key="item.concertId"
-            class="rounded-xl border border-slate-100 bg-slate-50 p-4"
+            class="rounded-2xl border border-slate-200 bg-slate-50 p-4"
           >
             <div class="text-sm font-semibold text-slate-900">{{ item.concertTitle }}</div>
-            <div class="mt-1 text-sm text-slate-500">{{ formatDateTime(item.nextPlayTime) }}</div>
+            <div class="mt-0.5 text-xs text-slate-500">{{ formatDateTime(item.nextPlayTime) }}</div>
             <div class="mt-2 flex items-center justify-between text-sm text-slate-600">
               <span>예매율 {{ formatPercent(item.bookingRate) }}</span>
               <span>잔여 {{ formatCount(item.remainingSeats) }} / {{ formatCount(item.totalSeats) }}</span>

@@ -2,8 +2,8 @@
   <div class="grid gap-4">
     <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <div>
-        <div class="text-sm font-semibold text-slate-900">내 공연 목록</div>
-        <div class="mt-1 text-sm text-slate-500">주최자 본인 공연 목록 (상태, 카테고리, 판매/좋아요 통계 및 공연 기간)</div>
+        <div class="mgmt-page-title">내 공연 목록</div>
+        <div class="mgmt-page-subtitle">주최자 본인 공연 목록 (상태, 카테고리, 판매/좋아요 통계 및 공연 기간)</div>
       </div>
       <div class="flex items-center gap-2">
         <div class="relative">

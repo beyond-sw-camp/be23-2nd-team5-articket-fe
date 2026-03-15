@@ -2,7 +2,7 @@
   <div class="grid gap-4">
     <div class="flex flex-wrap items-end justify-between gap-3">
       <div>
-        <div class="text-lg font-bold text-slate-900">공연자 관리</div>
+        <div class="text-lg font-semibold text-slate-900">공연자 관리</div>
         <div class="mt-0.5 text-sm text-slate-500">공연자 등록 · 목록 (ORGANIZER/ADMIN)</div>
       </div>
       <UiButton class="h-11 px-5" @click="openCreateModal">+ 공연자 등록</UiButton>

@@ -9,7 +9,7 @@
   <UiCard v-else-if="venue">
     <div class="flex items-start justify-between gap-3">
       <div>
-        <h1 class="text-xl font-bold text-slate-900">공연장 수정</h1>
+        <h1 class="mgmt-page-title">공연장 수정</h1>
         <p class="mt-1 text-sm text-slate-500">{{ venue.name }}</p>
       </div>
       <UiBadge tone="soft">ADMIN</UiBadge>
