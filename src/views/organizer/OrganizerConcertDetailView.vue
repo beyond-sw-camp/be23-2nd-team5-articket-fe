@@ -2,308 +2,392 @@
   <div class="space-y-6">
     <!-- 로딩 중 스켈레톤 -->
     <template v-if="loading">
-      <div class="flex gap-6">
-        <div class="h-64 w-48 shrink-0 animate-pulse rounded-2xl bg-slate-200" />
-        <div class="flex-1 space-y-3">
-          <div class="h-8 w-3/4 animate-pulse rounded bg-slate-200" />
-          <div class="h-5 w-1/4 animate-pulse rounded bg-slate-100" />
-          <div class="h-5 w-1/3 animate-pulse rounded bg-slate-100" />
+      <div class="h-8 w-48 animate-pulse rounded bg-slate-200" />
+      <div class="grid gap-6 lg:grid-cols-3">
+        <div class="lg:col-span-2 space-y-6">
+          <div class="h-64 animate-pulse rounded-2xl bg-slate-100" />
+          <div class="h-40 animate-pulse rounded-2xl bg-slate-100" />
         </div>
-      </div>
-      <div class="grid gap-3 sm:grid-cols-4">
-        <div v-for="i in 4" :key="i" class="h-20 animate-pulse rounded-xl bg-slate-100" />
+        <div class="h-96 animate-pulse rounded-2xl bg-slate-100" />
       </div>
     </template>
 
-    <!-- 공연 데이터가 정상적으로 있는 경우 -->
     <template v-else-if="item">
-      <div class="flex items-center justify-between">
-        <UiButton variant="ghost" class="-ml-2 h-9 px-2 text-sm text-slate-600" @click="$router.push('/organizer/concerts')">
-          <ChevronLeft class="mr-0.5 h-5 w-5" />
-          공연 목록
-        </UiButton>
-        <UiButton class="h-9 px-4" @click="$router.push(`/organizer/concerts/${item.id}/edit`)">
-          <Pencil class="mr-1.5 h-4 w-4" />
-          수정
-        </UiButton>
-      </div>
-
-      <!-- 공연 기본 정보 -->
-      <div class="flex flex-col gap-6 sm:flex-row">
-        <div class="shrink-0">
-          <div class="relative overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 shadow-sm">
-            <img
-              v-if="item.thumImgUrl"
-              :src="item.thumImgUrl"
-              :alt="item.title"
-              class="aspect-[3/4] w-full min-w-[200px] max-w-[240px] object-cover sm:w-56"
-              @error="onThumbError"
-            />
-            <div v-else class="flex aspect-[3/4] min-w-[200px] max-w-[240px] items-center justify-center bg-slate-100 sm:w-56">
-              <Ticket class="h-16 w-16 text-slate-300" />
-            </div>
-            <div class="absolute left-3 top-3">
-              <UiBadge :tone="statusTone(item.status)" :color="statusColor(item.status)">
-                {{ statusLabel(item.status) }}
-              </UiBadge>
-            </div>
+      <!-- 상단 헤더 & 핵심 액션 -->
+      <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <UiButton variant="ghost" class="-ml-2 h-8 px-2 text-xs text-slate-500" @click="$router.push('/organizer/concerts')">
+            <ChevronLeft class="mr-1 h-4 w-4" /> 목록으로 돌아가기
+          </UiButton>
+          <div class="mt-1 flex items-center gap-3">
+            <h1 class="text-2xl font-bold text-slate-900">{{ item.title }}</h1>
+            <UiBadge :tone="statusTone(item.status)" :color="statusColor(item.status)">
+              {{ statusLabel(item.status) }}
+            </UiBadge>
           </div>
         </div>
-
-        <div class="min-w-0 flex-1">
-          <h1 class="text-xl font-bold text-slate-900 sm:text-2xl">{{ item.title }}</h1>
-          <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-500">
-            <span v-if="item.venue?.name" class="flex items-center gap-1">
-              <MapPin class="h-4 w-4 text-slate-400" />
-              {{ item.venue.name }}
-            </span>
-            <span v-if="item.category">{{ categoryLabel(item.category) }}</span>
-            <span v-if="(item.ageLimit ?? item.age_limit) != null">{{ ageLabel(item.ageLimit ?? item.age_limit) }}</span>
-          </div>
-          <div v-if="item.priceRange" class="mt-2 text-sm font-medium text-slate-700">
-            {{ item.priceRange }}
-          </div>
-        </div>
-      </div>
-
-      <!-- 상세 이미지 (추가) -->
-      <UiCard v-if="item.detailImgUrls && item.detailImgUrls.length > 0">
-        <h2 class="text-base font-semibold text-slate-900">상세 설명 이미지</h2>
-        <p class="mt-0.5 text-xs text-slate-500">사용자 앱의 공연 정보 탭에 노출되는 이미지입니다.</p>
-        <div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <div
-            v-for="(url, idx) in item.detailImgUrls"
-            :key="idx"
-            class="overflow-hidden rounded-xl border border-slate-100 bg-slate-50"
-          >
-            <img :src="url" class="aspect-video w-full object-cover" alt="상세 이미지" />
-          </div>
-        </div>
-      </UiCard>
-
-      <!-- 액션 카드 -->
-      <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <button
-          type="button"
-          class="flex items-center gap-4 rounded-xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:border-red-200 hover:bg-red-50/50 hover:shadow"
-          @click="$router.push(`/organizer/concerts/${item.id}/policies`)"
-        >
-          <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-100">
-            <Settings class="h-5 w-5 text-slate-600" />
-          </div>
-          <div>
-            <div class="text-sm font-semibold text-slate-900">정책 설정</div>
-            <div class="text-xs text-slate-500">가격·취소 정책 관리</div>
-          </div>
-          <ChevronRight class="ml-auto h-5 w-5 shrink-0 text-slate-400" />
-        </button>
-
-        <button
-          type="button"
-          class="flex items-center gap-4 rounded-xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:border-red-200 hover:bg-red-50/50 hover:shadow"
-          @click="$router.push(`/organizer/concerts/${item.id}/schedules`)"
-        >
-          <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-100">
-            <CalendarDays class="h-5 w-5 text-slate-600" />
-          </div>
-          <div>
-            <div class="text-sm font-semibold text-slate-900">회차 관리</div>
-            <div class="text-xs text-slate-500">공연 일정·좌석 등록</div>
-          </div>
-          <ChevronRight class="ml-auto h-5 w-5 shrink-0 text-slate-400" />
-        </button>
-
-        <!-- 추가된 좌석맵 보기 액션 -->
-        <button
-          type="button"
-          class="flex items-center gap-4 rounded-xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:border-red-200 hover:bg-red-50/50 hover:shadow"
-          @click="openSeatMapPreview"
-        >
-          <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-100">
-            <Ticket class="h-5 w-5 text-slate-600" />
-          </div>
-          <div>
-            <div class="text-sm font-semibold text-slate-900">좌석맵 보기</div>
-            <div class="text-xs text-slate-500">현재 공연에 연결된 좌석맵 확인</div>
-          </div>
-          <ChevronRight class="ml-auto h-5 w-5 shrink-0 text-slate-400" />
-        </button>
-
-        <button
-          type="button"
-          class="flex items-center gap-4 rounded-xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:border-red-200 hover:bg-red-50/50 hover:shadow"
-          @click="$router.push(`/organizer/concerts/${item.id}/performers`)"
-        >
-          <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-100">
-            <Users class="h-5 w-5 text-slate-600" />
-          </div>
-          <div>
-            <div class="text-sm font-semibold text-slate-900">메인 캐스트</div>
-            <div class="text-xs text-slate-500">공연 레벨 출연진 관리</div>
-          </div>
-          <ChevronRight class="ml-auto h-5 w-5 shrink-0 text-slate-400" />
-        </button>
-
-        <button
-          v-if="item.status === 'DRAFT'"
-          type="button"
-          class="flex items-center gap-4 rounded-xl border-2 border-red-200 bg-red-50/50 p-4 text-left shadow-sm transition hover:bg-red-50 hover:shadow"
-          @click="$router.push(`/organizer/concerts/${item.id}/publish`)"
-        >
-          <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-red-100">
-            <Send class="h-5 w-5 text-red-600" />
-          </div>
-          <div>
-            <div class="text-sm font-semibold text-red-800">게시하기</div>
-            <div class="text-xs text-red-600/80">사용자에게 공개</div>
-          </div>
-          <ChevronRight class="ml-auto h-5 w-5 shrink-0 text-red-400" />
-        </button>
-
-        <button
-          v-if="item.status === 'PUBLISHED'"
-          type="button"
-          class="flex items-center gap-4 rounded-xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:border-red-200 hover:bg-red-50/50 hover:shadow"
-          @click="$router.push(`/organizer/concerts/${item.id}/orders`)"
-        >
-          <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-100">
-            <Receipt class="h-5 w-5 text-slate-600" />
-          </div>
-          <div>
-            <div class="text-sm font-semibold text-slate-900">주문 현황</div>
-            <div class="text-xs text-slate-500">예매·결제 내역</div>
-          </div>
-          <ChevronRight class="ml-auto h-5 w-5 shrink-0 text-slate-400" />
-        </button>
-      </div>
-
-      <!-- 좌석 통계 -->
-      <UiCard v-if="stats" class="overflow-hidden">
-        <div class="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h2 class="text-base font-semibold text-slate-900">좌석 현황</h2>
-            <p class="mt-0.5 text-xs text-slate-500">예매 진행 상황</p>
-          </div>
-          <UiButton v-if="item.status === 'PUBLISHED'" variant="ghost" class="h-8 px-3 text-xs" @click="$router.push(`/organizer/concerts/${item.id}/orders`)">
-            주문 상세
-            <ChevronRight class="ml-1 h-4 w-4" />
+        <div class="flex items-center gap-2">
+          <UiButton variant="ghost" class="h-10 border border-slate-200 bg-white px-4 text-slate-600" @click="$router.push(`/organizer/concerts/${item.id}/policies`)">
+            <Settings class="mr-2 h-4 w-4 text-slate-500" /> 정책 설정
+          </UiButton>
+          <UiButton variant="ghost" class="h-10 border border-slate-200 bg-white px-4 text-slate-600" @click="$router.push(`/organizer/concerts/${item.id}/performers`)">
+            <Users class="mr-2 h-4 w-4 text-slate-500" /> 메인 캐스트
+          </UiButton>
+          <UiButton variant="ghost" class="h-10 border border-slate-200 bg-white px-4 text-slate-600" @click="$router.push(`/organizer/concerts/${item.id}/edit`)">
+            <Pencil class="mr-2 h-4 w-4 text-slate-500" /> 정보 수정
+          </UiButton>
+          <UiButton v-if="item.status === 'DRAFT'" color="red" class="h-10 px-6 shadow-lg shadow-red-100" @click="$router.push(`/organizer/concerts/${item.id}/publish`)">
+            <Send class="mr-2 h-4 w-4" /> 공연 게시하기
           </UiButton>
         </div>
+      </div>
 
-        <div v-if="(stats.totalSeats ?? 0) > 0" class="mt-4">
-          <div class="mb-2 flex justify-between text-sm">
-            <span class="text-slate-600">점유율</span>
-            <span class="font-semibold text-slate-900">{{ occupancyDisplay }}</span>
-          </div>
-          <div class="h-2 w-full overflow-hidden rounded-full bg-slate-100">
-            <div
-              class="h-full rounded-full bg-red-500 transition-all"
-              :style="{ width: `${Math.min(100, (stats.occupancyRate ?? 0) || 0)}%` }"
-            />
-          </div>
-        </div>
+      <!-- 메인 관리 대시보드 레이아웃 -->
+      <div class="grid gap-6 lg:grid-cols-3">
+        
+        <!-- 왼쪽 컬럼: 회차 관리 & 이미지 -->
+        <div class="lg:col-span-2 space-y-6">
+          
+          <!-- 회차 관리 섹션 (기존 회차 페이지 데이터 완전 통합) -->
+          <UiCard class="border-slate-200 shadow-sm">
+            <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
+              <div>
+                <h2 class="text-base font-bold text-slate-900">공연 회차 관리</h2>
+                <p class="text-xs text-slate-500">회차별 예매 기간, 판매 현황 및 출연진을 관리합니다.</p>
+              </div>
+              <UiButton variant="solid" color="red" class="h-9 px-4 text-xs font-bold shadow-sm" @click="openCreateModal">
+                + 새 회차 등록
+              </UiButton>
+            </div>
 
-        <div class="mt-5 grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
-          <div class="rounded-xl bg-slate-50 p-3">
-            <div class="text-xs font-medium text-slate-500">총 좌석</div>
-            <div class="mt-1 text-lg font-bold text-slate-900">{{ (stats.totalSeats ?? 0).toLocaleString() }}</div>
-          </div>
-          <div class="rounded-xl bg-green-50 p-3">
-            <div class="text-xs font-medium text-slate-600">예매 가능</div>
-            <div class="mt-1 text-lg font-bold text-green-800">{{ (stats.availableSeats ?? 0).toLocaleString() }}</div>
-          </div>
-          <div class="rounded-xl bg-slate-50 p-3">
-            <div class="text-xs font-medium text-slate-500">예약중</div>
-            <div class="mt-1 text-lg font-bold text-slate-900">{{ (stats.reservedSeats ?? 0).toLocaleString() }}</div>
-          </div>
-          <div class="rounded-xl bg-red-50 p-3">
-            <div class="text-xs font-medium text-slate-600">판매 완료</div>
-            <div class="mt-1 text-lg font-bold text-red-800">{{ (stats.soldSeats ?? 0).toLocaleString() }}</div>
-          </div>
-          <div class="rounded-xl bg-slate-50 p-3">
-            <div class="text-xs font-medium text-slate-500">점유율</div>
-            <div class="mt-1 text-lg font-bold text-slate-900">{{ occupancyDisplay }}</div>
-          </div>
-          <div v-if="stats.seatsGenerated != null" class="rounded-xl bg-slate-50 p-3">
-            <div class="text-xs font-medium text-slate-500">좌석 생성</div>
-            <div class="mt-1">
-              <UiBadge :tone="stats.seatsGenerated ? 'solid' : 'soft'" :color="stats.seatsGenerated ? 'green' : 'slate'">
-                {{ stats.seatsGenerated ? '완료' : '대기' }}
-              </UiBadge>
+            <div v-if="schedulesLoading" class="py-12 text-center text-sm text-slate-400">회차 정보를 불러오는 중...</div>
+            <div v-else-if="!schedules.length" class="py-12 text-center text-sm text-slate-400">등록된 회차가 없습니다. 회차를 추가해 주세요.</div>
+            <div v-else class="overflow-hidden">
+              <UiTable :columns="scheduleColumns" :rows="schedules">
+                <!-- 공연 일시 -->
+                <template #cell:playTime="{ row }">
+                  <div class="flex flex-col">
+                    <span class="text-sm font-bold text-slate-800">{{ formatDateTime(row.playTime) }}</span>
+                    <span class="text-[10px] text-slate-400">ID: {{ row.id }}</span>
+                  </div>
+                </template>
+
+                <!-- 예매 기간 (추가됨) -->
+                <template #cell:bookingPeriod="{ row }">
+                  <div class="flex flex-col text-[11px] leading-tight text-slate-500">
+                    <span>시작: {{ formatDateTime(row.bookingStart) }}</span>
+                    <span>종료: {{ formatDateTime(row.bookingEnd) }}</span>
+                  </div>
+                </template>
+
+                <!-- 상태 -->
+                <template #cell:status="{ row }">
+                  <UiBadge :tone="row.status === 'OPEN' || row.status === 'AVAILABLE' ? 'solid' : 'soft'" :color="row.status === 'OPEN' || row.status === 'AVAILABLE' ? 'red' : 'slate'">
+                    {{ row.status }}
+                  </UiBadge>
+                </template>
+
+                <!-- 예매 현황 (상세 수치 포함) -->
+                <template #cell:occupancy="{ row }">
+                  <div class="flex flex-col gap-1.5 min-w-[100px]">
+                    <div class="flex justify-between items-center text-[10px] font-bold">
+                      <span class="text-slate-400">{{ row.occupancy }}%</span>
+                      <span class="text-slate-700">{{ (row.sold || 0).toLocaleString() }} / {{ (row.total || 0).toLocaleString() }}석</span>
+                    </div>
+                    <div class="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+                      <div class="h-full rounded-full bg-red-500 transition-all duration-500" :style="{ width: `${row.occupancy}%` }" />
+                    </div>
+                  </div>
+                </template>
+
+                <!-- 작업 -->
+                <template #cell:actions="{ row }">
+                  <div class="flex items-center gap-1">
+                    <UiButton variant="ghost" class="h-7 px-2 text-[10px] font-bold text-slate-600 hover:bg-slate-100" @click="$router.push(`/organizer/schedules/${row.id}/performers`)">
+                      출연진
+                    </UiButton>
+                    <UiButton variant="ghost" class="h-7 px-2 text-[10px] font-bold text-slate-400" @click="openEditModal(row)">
+                      수정
+                    </UiButton>
+                  </div>
+                </template>
+              </UiTable>
+            </div>
+          </UiCard>
+
+          <!-- 공연 정보 요약 카드 -->
+          <UiCard class="overflow-hidden !p-0 shadow-sm border-slate-200">
+            <div class="flex flex-col sm:flex-row">
+              <div class="relative w-full sm:w-48 shrink-0 bg-slate-100">
+                <img :src="item.thumImgUrl" class="aspect-[3/4] h-full w-full object-cover" @error="onThumbError" />
+              </div>
+              <div class="flex-1 p-5">
+                <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                  <h2 class="font-bold text-slate-900">기본 정보</h2>
+                  <span class="text-[10px] font-medium text-slate-400">ID: {{ item.id }}</span>
+                </div>
+                <div class="mt-4 grid grid-cols-2 gap-x-4 gap-y-5 text-sm">
+                  <div>
+                    <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">공연 장소</p>
+                    <p class="mt-1 font-semibold text-slate-700">{{ item.venue?.name || '-' }}</p>
+                  </div>
+                  <div>
+                    <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">카테고리</p>
+                    <p class="mt-1 font-semibold text-slate-700">{{ categoryLabel(item.category) }}</p>
+                  </div>
+                  <div>
+                    <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">공연 기간</p>
+                    <p class="mt-1 font-semibold text-slate-700 text-xs leading-tight">
+                      {{ formatDate(item.scheduleStartDate) }} ~ {{ formatDate(item.scheduleEndDate) }}
+                    </p>
+                  </div>
+                  <div>
+                    <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">티켓 오픈</p>
+                    <p class="mt-1 font-semibold text-slate-700 text-xs">
+                      {{ formatDateTime(item.ticketingOpenAt) }}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </UiCard>
+
+          <!-- 상세 설명 이미지 -->
+          <div v-if="item.detailImgUrls && item.detailImgUrls.length > 0">
+            <div class="mb-3 flex items-center justify-between px-1">
+              <h2 class="text-sm font-bold text-slate-800">상세 설명 이미지 ({{ item.detailImgUrls.length }})</h2>
+              <p class="text-[10px] text-slate-400">* 사용자 앱 노출 이미지</p>
+            </div>
+            <div class="flex gap-3 overflow-x-auto pb-4 scrollbar-hide">
+              <div v-for="(url, idx) in item.detailImgUrls" :key="idx" 
+                class="h-36 w-56 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-50 shadow-sm transition hover:scale-[1.02] hover:border-red-200"
+              >
+                <img :src="url" class="h-full w-full object-cover" />
+              </div>
             </div>
           </div>
         </div>
-      </UiCard>
 
-      <!-- 좌석맵 미리보기 모달 -->
-      <UiModal
-        :open="seatMapPreviewOpen"
-        title="좌석맵 보기"
-        max-width-class="max-w-6xl"
-        @close="closeSeatMapPreview"
-      >
-        <div v-if="seatMapPreview" class="flex h-[75vh] flex-col">
-          <!-- 썸네일 이미지를 확대/축소/드래그해서 보는 영역 -->
-          <div
-            class="relative w-full flex-1 select-none overflow-hidden rounded-lg bg-slate-50 p-2"
-            :class="isPreviewDragging ? 'cursor-grabbing' : 'cursor-grab'"
-            @wheel.prevent="onPreviewWheel"
-            @mousedown.left="startPreviewDrag"
-            @mousemove="onPreviewDrag"
-            @mouseup="endPreviewDrag"
-            @mouseleave="endPreviewDrag"
-          >
-            <img
-              v-if="seatMapPreview.thumbnailUrl || seatMapPreview.thumbnail_url"
-              :src="seatMapPreview.thumbnailUrl || seatMapPreview.thumbnail_url"
-              :alt="seatMapPreview.name || '좌석맵'"
-              class="block h-full w-full rounded-lg object-contain transition-transform duration-75"
-              :style="{
-                transform: `translate(${previewOffsetX}px, ${previewOffsetY}px) scale(${previewScale})`,
-                transformOrigin: 'center center',
-                willChange: 'transform'
-              }"
-              draggable="false"
-              @dragstart.prevent
-              @error="$event.target.style.display='none'"
-            />
-            <div
-              v-else
-              class="flex h-full w-full items-center justify-center rounded-lg border border-dashed border-slate-300 text-sm text-slate-500"
-            >
-              좌석맵 미리보기가 없습니다.
+        <!-- 오른쪽 컬럼: 판매 통계 & 소셜 지표 -->
+        <div class="space-y-6">
+          
+          <!-- 판매 현황 요약 카드 -->
+          <UiCard class="shadow-xl shadow-slate-200/50 border-slate-200">
+            <div class="flex items-center justify-between">
+              <h2 class="font-bold text-slate-900">전체 판매 지표</h2>
+              <UiButton variant="ghost" class="h-7 px-2 text-[10px] text-slate-500" @click="$router.push(`/organizer/concerts/${item.id}/orders`)">
+                주문 상세 <ChevronRight class="ml-1 h-3 w-3" />
+              </UiButton>
             </div>
-          </div>
 
-          <div class="mt-3 flex items-center justify-between">
-            <p class="text-sm text-slate-600">{{ seatMapPreview.name || `배치 ${seatMapPreview.id}` }}</p>
-            <div class="flex items-center gap-2">
-              <UiButton variant="ghost" class="h-8 px-3 text-xs" @click="zoomOutPreview">-</UiButton>
-              <div class="text-xs text-slate-500">{{ Math.round(previewScale * 100) }}%</div>
-              <UiButton variant="ghost" class="h-8 px-3 text-xs" @click="zoomInPreview">+</UiButton>
-              <UiButton variant="ghost" class="h-8 px-3 text-xs" @click="resetPreviewZoom">100%</UiButton>
+            <div class="mt-6 flex flex-col items-center">
+              <div class="relative flex h-36 w-36 items-center justify-center">
+                <svg class="h-full w-full -rotate-90 transform">
+                  <circle cx="72" cy="72" r="64" stroke="currentColor" stroke-width="12" fill="transparent" class="text-slate-100" />
+                  <circle cx="72" cy="72" r="64" stroke="currentColor" stroke-width="12" fill="transparent" 
+                    class="text-red-500 transition-all duration-1000 ease-out" 
+                    :style="{ strokeDasharray: 402, strokeDashoffset: 402 - (402 * (stats?.occupancyRate || 0)) / 100 }" />
+                </svg>
+                <div class="absolute text-center">
+                  <span class="text-3xl font-black text-slate-900">{{ occupancyDisplay }}</span>
+                  <p class="text-[10px] font-bold text-slate-400">누적 점유율</p>
+                </div>
+              </div>
             </div>
-          </div>
+
+            <div class="mt-8 space-y-2">
+              <div class="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3">
+                <span class="text-xs font-bold text-slate-500">총 좌석</span>
+                <span class="text-sm font-black text-slate-900">{{ (stats?.totalSeats || 0).toLocaleString() }}석</span>
+              </div>
+              <div class="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3">
+                <span class="text-xs font-bold text-slate-500">판매 완료</span>
+                <span class="text-sm font-black">{{ (stats?.soldSeats || 0).toLocaleString() }}석</span>
+              </div>
+              <div class="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3">
+                <span class="text-xs font-bold text-slate-500">예약 중 (Hold)</span>
+                <span class="text-sm font-black">{{ (stats?.reservedSeats || 0).toLocaleString() }}석</span>
+              </div>
+            </div>
+          </UiCard>
+
+          <!-- 소셜 반응 카드 -->
+          <UiCard class="border-slate-200">
+            <h2 class="text-sm font-bold text-slate-800">소셜 반응</h2>
+            <div class="mt-4 grid grid-cols-2 gap-3">
+              <div class="rounded-2xl border border-slate-100 bg-slate-50/50 p-4 text-center">
+                <Heart class="mx-auto mb-1 h-5 w-5 text-red-500 fill-red-50" />
+                <p class="text-lg font-black text-slate-900">{{ (item.likeCount || 0).toLocaleString() }}</p>
+                <p class="text-[10px] font-bold text-slate-400">좋아요</p>
+              </div>
+              <div class="rounded-2xl border border-slate-100 bg-slate-50/50 p-4 text-center">
+                <MessageSquare class="mx-auto mb-1 h-5 w-5 text-amber-500" />
+                <p class="text-lg font-black text-slate-900">{{ (item.reviewCount || 0).toLocaleString() }}</p>
+                <p class="text-[10px] font-bold text-slate-400">리뷰 수</p>
+              </div>
+            </div>
+          </UiCard>
+
+          <!-- 좌석맵 퀵 링크 -->
+          <button @click="openSeatMapPreview" class="w-full overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 text-left transition hover:border-red-300 shadow-sm group">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-600 group-hover:bg-red-50 group-hover:text-red-600">
+                  <Ticket class="h-5 w-5" />
+                </div>
+                <div>
+                  <p class="text-xs font-black text-slate-900 uppercase leading-none">Seat Map</p>
+                  <p class="text-[10px] text-slate-400 mt-1">배치도 미리보기</p>
+                </div>
+              </div>
+              <ChevronRight class="h-5 w-5 text-slate-300 group-hover:text-red-400" />
+            </div>
+          </button>
+
         </div>
-
-        <template #footer>
-          <div class="flex justify-end">
-            <UiButton variant="ghost" @click="closeSeatMapPreview">닫기</UiButton>
-          </div>
-        </template>
-      </UiModal>
+      </div>
     </template>
 
-    <!-- 공연을 못 찾았을 때 -->
     <EmptyState v-else title="공연을 찾을 수 없습니다" description="존재하지 않거나 권한이 없는 공연일 수 있습니다.">
       <UiButton class="mt-3" @click="$router.push('/organizer/concerts')">목록으로</UiButton>
     </EmptyState>
+
+    <!-- 회차 생성 모달 -->
+    <UiModal :open="createScheduleModalOpen" title="회차 생성" @close="closeCreateModal">
+      <form id="schedule-create-form" class="grid gap-4" @submit.prevent="submitCreateSchedule">
+        <div v-if="scheduleFormError" class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {{ scheduleFormError }}
+        </div>
+
+        <div class="flex gap-2 rounded-xl border border-slate-200 bg-slate-50 p-1">
+          <button type="button" :class="['flex-1 rounded-lg py-1.5 text-xs font-semibold transition', !bulkMode ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400']" @click="bulkMode = false">
+            단일 날짜
+          </button>
+          <button type="button" :class="['flex-1 rounded-lg py-1.5 text-xs font-semibold transition', bulkMode ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400']" @click="bulkMode = true">
+            여러 날짜 (일괄 등록)
+          </button>
+        </div>
+
+        <div v-if="!bulkMode">
+          <label class="block text-xs font-semibold text-slate-500">공연 시작 시간 *</label>
+          <input v-model="scheduleForm.playTime" type="datetime-local" class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:ring-1 focus:ring-red-500 outline-none shadow-sm" required />
+        </div>
+
+        <div v-else>
+          <div class="flex items-center justify-between mb-2">
+            <label class="block text-xs font-semibold text-slate-500">공연 날짜 목록 *</label>
+            <button type="button" class="text-xs text-red-500 font-bold hover:underline" @click="addBulkPlayTime">+ 날짜 추가</button>
+          </div>
+          <div class="max-h-48 overflow-y-auto pr-1 space-y-2">
+            <div v-for="(pt, idx) in bulkScheduleForm.playTimes" :key="idx" class="flex items-center gap-2">
+              <input v-model="bulkScheduleForm.playTimes[idx]" type="datetime-local" class="flex-1 rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:ring-1 focus:ring-red-500 outline-none shadow-sm" required />
+              <button v-if="bulkScheduleForm.playTimes.length > 1" type="button" class="text-slate-400 hover:text-red-500 transition-colors" @click="removeBulkPlayTime(idx)">
+                <X class="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-500">예매 오픈 *</label>
+            <input v-model="scheduleForm.bookingStart" type="datetime-local" class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:ring-1 focus:ring-red-500 outline-none shadow-sm" required />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-500">예매 마감 *</label>
+            <input v-model="scheduleForm.bookingEnd" type="datetime-local" class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:ring-1 focus:ring-red-500 outline-none shadow-sm" required />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-500">상태 *</label>
+          <select v-model="scheduleForm.status" class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:ring-1 focus:ring-red-500 outline-none shadow-sm">
+            <option value="DRAFT">DRAFT</option>
+            <option value="READY">READY</option>
+            <option value="OPEN">OPEN</option>
+          </select>
+        </div>
+      </form>
+      <template #footer>
+        <div class="flex justify-end gap-2">
+          <UiButton variant="ghost" @click="closeCreateModal">취소</UiButton>
+          <UiButton as="button" type="submit" form="schedule-create-form" color="red" :disabled="creatingSchedule" class="px-8 font-bold">회차 생성</UiButton>
+        </div>
+      </template>
+    </UiModal>
+
+    <!-- 회차 수정 모달 -->
+    <UiModal :open="editScheduleModalOpen" title="회차 수정" @close="closeEditModal">
+      <form id="schedule-edit-form" class="grid gap-4" @submit.prevent="submitEditSchedule">
+        <div v-if="editScheduleFormError" class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {{ editScheduleFormError }}
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-500">공연 시작 시간 *</label>
+          <input v-model="editScheduleForm.playTime" type="datetime-local" class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:ring-1 focus:ring-red-500 outline-none shadow-sm" required />
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-500">예매 오픈 *</label>
+            <input v-model="editScheduleForm.bookingStart" type="datetime-local" class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:ring-1 focus:ring-red-500 outline-none shadow-sm" required />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-500">예매 마감 *</label>
+            <input v-model="editScheduleForm.bookingEnd" type="datetime-local" class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:ring-1 focus:ring-red-500 outline-none shadow-sm" required />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-500">상태 *</label>
+          <select v-model="editScheduleForm.status" class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:ring-1 focus:ring-red-500 outline-none shadow-sm">
+            <option value="DRAFT">DRAFT</option>
+            <option value="READY">READY</option>
+            <option value="OPEN">OPEN</option>
+          </select>
+        </div>
+      </form>
+      <template #footer>
+        <div class="flex justify-end gap-2">
+          <UiButton variant="ghost" @click="closeEditModal">취소</UiButton>
+          <UiButton as="button" type="submit" form="schedule-edit-form" color="red" :disabled="editingSchedule" class="px-8 font-bold">수정 저장</UiButton>
+        </div>
+      </template>
+    </UiModal>
+
+    <!-- 좌석맵 미리보기 모달 -->
+    <UiModal :open="seatMapPreviewOpen" title="좌석맵 보기" max-width-class="max-w-6xl" @close="closeSeatMapPreview">
+      <div v-if="seatMapPreview" class="flex h-[75vh] flex-col">
+        <div class="relative w-full flex-1 select-none overflow-hidden rounded-lg bg-slate-50 p-2"
+          :class="isPreviewDragging ? 'cursor-grabbing' : 'cursor-grab'"
+          @wheel.prevent="onPreviewWheel" @mousedown.left="startPreviewDrag" @mousemove="onPreviewDrag" @mouseup="endPreviewDrag" @mouseleave="endPreviewDrag"
+        >
+          <img v-if="seatMapPreview.thumbnailUrl || seatMapPreview.thumbnail_url" 
+            :src="seatMapPreview.thumbnailUrl || seatMapPreview.thumbnail_url" class="block h-full w-full rounded-lg object-contain transition-transform duration-75"
+            :style="{ transform: `translate(${previewOffsetX}px, ${previewOffsetY}px) scale(${previewScale})`, transformOrigin: 'center center' }"
+            draggable="false" @dragstart.prevent
+          />
+        </div>
+        <div class="mt-3 flex items-center justify-between px-2">
+          <p class="text-sm font-bold text-slate-600">{{ seatMapPreview.name }}</p>
+          <div class="flex items-center gap-2">
+            <UiButton variant="ghost" class="h-8 px-3 text-xs" @click="resetPreviewZoom">100%</UiButton>
+            <UiButton variant="ghost" class="h-8 px-3 text-xs font-bold text-red-600" @click="closeSeatMapPreview">닫기</UiButton>
+          </div>
+        </div>
+      </div>
+    </UiModal>
   </div>
 </template>
 
 <script>
-import { ChevronLeft, ChevronRight, MapPin, Ticket, Settings, CalendarDays, Send, Receipt, Pencil, Users } from 'lucide-vue-next'
+import { 
+  ChevronLeft, ChevronRight, MapPin, Ticket, Settings, 
+  CalendarDays, Send, Receipt, Pencil, Users, Heart, MessageSquare, X 
+} from 'lucide-vue-next'
 import UiCard from '../../components/common/UiCard.vue'
+import UiTable from '../../components/common/UiTable.vue'
 import UiButton from '../../components/common/UiButton.vue'
 import UiBadge from '../../components/common/UiBadge.vue'
 import EmptyState from '../../components/common/EmptyState.vue'
@@ -315,29 +399,9 @@ import { getCategoryLabel } from '../../lib/constants/concertCategory'
 export default {
   name: 'OrganizerConcertDetailView',
   components: {
-    ChevronLeft,
-    ChevronRight,
-    MapPin,
-    Ticket,
-    Settings,
-    CalendarDays,
-    Send,
-    Receipt,
-    Pencil,
-    Users,
-    UiCard,
-    UiButton,
-    UiBadge,
-    EmptyState,
-    UiModal
-  },
-  computed: {
-    // 점유율 표시 문자열
-    occupancyDisplay() {
-      const rate = this.stats?.occupancyRate
-      if (rate == null || Number.isNaN(rate)) return '-'
-      return `${Number(rate).toFixed(1)}%`
-    }
+    ChevronLeft, ChevronRight, MapPin, Ticket, Settings, 
+    CalendarDays, Send, Receipt, Pencil, Users, Heart, MessageSquare, X,
+    UiCard, UiTable, UiButton, UiBadge, EmptyState, UiModal
   },
   data() {
     return {
@@ -345,18 +409,50 @@ export default {
       item: null,
       stats: null,
       api: null,
-
-      // 좌석맵 미리보기 모달 상태
       seatMapPreviewOpen: false,
       seatMapPreview: null,
-
-      // 이미지 확대/이동 상태
       previewScale: 1,
       previewOffsetX: 0,
       previewOffsetY: 0,
       isPreviewDragging: false,
       previewDragStartX: 0,
-      previewDragStartY: 0
+      previewDragStartY: 0,
+      managementMenus: [
+        { label: '정책 설정', icon: 'Settings', path: (id) => `/organizer/concerts/${id}/policies` },
+        { label: '메인 캐스트', icon: 'Users', path: (id) => `/organizer/concerts/${id}/performers` },
+        { label: '주문 현황', icon: 'Receipt', path: (id) => `/organizer/concerts/${id}/orders` },
+      ],
+
+      // 회차 관리 관련 상태 (기존 회차 페이지 데이터와 100% 매칭)
+      schedules: [],
+      schedulesLoading: false,
+      scheduleColumns: [
+        { key: 'playTime', label: '공연 일시' },
+        { key: 'bookingPeriod', label: '예매 기간' },
+        { key: 'status', label: '상태' },
+        { key: 'occupancy', label: '예매율/판매현황' },
+        { key: 'actions', label: '작업' }
+      ],
+      createScheduleModalOpen: false,
+      creatingSchedule: false,
+      bulkMode: false,
+      scheduleForm: this.getDefaultScheduleForm(),
+      bulkScheduleForm: {
+        playTimes: [this.getDefaultDateTime()]
+      },
+      scheduleFormError: '',
+
+      editScheduleModalOpen: false,
+      editingSchedule: false,
+      editScheduleId: null,
+      editScheduleForm: { playTime: '', bookingStart: '', bookingEnd: '', status: 'READY' },
+      editScheduleFormError: ''
+    }
+  },
+  computed: {
+    occupancyDisplay() {
+      const rate = this.stats?.occupancyRate
+      return (rate == null || Number.isNaN(rate)) ? '0%' : `${Number(rate).toFixed(1)}%`
     }
   },
   created() {
@@ -365,138 +461,189 @@ export default {
   mounted() {
     this.load()
   },
-  beforeUnmount() {
-    this.isPreviewDragging = false
-  },
   methods: {
-    statusLabel(s) {
-      const m = {
-        DRAFT: '초안',
-        PUBLISHED: '게시',
-        ENDED: '종료',
-        AVAILABLE: 'AVAILABLE'
+    getDefaultDateTime() {
+      const d = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+      d.setMinutes(d.getMinutes() - d.getTimezoneOffset())
+      return d.toISOString().slice(0, 16)
+    },
+    getDefaultScheduleForm() {
+      const now = new Date()
+      const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
+      const bookingEnd = new Date(nextWeek.getTime() - 24 * 60 * 60 * 1000)
+      const fmtIso = (date) => {
+        const d = new Date(date)
+        d.setMinutes(d.getMinutes() - d.getTimezoneOffset())
+        return d.toISOString().slice(0, 16)
       }
+      return {
+        playTime: fmtIso(nextWeek),
+        bookingStart: fmtIso(now),
+        bookingEnd: fmtIso(bookingEnd),
+        status: 'READY'
+      }
+    },
+    statusLabel(s) {
+      const m = { DRAFT: '초안', PUBLISHED: '게시중', AVAILABLE: '예매가능', UPCOMING: '오픈대기', ENDED: '종료' }
       return m[s] ?? s ?? '-'
     },
-    statusTone(s) {
-      return s === 'PUBLISHED' ? 'solid' : 'soft'
+    statusTone(s) { return (s === 'PUBLISHED' || s === 'AVAILABLE') ? 'solid' : 'soft' },
+    statusColor(s) { return (s === 'PUBLISHED' || s === 'AVAILABLE') ? 'red' : 'slate' },
+    categoryLabel(cat) { return getCategoryLabel(cat) },
+    formatDate(d) {
+      if (!d) return '-'
+      const date = new Date(d)
+      return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}`
     },
-    statusColor(s) {
-      if (s === 'PUBLISHED') return 'red'
-      if (s === 'ENDED') return 'slate'
-      return 'amber'
+    formatDateTime(d) {
+      if (!d) return '-'
+      const date = new Date(d)
+      return `${this.formatDate(d)} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
     },
-    categoryLabel(cat) {
-      return getCategoryLabel(cat)
-    },
-    ageLabel(age) {
-      if (age == null || age === '') return ''
-      if (age === 0) return '전체관람가'
-      return `${age}세 이상`
-    },
-    onThumbError(e) {
-      e.target.style.display = 'none'
-    },
-
-    // 공연 상세와 좌석 통계를 같이 조회
+    onThumbError(e) { e.target.style.display = 'none' },
+    
     async load() {
       const concertId = this.$route.params.concertId
-      if (concertId == null || concertId === '') {
-        this.loading = false
-        return
-      }
-
+      if (!concertId) return
       this.loading = true
+      this.schedulesLoading = true
       try {
-        const [detail, statsRes] = await Promise.all([
+        const [detail, statsRes, schedulesRes] = await Promise.all([
           this.api.get(ENDPOINTS.concert(concertId)),
-          this.api.get(ENDPOINTS.organizerConcertStats(concertId)).catch(() => null)
+          this.api.get(ENDPOINTS.organizerConcertStats(concertId)).catch(() => null),
+          this.api.get(`${ENDPOINTS.concertSchedules(concertId)}?page=0&size=50&sort=playTime,asc`)
         ])
         this.item = detail
         this.stats = statsRes
+        const rawSchedules = schedulesRes.content ?? schedulesRes.items ?? []
+        this.schedules = rawSchedules.map(s => ({
+          ...s,
+          playTime: s.playTime ?? s.play_time,
+          bookingStart: s.bookingStart ?? s.booking_start,
+          bookingEnd: s.bookingEnd ?? s.booking_end,
+          occupancy: s.occupancyRate ?? s.occupancy ?? 0,
+          sold: s.soldSeats ?? s.sold ?? 0,
+          total: s.totalSeats ?? s.total ?? 0
+        }))
       } catch (err) {
         this.item = null
       } finally {
         this.loading = false
+        this.schedulesLoading = false
       }
     },
 
-    // 공연에 연결된 seatMapId / venueId로 좌석맵 목록을 찾아 미리보기 데이터 확보
+    openCreateModal() {
+      this.scheduleForm = this.getDefaultScheduleForm()
+      this.bulkScheduleForm.playTimes = [this.getDefaultDateTime()]
+      this.bulkMode = false
+      this.scheduleFormError = ''
+      this.createScheduleModalOpen = true
+    },
+    closeCreateModal() { this.createScheduleModalOpen = false },
+    addBulkPlayTime() {
+      const last = this.bulkScheduleForm.playTimes.at(-1)
+      const next = new Date(new Date(last).getTime() + 24 * 60 * 60 * 1000)
+      const d = new Date(next)
+      d.setMinutes(d.getMinutes() - d.getTimezoneOffset())
+      this.bulkScheduleForm.playTimes.push(d.toISOString().slice(0, 16))
+    },
+    removeBulkPlayTime(idx) { this.bulkScheduleForm.playTimes.splice(idx, 1) },
+    openEditModal(row) {
+      this.editScheduleId = row.id
+      const fmtLocal = (val) => {
+        if (!val) return ''
+        const d = new Date(val)
+        d.setMinutes(d.getMinutes() - d.getTimezoneOffset())
+        return d.toISOString().slice(0, 16)
+      }
+      this.editScheduleForm = {
+        playTime: fmtLocal(row.playTime),
+        bookingStart: fmtLocal(row.bookingStart),
+        bookingEnd: fmtLocal(row.bookingEnd),
+        status: row.status ?? 'READY'
+      }
+      this.editScheduleFormError = ''
+      this.editScheduleModalOpen = true
+    },
+    closeEditModal() { this.editScheduleModalOpen = false },
+    async submitEditSchedule() {
+      this.editingSchedule = true
+      this.editScheduleFormError = ''
+      try {
+        await this.api.put(ENDPOINTS.organizerUpdateSchedule(this.editScheduleId), {
+          playTime: this.editScheduleForm.playTime,
+          bookingStart: this.editScheduleForm.bookingStart,
+          bookingEnd: this.editScheduleForm.bookingEnd,
+          status: this.editScheduleForm.status
+        })
+        this.closeEditModal()
+        await this.load()
+      } catch (err) {
+        this.editScheduleFormError = '회차 수정 중 오류가 발생했습니다.'
+      } finally {
+        this.editingSchedule = false
+      }
+    },
+    async submitCreateSchedule() {
+      const concertId = this.$route.params.concertId
+      this.creatingSchedule = true
+      this.scheduleFormError = ''
+      try {
+        if (this.bulkMode) {
+          await this.api.post(ENDPOINTS.organizerBulkCreateSchedules(concertId), {
+            playTimes: this.bulkScheduleForm.playTimes,
+            bookingStart: this.scheduleForm.bookingStart,
+            bookingEnd: this.scheduleForm.bookingEnd,
+            status: this.scheduleForm.status
+          })
+        } else {
+          await this.api.post(ENDPOINTS.organizerCreateSchedule(concertId), {
+            playTime: this.scheduleForm.playTime,
+            bookingStart: this.scheduleForm.bookingStart,
+            bookingEnd: this.scheduleForm.bookingEnd,
+            status: this.scheduleForm.status
+          })
+        }
+        this.closeCreateModal()
+        await this.load()
+      } catch (err) {
+        this.scheduleFormError = '회차 생성 중 오류가 발생했습니다.'
+      } finally {
+        this.creatingSchedule = false
+      }
+    },
     async openSeatMapPreview() {
       if (!this.item) return
-
-      const seatMapId =
-        this.item.seatMapId ??
-        this.item.seat_map_id ??
-        this.item.concertSeatMapResDto?.id ??
-        null
-
-      const venueId =
-        this.item.venue?.id ??
-        this.item.venueId ??
-        this.item.venue_id ??
-        null
-
+      const seatMapId = this.item.seatMapId ?? this.item.concertSeatMapResDto?.id
+      const venueId = this.item.venue?.id
       if (!seatMapId || !venueId) return
-
       try {
         const res = await this.api.get(ENDPOINTS.venueSeatMaps(venueId))
-        const seatMaps = Array.isArray(res) ? res : res?.content || res?.items || []
-        this.seatMapPreview =
-          seatMaps.find((sm) => Number(sm.id) === Number(seatMapId)) ?? null
-      } catch (err) {
-        this.seatMapPreview = null
-      }
-
-      // 모달 열 때 확대/이동 상태 초기화
+        const seatMaps = Array.isArray(res) ? res : res?.content || []
+        this.seatMapPreview = seatMaps.find((sm) => Number(sm.id) === Number(seatMapId))
+      } catch (err) { this.seatMapPreview = null }
       this.previewScale = 1
       this.previewOffsetX = 0
       this.previewOffsetY = 0
-      this.isPreviewDragging = false
       this.seatMapPreviewOpen = true
     },
-
-    closeSeatMapPreview() {
-      this.seatMapPreviewOpen = false
-      this.previewScale = 1
-      this.previewOffsetX = 0
-      this.previewOffsetY = 0
-      this.isPreviewDragging = false
-    },
-
-    // 마우스 휠로 확대/축소
+    closeSeatMapPreview() { this.seatMapPreviewOpen = false },
     onPreviewWheel(evt) {
       const delta = evt.deltaY > 0 ? -0.1 : 0.1
       this.previewScale = Math.min(4, Math.max(0.5, +(this.previewScale + delta).toFixed(2)))
     },
-
-    // 드래그 시작
     startPreviewDrag(evt) {
       this.isPreviewDragging = true
       this.previewDragStartX = evt.clientX - this.previewOffsetX
       this.previewDragStartY = evt.clientY - this.previewOffsetY
     },
-
-    // 드래그 중 위치 이동
     onPreviewDrag(evt) {
       if (!this.isPreviewDragging) return
       this.previewOffsetX = evt.clientX - this.previewDragStartX
       this.previewOffsetY = evt.clientY - this.previewDragStartY
     },
-
-    // 드래그 종료
-    endPreviewDrag() {
-      this.isPreviewDragging = false
-    },
-
-    zoomInPreview() {
-      this.previewScale = Math.min(4, +(this.previewScale + 0.1).toFixed(2))
-    },
-
-    zoomOutPreview() {
-      this.previewScale = Math.max(0.5, +(this.previewScale - 0.1).toFixed(2))
-    },
-
+    endPreviewDrag() { this.isPreviewDragging = false },
     resetPreviewZoom() {
       this.previewScale = 1
       this.previewOffsetX = 0
@@ -505,3 +652,8 @@ export default {
   }
 }
 </script>
+
+<style scoped>
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+</style>
