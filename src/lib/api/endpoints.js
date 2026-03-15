@@ -1,4 +1,4 @@
-export const ENDPOINTS = {
+﻿export const ENDPOINTS = {
   // GUEST
   concerts: () => `/concerts`,
   /** 오픈 예정 공연 전용 목록 (예매 오픈 기준 정렬) */
@@ -57,6 +57,7 @@ export const ENDPOINTS = {
   // USER
   me: () => `/users/me`,
   meUpdate: () => `/users/me`,
+  meDelete: () => `/users/me`,
   myGenrePreferences: () => `/users/me/preferences/genres`,
   myRecentActivities: (params = {}) => {
     const p = new URLSearchParams()

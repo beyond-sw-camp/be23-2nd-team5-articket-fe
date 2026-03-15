@@ -45,6 +45,21 @@ export function useMe() {
     }
   }
 
+  async function deleteAccount() {
+    loading.value = true
+    error.value = ''
+    try {
+      const res = await api.del(ENDPOINTS.meDelete())
+      clear()
+      return res?.data != null ? res.data : res
+    } catch (e) {
+      error.value = e.message || '회원 탈퇴에 실패했습니다.'
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
   async function fetchGenrePreferences() {
     try {
       const res = await api.get(ENDPOINTS.myGenrePreferences())
@@ -78,6 +93,7 @@ export function useMe() {
     isOrganizerPending,
     refetch,
     updateProfile,
+    deleteAccount,
     fetchGenrePreferences,
     fetchRecentActivities,
     clear
