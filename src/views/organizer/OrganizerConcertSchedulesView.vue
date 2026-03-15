@@ -555,10 +555,7 @@ export default {
             status: this.form.status
           }
 
-          const formData = new FormData()
-          formData.append('schedule', new Blob([JSON.stringify(schedulePayload)], { type: 'application/json' }))
-
-          await this.api.post(ENDPOINTS.organizerCreateSchedule(concertId), formData)
+          await this.api.post(ENDPOINTS.organizerCreateSchedule(concertId), schedulePayload)
         }
 
         this.closeCreateModal()

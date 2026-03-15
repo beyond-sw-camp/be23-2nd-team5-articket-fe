@@ -136,7 +136,18 @@
         <div v-show="activeTab === 'info'" class="space-y-6">
           <div v-if="item.description" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <h3 class="mb-3 text-sm font-semibold text-slate-900">공연 소개</h3>
-            <div class="text-sm leading-relaxed text-slate-700">{{ item.description }}</div>
+            <div class="text-sm leading-relaxed text-slate-700 whitespace-pre-wrap">{{ item.description }}</div>
+          </div>
+          <!-- 상세 이미지 리스트 -->
+          <div v-if="item.detailImgUrls && item.detailImgUrls.length > 0" class="space-y-4">
+            <img
+              v-for="(url, idx) in item.detailImgUrls"
+              :key="idx"
+              :src="url"
+              class="w-full rounded-2xl border border-slate-100 shadow-sm"
+              alt="상세 이미지"
+              @error="$event.target.style.display='none'"
+            />
           </div>
           <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <h3 class="mb-3 text-sm font-semibold text-slate-900">공연시간 정보</h3>
@@ -624,7 +635,8 @@ export default {
           venue: concert.venue ?? { id: null, name: '공연장', address: '' },
           ageLimit: concert.ageLimit ?? concert.age_limit ?? null,
           status: concert.status ?? null,
-          ticketingOpenAt: concert.ticketingOpenAt ?? concert.ticketing_open_at ?? null
+          ticketingOpenAt: concert.ticketingOpenAt ?? concert.ticketing_open_at ?? null,
+          detailImgUrls: concert.detailImgUrls ?? []
         }
         await Promise.allSettled([
           this.loadStats(concertId),
