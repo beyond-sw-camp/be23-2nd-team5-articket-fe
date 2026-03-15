@@ -1,36 +1,62 @@
 <template>
-  <div class="grid gap-6">
-    <div class="flex items-end justify-between gap-3">
+  <div class="grid gap-5">
+
+    <!-- ── 헤더 ── -->
+    <div class="flex items-end justify-between">
       <div>
         <div class="text-sm font-semibold text-slate-900">ADMIN 운영 대시보드</div>
-        <div class="mt-1 text-sm text-slate-500">플랫폼 자산/보안/차단/감사 로그 요약</div>
+        <div class="mt-0.5 text-xs text-slate-400">{{ currentDateDisplay }}</div>
       </div>
       <UiBadge tone="soft">ADMIN</UiBadge>
     </div>
 
-    <!-- StatCards + 회원가입 추이 차트 (나란히) -->
-    <div class="grid gap-3 lg:grid-cols-5 items-stretch">
-      <!-- StatCards: 왼쪽 -->
-      <div class="lg:col-span-2 flex flex-col gap-2 lg:h-full">
-        <StatCard compact fill label="총 회원수" :value="summaryLoading ? '…' : String(totalUsers)" hint="전체 가입 회원" />
-        <StatCard compact fill label="활성 공연장" :value="summaryLoading ? '…' : String(activeVenues)" hint="등록된 공연장" />
-        <StatCard
-          compact fill
-          label="주최자 승인 대기"
-          :value="summaryLoading ? '…' : String(pendingCount)"
-          :hint="pendingCount > 0 ? '처리 필요' : '대기 없음'"
-        />
+    <!-- ── KPI 5종 ── -->
+    <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+      <div class="rounded-2xl border border-slate-200 bg-white px-5 py-4">
+        <p class="text-[11px] font-medium text-slate-400">총 가입 회원</p>
+        <p class="mt-1.5 text-3xl font-black text-slate-900">{{ summaryLoading ? '…' : totalUsers.toLocaleString() }}</p>
+        <p class="mt-1 text-[10px] text-slate-300">누적</p>
       </div>
+      <div class="rounded-2xl border border-slate-200 bg-white px-5 py-4">
+        <p class="text-[11px] font-medium text-slate-400">오늘 신규 회원</p>
+        <p class="mt-1.5 text-3xl font-black text-slate-900">{{ chartLoading ? '…' : todayNewUsers }}</p>
+        <p class="mt-1 text-[10px] text-slate-300">오늘 가입</p>
+      </div>
+      <div class="rounded-2xl border border-slate-200 bg-white px-5 py-4">
+        <p class="text-[11px] font-medium text-slate-400">활성 공연</p>
+        <p class="mt-1.5 text-3xl font-black text-slate-900">{{ summaryLoading ? '…' : activeConcertCount }}</p>
+        <p class="mt-1 text-[10px] text-slate-300">예매 가능</p>
+      </div>
+      <div class="rounded-2xl border border-slate-200 bg-white px-5 py-4">
+        <p class="text-[11px] font-medium text-slate-400">활성 공연장</p>
+        <p class="mt-1.5 text-3xl font-black text-slate-900">{{ summaryLoading ? '…' : activeVenues }}</p>
+        <p class="mt-1 text-[10px] text-slate-300">운영 중</p>
+      </div>
+      <div
+        class="cursor-pointer rounded-2xl border bg-white px-5 py-4 transition-colors hover:bg-slate-50"
+        :class="pendingCount > 0 ? 'border-amber-300' : 'border-slate-200'"
+        @click="$router.push('/admin/pending-organizers')"
+      >
+        <p class="text-[11px] font-medium text-slate-400">주최자 승인 대기</p>
+        <p class="mt-1.5 text-3xl font-black" :class="pendingCount > 0 ? 'text-amber-500' : 'text-slate-900'">
+          {{ summaryLoading ? '…' : pendingCount }}
+        </p>
+        <p v-if="pendingCount > 0" class="mt-1 text-[10px] font-semibold text-amber-400">처리 필요 →</p>
+        <p v-else class="mt-1 text-[10px] text-slate-300">대기 없음</p>
+      </div>
+    </div>
 
-      <!-- 회원가입 추이 차트: 오른쪽 -->
-      <div class="lg:col-span-3 overflow-hidden rounded-2xl border border-slate-200 bg-white flex flex-col">
+    <!-- ── 회원가입 추이 + 승인 대기 미리보기 ── -->
+    <div class="grid gap-5 lg:grid-cols-3">
+
+      <!-- 회원가입 추이 차트 -->
+      <div class="lg:col-span-2 overflow-hidden rounded-2xl border border-slate-200 bg-white flex flex-col">
         <div class="flex items-center justify-between border-b border-slate-100 bg-slate-50 px-4 py-3 shrink-0">
           <div class="flex items-center gap-3">
             <span class="text-sm font-semibold text-slate-700">회원가입 추이</span>
             <div class="flex gap-0.5 rounded-lg bg-slate-100 p-0.5">
               <button
-                v-for="opt in chartRoleOptions"
-                :key="opt.value"
+                v-for="opt in chartRoleOptions" :key="opt.value"
                 class="rounded-md px-2.5 py-1 text-xs font-medium transition-colors"
                 :class="chartRole === opt.value ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'"
                 @click="chartRole = opt.value"
@@ -39,12 +65,9 @@
           </div>
           <div class="flex gap-1">
             <button
-              v-for="opt in chartPeriodOptions"
-              :key="opt.value"
+              v-for="opt in chartPeriodOptions" :key="opt.value"
               class="rounded-md px-2.5 py-1 text-xs font-medium transition-colors"
-              :class="chartPeriod === opt.value
-                ? 'bg-red-500 text-white'
-                : 'text-slate-500 hover:bg-slate-100'"
+              :class="chartPeriod === opt.value ? 'bg-red-500 text-white' : 'text-slate-500 hover:bg-slate-100'"
               @click="chartPeriod = opt.value"
             >{{ opt.label }}</button>
           </div>
@@ -52,328 +75,167 @@
         <div v-if="chartLoading" class="flex flex-1 items-center justify-center text-sm text-slate-400">불러오는 중…</div>
         <div v-else class="flex-1 min-h-0 px-2 pt-2 pb-1">
           <svg viewBox="0 0 600 200" class="w-full h-full" style="min-height:170px">
-            <!-- y축 가이드라인 -->
             <g v-for="(tick, i) in chartYTicks" :key="'y'+i">
-              <line
-                :x1="38" :y1="chartY(tick)"
-                :x2="592" :y2="chartY(tick)"
-                stroke="#f1f5f9" stroke-width="1"
-              />
+              <line :x1="38" :y1="chartY(tick)" :x2="592" :y2="chartY(tick)" stroke="#f1f5f9" stroke-width="1" />
               <text :x="34" :y="chartY(tick) + 4" text-anchor="end" font-size="9" fill="#94a3b8">{{ tick }}</text>
             </g>
-            <!-- 막대 -->
             <rect
-              v-for="(p, i) in chartPoints"
-              :key="'bar'+i"
-              :x="p.x - p.barW / 2"
-              :y="p.y"
-              :width="p.barW"
-              :height="chartBottom - p.y"
+              v-for="(p, i) in chartPoints" :key="'bar'+i"
+              :x="p.x - p.barW / 2" :y="p.y"
+              :width="p.barW" :height="chartBottom - p.y"
               :fill="tooltip.i === i ? '#dc2626' : '#ef4444'"
-              opacity="0.85"
-              rx="2"
-              style="cursor:pointer"
+              opacity="0.85" rx="2" style="cursor:pointer"
               @mouseenter="showTooltip(p, i, $event)"
               @mouseleave="tooltip.visible = false"
             />
-            <!-- 툴팁 -->
             <g v-if="tooltip.visible">
-              <rect
-                :x="tooltip.x - 36"
-                :y="tooltip.rectTop"
-                width="72"
-                height="22"
-                rx="4"
-                fill="#1e293b"
-              />
-              <text
-                :x="tooltip.x"
-                :y="tooltip.rectTop + 15"
-                text-anchor="middle"
-                font-size="9"
-                fill="white"
-              >{{ tooltip.label }} · {{ tooltip.count }}명</text>
+              <rect :x="tooltip.x - 36" :y="tooltip.rectTop" width="72" height="22" rx="4" fill="#1e293b" />
+              <text :x="tooltip.x" :y="tooltip.rectTop + 15" text-anchor="middle" font-size="9" fill="white">{{ tooltip.label }} · {{ tooltip.count }}명</text>
             </g>
-            <!-- x축 날짜 레이블 -->
             <g v-for="(p, i) in chartPoints" :key="'lx'+i">
-              <text
-                v-if="i % chartLabelStep === 0"
-                :x="p.x" :y="195"
-                text-anchor="middle"
-                font-size="9"
-                fill="#94a3b8"
-              >{{ p.label }}</text>
+              <text v-if="i % chartLabelStep === 0" :x="p.x" :y="195" text-anchor="middle" font-size="9" fill="#94a3b8">{{ p.label }}</text>
             </g>
           </svg>
         </div>
       </div>
+
+      <!-- 주최자 승인 대기 미리보기 -->
+      <div class="flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white">
+        <div class="flex items-center justify-between border-b border-slate-100 bg-slate-50 px-4 py-3 shrink-0">
+          <div class="flex items-center gap-2">
+            <span class="text-sm font-semibold text-slate-700">승인 대기</span>
+            <span v-if="pendingCount > 0"
+              class="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-600">
+              {{ pendingCount }}
+            </span>
+          </div>
+          <button
+            class="text-xs font-medium text-slate-400 transition-colors hover:text-slate-700"
+            @click="$router.push('/admin/pending-organizers')"
+          >전체 보기 →</button>
+        </div>
+
+        <div v-if="summaryLoading" class="flex flex-1 items-center justify-center py-10 text-sm text-slate-400">
+          불러오는 중…
+        </div>
+        <div v-else-if="pendingItems.length === 0"
+          class="flex flex-1 flex-col items-center justify-center gap-2 py-10 text-center">
+          <div class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <p class="text-xs text-slate-400">대기 중인 신청이 없습니다</p>
+        </div>
+        <div v-else class="flex flex-col divide-y divide-slate-50">
+          <div
+            v-for="item in pendingItems" :key="item.id"
+            class="flex items-center justify-between gap-3 px-4 py-3"
+          >
+            <div class="min-w-0">
+              <p class="truncate text-sm font-medium text-slate-800">
+                {{ item.name || item.username || item.email || '-' }}
+              </p>
+              <p class="truncate text-[11px] text-slate-400">{{ item.email || '' }}</p>
+              <p class="mt-0.5 text-[10px] text-slate-300">{{ formatRelativeTime(item.requestedAt || item.createdAt) }}</p>
+            </div>
+            <div class="flex shrink-0 flex-col gap-1">
+              <button
+                class="rounded-lg bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-600 transition-colors hover:bg-emerald-100 disabled:opacity-40"
+                :disabled="!!item._loading"
+                @click="approveOrganizer(item)"
+              >{{ item._loading === 'approve' ? '…' : '승인' }}</button>
+              <button
+                class="rounded-lg bg-slate-100 px-3 py-1 text-[11px] font-semibold text-slate-500 transition-colors hover:bg-slate-200 disabled:opacity-40"
+                :disabled="!!item._loading"
+                @click="rejectOrganizer(item)"
+              >{{ item._loading === 'reject' ? '…' : '거절' }}</button>
+            </div>
+          </div>
+          <div v-if="pendingCount > pendingItems.length"
+            class="px-4 py-2.5 text-center text-[11px] text-slate-400">
+            외 {{ pendingCount - pendingItems.length }}건 더 있음
+          </div>
+        </div>
+      </div>
     </div>
 
+    <!-- ── 빠른 이동 카드 2종 ── -->
+    <div class="grid gap-4 sm:grid-cols-2">
 
-    <!-- 좌석맵 (탭) -->
-    <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-      <!-- 헤더 -->
-      <div class="flex items-center justify-between border-b border-slate-100 bg-slate-50 px-4 py-3">
-        <span class="text-sm font-semibold text-slate-700">공연장 - 좌석맵</span>
-        <span v-if="seatMapLoading" class="text-xs text-slate-400">불러오는 중…</span>
-        <span v-else class="text-xs text-slate-400">총 {{ allSeatMaps.length }}개</span>
+      <!-- 공연장 인사이트 -->
+      <div
+        class="flex cursor-pointer items-center justify-between rounded-2xl border border-slate-200 bg-white px-5 py-4 transition-colors hover:bg-slate-50"
+        @click="$router.push('/admin/venue-insights')"
+      >
+        <div class="flex items-center gap-4">
+          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+            </svg>
+          </div>
+          <div>
+            <p class="text-sm font-semibold text-slate-900">공연장 · 좌석맵 인사이트</p>
+            <p class="mt-0.5 text-xs text-slate-400">
+              {{ summaryLoading ? '…' : activeVenues }}개 공연장 · 월별 점유율 및 공연 일정 분석
+            </p>
+          </div>
+        </div>
+        <div class="flex shrink-0 items-center gap-1.5">
+          <span class="rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-600">인사이트</span>
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        </div>
       </div>
 
-      <div v-if="seatMapLoading" class="p-6 text-center text-sm text-slate-400">불러오는 중…</div>
-      <div v-else-if="venueGroups.length === 0" class="p-6 text-center text-sm text-slate-400">등록된 공연장이 없습니다.</div>
-
-      <template v-else>
-        <!-- 탭 -->
-        <div class="flex gap-1 overflow-x-auto border-b border-slate-100 px-4 pt-3 pb-0">
-          <button
-            v-for="group in venueGroups"
-            :key="group.venueId"
-            class="shrink-0 rounded-t-lg px-4 py-2 text-xs font-medium transition-colors"
-            :class="selectedVenueId === group.venueId
-              ? 'border-b-2 border-red-500 text-red-600 bg-white'
-              : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'"
-            @click="selectedVenueId = group.venueId; selectedSeatMapDetail = null; detailConcerts = []"
-          >
-            {{ group.venueName }}
-            <span class="ml-1 rounded-full bg-slate-200 px-1.5 py-0.5 text-slate-500">{{ group.seatMaps.length }}</span>
-          </button>
-        </div>
-
-        <!-- 선택된 탭의 좌석맵 그리드 -->
-        <div class="p-4">
-          <div v-if="selectedGroup && selectedGroup.seatMaps.length === 0" class="py-6 text-center text-sm text-slate-400">
-            등록된 좌석맵이 없습니다.
+      <!-- 프로모션 배너 -->
+      <div
+        class="flex cursor-pointer items-center justify-between rounded-2xl border border-slate-200 bg-white px-5 py-4 transition-colors hover:bg-slate-50"
+        @click="$router.push('/admin/promotions')"
+      >
+        <div class="flex items-center gap-4">
+          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+            </svg>
           </div>
-          <div v-else class="grid gap-2 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
-            <div
-              v-for="sm in selectedGroup ? selectedGroup.seatMaps : []"
-              :key="sm.id"
-              class="group overflow-hidden rounded-xl border shadow-sm transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 cursor-pointer"
-              :class="selectedSeatMapDetail && selectedSeatMapDetail.id === sm.id
-                ? 'border-red-400 bg-red-50'
-                : 'border-slate-200 bg-white'"
-              @click="openSeatMapDetail(sm)"
-            >
-              <!-- 썸네일 -->
-              <div class="relative aspect-[5/3] overflow-hidden bg-gradient-to-br from-slate-100 to-slate-200">
-                <img
-                  v-if="sm.thumbnailUrl"
-                  :src="sm.thumbnailUrl"
-                  alt="좌석맵"
-                  class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                />
-                <div v-else class="flex h-full flex-col items-center justify-center gap-1.5">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-9 w-9 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-                  </svg>
-                </div>
-                <span
-                  class="absolute left-2 top-2 rounded-full px-2 py-0.5 text-xs font-semibold shadow-sm"
-                  :class="sm.status === 'PUBLISHED' ? 'bg-green-500 text-white' : sm.status === 'ARCHIVED' ? 'bg-amber-500 text-white' : 'bg-slate-600 text-white'"
-                >{{ sm.status === 'PUBLISHED' ? '게시' : sm.status === 'ARCHIVED' ? '폐기' : '초안' }}</span>
-                <div class="absolute inset-0 flex items-center justify-center bg-slate-900/0 transition-colors duration-200 group-hover:bg-slate-900/20">
-                  <span class="rounded-lg bg-white/90 px-3 py-1 text-xs font-semibold text-slate-800 opacity-0 shadow transition-opacity duration-200 group-hover:opacity-100">
-                    {{ selectedSeatMapDetail && selectedSeatMapDetail.id === sm.id ? '닫기' : '선택' }}
-                  </span>
-                </div>
-              </div>
-              <div class="p-3">
-                <div class="truncate font-semibold text-slate-900 text-sm leading-tight">{{ sm.name || '-' }}</div>
-                <div class="mt-1 flex items-center gap-1.5 text-xs text-slate-400">
-                  <span v-if="sm.size">{{ sm.size.toLocaleString() }}석</span>
-                  <span v-if="sm.size && sm.version" class="text-slate-300">·</span>
-                  <span v-if="sm.version">v{{ sm.version }}</span>
-                  <span v-if="!sm.size && !sm.version">정보 없음</span>
-                </div>
-              </div>
-            </div>
+          <div>
+            <p class="text-sm font-semibold text-slate-900">프로모션 배너 관리</p>
+            <p class="mt-0.5 text-xs text-slate-400">
+              {{ summaryLoading ? '…' : `${promotionCount}개 배너 등록됨 · 홈 히어로 배너 관리` }}
+            </p>
           </div>
         </div>
-
-        <!-- ── 인라인 상세 패널 ── -->
-        <div v-if="selectedSeatMapDetail" class="border-t border-slate-200 bg-white">
-          <!-- 패널 헤더 -->
-          <div class="flex items-center justify-between border-b border-slate-100 bg-slate-50 px-4 py-2.5">
-            <div class="flex items-center gap-2">
-              <span class="font-semibold text-slate-900 text-sm">{{ selectedSeatMapDetail.name || '좌석맵' }}</span>
-              <span
-                class="rounded-full px-2 py-0.5 text-xs font-semibold"
-                :class="selectedSeatMapDetail.status === 'PUBLISHED' ? 'bg-green-100 text-green-700' : selectedSeatMapDetail.status === 'ARCHIVED' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'"
-              >{{ selectedSeatMapDetail.status === 'PUBLISHED' ? '게시' : selectedSeatMapDetail.status === 'ARCHIVED' ? '폐기' : '초안' }}</span>
-              <span v-if="selectedSeatMapDetail.version" class="text-xs text-slate-400">v{{ selectedSeatMapDetail.version }}</span>
-            </div>
-            <button class="h-7 w-7 rounded-lg text-slate-400 hover:bg-slate-200 hover:text-slate-600 transition-colors text-sm" @click="selectedSeatMapDetail = null; detailConcerts = []; detailSchedules = []">✕</button>
-          </div>
-
-          <!-- 로딩 -->
-          <div v-if="detailSeatMapLoading" class="p-8 text-center text-sm text-slate-400">불러오는 중…</div>
-
-          <!-- 본문 -->
-          <div v-else class="p-4 grid gap-4 lg:grid-cols-3">
-
-            <!-- 왼쪽: 배치도 미리보기 + 상태 변경 -->
-            <div class="lg:col-span-1 flex flex-col gap-3">
-              <!-- 배치도 미리보기 -->
-              <div class="overflow-hidden rounded-xl border border-slate-200 bg-white">
-                <div class="flex items-center justify-between border-b border-slate-100 bg-slate-50 px-3 py-1.5">
-                  <span class="text-xs font-semibold text-slate-600">배치도 미리보기</span>
-                  <div class="flex items-center gap-0.5">
-                    <button type="button" class="rounded p-1 text-slate-500 hover:bg-slate-200 text-xs" @click="detailImgScale = Math.max(detailImgScale / 1.25, 0.25)">−</button>
-                    <span class="min-w-10 text-center text-xs text-slate-500">{{ Math.round(detailImgScale * 100) }}%</span>
-                    <button type="button" class="rounded p-1 text-slate-500 hover:bg-slate-200 text-xs" @click="detailImgScale = Math.min(detailImgScale * 1.25, 3)">+</button>
-                    <button type="button" class="rounded p-1 text-xs text-slate-500 hover:bg-slate-200" @click="resetDetailImgView">↺</button>
-                  </div>
-                </div>
-                <div
-                  v-if="selectedSeatMapDetail.thumbnailUrl"
-                  class="relative bg-white overflow-hidden"
-                  :class="detailImgDragging ? 'cursor-grabbing' : 'cursor-grab'"
-                  style="height: 200px"
-                  @wheel.prevent="onDetailImgWheel"
-                  @mousedown.prevent="onDetailImgMouseDown"
-                  @mousemove="onDetailImgMouseMove"
-                  @mouseup="onDetailImgMouseUp"
-                  @mouseleave="onDetailImgMouseUp"
-                >
-                  <img
-                    :src="selectedSeatMapDetail.thumbnailUrl"
-                    alt="배치도"
-                    draggable="false"
-                    class="absolute left-0 top-0 w-full h-full object-contain select-none pointer-events-none"
-                    :style="{
-                      transformOrigin: '0 0',
-                      transform: `translate(${detailImgOffsetX}px, ${detailImgOffsetY}px) scale(${detailImgScale})`
-                    }"
-                  />
-                </div>
-                <div v-else class="flex flex-col items-center justify-center py-10 bg-slate-50">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-slate-300 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="0.8">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-                  </svg>
-                  <span class="text-xs text-slate-400">저장된 배치도가 없습니다</span>
-                </div>
-              </div>
-
-              <!-- 좌석수 -->
-              <div v-if="selectedSeatMapDetail.size" class="text-xs text-slate-500">총 {{ selectedSeatMapDetail.size.toLocaleString() }}석</div>
-
-            </div>
-
-            <!-- 오른쪽: 공연 목록 + 캘린더 -->
-            <div class="lg:col-span-2 grid gap-4 lg:grid-cols-5">
-              <!-- 공연 목록 -->
-              <div class="lg:col-span-3 overflow-hidden rounded-xl border border-slate-200 bg-white">
-                <div class="flex items-center justify-between border-b border-slate-100 bg-slate-50 px-3 py-2">
-                  <span class="text-xs font-semibold text-slate-700">이 좌석맵의 공연</span>
-                  <span v-if="detailConcertsLoading" class="text-xs text-slate-400">불러오는 중…</span>
-                  <span v-else class="text-xs text-slate-400">{{ detailConcerts.length }}건</span>
-                </div>
-                <div v-if="detailConcertsLoading" class="p-4 text-center text-xs text-slate-400">불러오는 중…</div>
-                <div v-else-if="detailConcerts.length === 0" class="p-4 text-center text-xs text-slate-400">등록된 공연이 없습니다.</div>
-                <table v-else class="w-full text-sm">
-                  <thead class="border-b border-slate-100">
-                    <tr>
-                      <th class="px-3 py-2 text-left text-xs font-semibold text-slate-500">공연명</th>
-                      <th class="px-3 py-2 text-center text-xs font-semibold text-slate-500">상태</th>
-                      <th class="px-3 py-2 text-left text-xs font-semibold text-slate-500">기간</th>
-                      <th class="px-3 py-2 text-center text-xs font-semibold text-slate-500">잔여석</th>
-                      <th class="px-3 py-2 text-center text-xs font-semibold text-slate-500">일정</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr
-                      v-for="c in detailConcerts"
-                      :key="c.id"
-                      class="border-b border-slate-100 last:border-0 transition-colors"
-                      :class="detailSelectedConcertId === c.id ? 'bg-red-50' : 'hover:bg-slate-50'"
-                    >
-                      <td class="px-3 py-2">
-                        <div class="font-medium text-slate-900 text-xs">{{ c.title || '-' }}</div>
-                        <div class="text-xs text-slate-400">ID {{ c.id }}</div>
-                      </td>
-                      <td class="px-3 py-2 text-center">
-                        <span
-                          class="rounded-full px-2 py-0.5 text-xs font-semibold"
-                          :class="c.status === 'AVAILABLE' ? 'bg-red-100 text-red-700' : c.status === 'UPCOMING' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'"
-                        >{{ { DRAFT: '초안', UPCOMING: '게시', AVAILABLE: '예매중', CLOSED: '마감' }[c.status] ?? c.status }}</span>
-                      </td>
-                      <td class="px-3 py-2 text-xs text-slate-600">
-                        <template v-if="concertDateRange(c)">
-                          <div>{{ concertDateRange(c).start }}</div>
-                          <div class="text-slate-400">~ {{ concertDateRange(c).end }}</div>
-                        </template>
-                        <span v-else class="text-slate-400">-</span>
-                      </td>
-                      <td class="px-3 py-2 text-center">
-                        <span class="text-xs font-semibold" :class="concertRemainingSeats(c) === 0 ? 'text-red-500' : 'text-emerald-600'">
-                          {{ concertRemainingSeats(c) }}석
-                        </span>
-                      </td>
-                      <td class="px-3 py-2 text-center">
-                        <button
-                          class="h-6 rounded-lg border px-2 text-xs font-medium transition-colors"
-                          :class="detailSelectedConcertId === c.id
-                            ? 'border-red-500 bg-red-500 text-white'
-                            : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'"
-                          @click="selectDetailConcert(c)"
-                        >{{ detailSelectedConcertId === c.id ? '선택됨' : '일정 보기' }}</button>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-
-              <!-- 캘린더 -->
-              <div class="lg:col-span-2">
-                <div class="rounded-xl border border-slate-200 bg-white p-3">
-                  <div class="mb-2 border-b border-slate-100 pb-2">
-                    <div class="text-xs font-semibold text-slate-700">공연 일정</div>
-                    <div class="mt-0.5 text-xs text-slate-400">
-                      <template v-if="detailSelectedConcertId">「{{ detailSelectedConcertTitle }}」</template>
-                      <template v-else>전체 공연 일정</template>
-                    </div>
-                  </div>
-                  <ConcertCalendar
-                    :available-dates="detailAvailableDates"
-                    :schedules-by-date="detailSchedulesByDate"
-                    :admin-mode="true"
-                    @select-schedule="() => {}"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
+        <div class="flex shrink-0 items-center gap-1.5">
+          <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">관리</span>
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
         </div>
-      </template>
+      </div>
     </div>
 
   </div>
 </template>
 
 <script>
-import StatCard from '../../components/common/StatCard.vue'
-import UiCard from '../../components/common/UiCard.vue'
 import UiBadge from '../../components/common/UiBadge.vue'
-import UiButton from '../../components/common/UiButton.vue'
-import ConcertCalendar from '../../components/concert/ConcertCalendar.vue'
 import { useApi } from '../../composables/useApi'
 import { ENDPOINTS } from '../../lib/api/endpoints'
 
 export default {
   name: 'AdminDashboardView',
-  components: { StatCard, UiCard, UiBadge, UiButton, ConcertCalendar },
+  components: { UiBadge },
   data() {
     return {
-      venueGroups: [],
-      selectedVenueId: null,
-      seatMapLoading: false,
       summaryLoading: false,
       totalUsers: 0,
       activeVenues: 0,
+      activeConcertCount: 0,
+      promotionCount: 0,
       pendingCount: 0,
-      blocklistCount: 0,
       pendingItems: [],
-      pendingLoading: false,
       chartLoading: false,
       chartRawUsers: [],
       chartPeriod: 30,
@@ -389,25 +251,23 @@ export default {
         { label: '6개월', value: 180 },
         { label: '1년', value: 365 }
       ],
-      api: null,
-      // 인라인 상세 패널
-      selectedSeatMapDetail: null,
-      detailSeatMapLoading: false,
-      detailImgScale: 1,
-      detailImgOffsetX: 0,
-      detailImgOffsetY: 0,
-      detailImgDragging: false,
-      detailImgDragStart: { x: 0, y: 0 },
-      detailImgDragStartOffset: { x: 0, y: 0 },
-      detailConcerts: [],
-      detailConcertsLoading: false,
-      detailSelectedConcertId: null,
-      detailSelectedConcertTitle: '',
-      detailSchedules: [],
-      detailStatusUpdating: false
+      api: null
     }
   },
   computed: {
+    currentDateDisplay() {
+      const now = new Date()
+      const days = ['일', '월', '화', '수', '목', '금', '토']
+      return `${now.getFullYear()}년 ${now.getMonth() + 1}월 ${now.getDate()}일 (${days[now.getDay()]})`
+    },
+    todayNewUsers() {
+      const today = new Date()
+      const key = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+      return this.chartRawUsers.filter(u => {
+        const raw = u.createdTime ?? u.createdAt ?? u.joinedAt ?? ''
+        return String(raw).slice(0, 10) === key
+      }).length
+    },
     chartDays() {
       const days = []
       const today = new Date()
@@ -434,9 +294,7 @@ export default {
       }
       return this.chartDays.map((d) => map[d] || 0)
     },
-    chartMaxY() {
-      return Math.max(1, ...this.chartCounts)
-    },
+    chartMaxY() { return Math.max(1, ...this.chartCounts) },
     chartYTicks() {
       const max = this.chartMaxY
       if (max <= 4) return [0, 1, 2, max]
@@ -456,125 +314,84 @@ export default {
         label: this.chartPeriod <= 30 ? this.chartDays[i].slice(5) : this.chartDays[i].slice(0, 7)
       }))
     },
-    chartBottom() {
-      return 200 - 28
-    },
-    allSeatMaps() {
-      return this.venueGroups.flatMap((g) =>
-        g.seatMaps.map((sm) => ({ ...sm, venueId: g.venueId, venueName: g.venueName }))
-      )
-    },
-    selectedGroup() {
-      return this.venueGroups.find((g) => g.venueId === this.selectedVenueId) ?? null
-    },
-    detailAvailableDates() {
-      const set = new Set()
-      for (const s of this.detailSchedules) {
-        const raw = s.play_time ?? s.playTime ?? s.startAt ?? s.date ?? ''
-        if (!raw) continue
-        const d = new Date(raw)
-        if (isNaN(d)) continue
-        set.add(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`)
-      }
-      return [...set].sort()
-    },
-    detailSchedulesByDate() {
-      const map = {}
-      for (const s of this.detailSchedules) {
-        const raw = s.play_time ?? s.playTime ?? s.startAt ?? s.date ?? ''
-        if (!raw) continue
-        const d = new Date(raw)
-        if (isNaN(d)) continue
-        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-        if (!map[key]) map[key] = []
-        map[key].push({
-          scheduleId: s.id,
-          playTime: raw.length > 10 ? raw.slice(11, 16) : '',
-          status: s.status
-        })
-      }
-      for (const k of Object.keys(map)) {
-        map[k].sort((a, b) => a.playTime.localeCompare(b.playTime))
-      }
-      return map
-    }
+    chartBottom() { return 200 - 28 },
   },
   created() {
     this.api = useApi()
   },
   mounted() {
-    this.loadSeatMaps()
     this.loadSummary()
-    this.loadPendingOrganizers()
     this.loadUserChart()
   },
   watch: {
-    chartPeriod() {
-      this.loadUserChart()
-    }
+    chartPeriod() { this.loadUserChart() }
   },
   methods: {
     async loadSummary() {
       this.summaryLoading = true
       try {
-        const [usersRes, venuesRes, pendingRes] = await Promise.allSettled([
+        const [usersRes, venuesRes, pendingRes, concertsRes, promotionsRes, pendingItemsRes] = await Promise.allSettled([
           this.api.get(ENDPOINTS.adminUsers({ page: 0, size: 1 })),
           this.api.get(ENDPOINTS.adminVenueList({ page: 0, size: 100 })),
-          this.api.get(ENDPOINTS.adminPendingOrganizers({ page: 0, size: 1 }))
+          this.api.get(ENDPOINTS.adminPendingOrganizers({ page: 0, size: 1 })),
+          this.api.get(ENDPOINTS.searchConcerts({ status: 'AVAILABLE', page: 0, size: 1 })),
+          this.api.get(ENDPOINTS.promotions({ page: 0, size: 1 })),
+          this.api.get(ENDPOINTS.adminPendingOrganizers({ page: 0, size: 5 })),
         ])
-
-        if (usersRes.status === 'fulfilled') {
+        if (usersRes.status === 'fulfilled')
           this.totalUsers = usersRes.value?.totalElements ?? usersRes.value?.total ?? 0
-        }
         if (venuesRes.status === 'fulfilled') {
           const venues = venuesRes.value?.content ?? venuesRes.value?.items ?? (Array.isArray(venuesRes.value) ? venuesRes.value : [])
           this.activeVenues = venues.length
         }
-        if (pendingRes.status === 'fulfilled') {
+        if (pendingRes.status === 'fulfilled')
           this.pendingCount = pendingRes.value?.totalElements ?? pendingRes.value?.total ?? 0
+        if (concertsRes.status === 'fulfilled')
+          this.activeConcertCount = concertsRes.value?.totalElements ?? concertsRes.value?.total ?? 0
+        if (promotionsRes.status === 'fulfilled')
+          this.promotionCount = promotionsRes.value?.totalElements ?? promotionsRes.value?.total ?? 0
+        if (pendingItemsRes.status === 'fulfilled') {
+          const raw = pendingItemsRes.value?.content ?? pendingItemsRes.value?.data ?? (Array.isArray(pendingItemsRes.value) ? pendingItemsRes.value : [])
+          this.pendingItems = Array.isArray(raw) ? raw.map(r => ({ ...r, _loading: null })) : []
         }
       } finally {
         this.summaryLoading = false
       }
     },
 
-    async loadPendingOrganizers() {
-      this.pendingLoading = true
-      try {
-        const res = await this.api.get(ENDPOINTS.adminPendingOrganizers({ page: 0, size: 5 }))
-        const raw = res?.content ?? res?.data ?? []
-        this.pendingItems = Array.isArray(raw)
-          ? raw.map((r) => ({ ...r, _approving: false, _rejecting: false }))
-          : []
-        this.pendingCount = res?.totalElements ?? res?.total ?? this.pendingItems.length
-      } catch {
-        this.pendingItems = []
-      } finally {
-        this.pendingLoading = false
-      }
-    },
-
     async approveOrganizer(item) {
-      item._approving = true
+      item._loading = 'approve'
       try {
         await this.api.post(ENDPOINTS.adminApproveOrganizer(item.id), {})
-        await this.loadPendingOrganizers()
-        await this.loadSummary()
+        this.pendingItems = this.pendingItems.filter(i => i.id !== item.id)
+        this.pendingCount = Math.max(0, this.pendingCount - 1)
       } finally {
-        item._approving = false
+        item._loading = null
       }
     },
 
     async rejectOrganizer(item) {
       if (!window.confirm(`"${item.name ?? item.email}" 주최자 신청을 거절할까요?`)) return
-      item._rejecting = true
+      item._loading = 'reject'
       try {
         await this.api.post(ENDPOINTS.adminRejectOrganizer(item.id), {})
-        await this.loadPendingOrganizers()
-        await this.loadSummary()
+        this.pendingItems = this.pendingItems.filter(i => i.id !== item.id)
+        this.pendingCount = Math.max(0, this.pendingCount - 1)
       } finally {
-        item._rejecting = false
+        item._loading = null
       }
+    },
+
+    formatRelativeTime(dateStr) {
+      if (!dateStr) return ''
+      const diff = Date.now() - new Date(dateStr).getTime()
+      if (isNaN(diff)) return ''
+      const m = Math.floor(diff / 60000)
+      if (m < 1) return '방금 전'
+      if (m < 60) return `${m}분 전`
+      const h = Math.floor(m / 60)
+      if (h < 24) return `${h}시간 전`
+      return `${Math.floor(h / 24)}일 전`
     },
 
     showTooltip(p, i) {
@@ -600,193 +417,6 @@ export default {
         this.chartLoading = false
       }
     },
-
-    // ── 인라인 상세 패널 ──────────────────────────────────────
-    openSeatMapDetail(sm) {
-      if (this.selectedSeatMapDetail?.id === sm.id) {
-        this.selectedSeatMapDetail = null
-        this.detailConcerts = []
-        this.detailSchedules = []
-        return
-      }
-      this.selectedSeatMapDetail = { ...sm, venueId: this.selectedVenueId }
-      this.resetDetailImgView()
-      this.detailSelectedConcertId = null
-      this.detailSelectedConcertTitle = ''
-      this.detailSchedules = []
-      this.loadDetailConcerts(sm.id, this.selectedVenueId)
-    },
-
-    async loadDetailConcerts(seatMapId, venueId) {
-      this.detailConcertsLoading = true
-      this.detailConcerts = []
-      try {
-        const res = await this.api.get(ENDPOINTS.adminVenueConcerts(venueId))
-        const allConcerts = res?.content ?? res?.items ?? (Array.isArray(res) ? res : [])
-
-        // 각 공연의 회차 목록 병렬 조회
-        const scheduleResults = await Promise.allSettled(
-          allConcerts.map(c => this.api.get(ENDPOINTS.concertSchedules(c.id)))
-        )
-        const concertScheduleMap = allConcerts.map((concert, i) => {
-          const r = scheduleResults[i]
-          const schedules = r.status === 'fulfilled'
-            ? (r.value?.content ?? r.value?.items ?? (Array.isArray(r.value) ? r.value : []))
-            : []
-          return { concert, schedules }
-        })
-
-        // 회차별 좌석맵 병렬 조회
-        const allSchedules = concertScheduleMap.flatMap(({ schedules }) => schedules)
-        const seatMapResults = await Promise.allSettled(
-          allSchedules.map(s => this.api.get(ENDPOINTS.seatMap(s.id)))
-        )
-        const seatMapById = {}
-        allSchedules.forEach((s, i) => {
-          const r = seatMapResults[i]
-          if (r.status === 'fulfilled') seatMapById[s.id] = String(r.value?.seatMapId ?? '')
-        })
-
-        // 이 좌석맵을 쓰는 공연만 필터 (matching schedules 포함)
-        const filtered = []
-        for (const { concert, schedules } of concertScheduleMap) {
-          const matching = schedules.filter(s => seatMapById[s.id] === String(seatMapId))
-          if (matching.length > 0) {
-            filtered.push({ ...concert, _schedules: matching })
-          }
-        }
-        this.detailConcerts = filtered
-        // 좌석맵의 전체 공연 일정 바로 표시
-        this.detailSchedules = filtered.flatMap(c => c._schedules ?? [])
-      } catch {
-        this.detailConcerts = []
-      } finally {
-        this.detailConcertsLoading = false
-      }
-    },
-
-    selectDetailConcert(concert) {
-      if (this.detailSelectedConcertId === concert.id) {
-        // 선택 해제 → 전체 일정으로 복원
-        this.detailSelectedConcertId = null
-        this.detailSelectedConcertTitle = ''
-        this.detailSchedules = this.detailConcerts.flatMap(c => c._schedules ?? [])
-        return
-      }
-      this.detailSelectedConcertId = concert.id
-      this.detailSelectedConcertTitle = concert.title || ''
-      this.detailSchedules = concert._schedules ?? []
-    },
-
-    concertDateRange(concert) {
-      const schedules = concert._schedules ?? []
-      if (schedules.length === 0) return null
-      const times = schedules
-        .map(s => new Date(s.playTime ?? s.play_time))
-        .filter(d => !isNaN(d))
-        .sort((a, b) => a - b)
-      if (times.length === 0) return null
-      const fmt = d => `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`
-      return { start: fmt(times[0]), end: fmt(times[times.length - 1]) }
-    },
-
-    concertRemainingSeats(concert) {
-      const schedules = concert._schedules ?? []
-      return schedules.reduce((total, s) => {
-        const avail = s.availabilityByGrade ?? {}
-        return total + Object.values(avail).reduce((sum, v) => sum + (v ?? 0), 0)
-      }, 0)
-    },
-
-    async updateDetailStatus(status) {
-      if (!this.selectedSeatMapDetail || this.selectedSeatMapDetail.status === status) return
-      this.detailStatusUpdating = true
-      try {
-        await this.api.patch(ENDPOINTS.adminUpdateSeatMapStatus(this.selectedSeatMapDetail.id, status))
-        // 카드와 패널 상태 동기화
-        this.selectedSeatMapDetail = { ...this.selectedSeatMapDetail, status }
-        // venueGroups 내 카드도 업데이트
-        for (const group of this.venueGroups) {
-          const sm = group.seatMaps.find(s => s.id === this.selectedSeatMapDetail.id)
-          if (sm) { sm.status = status; break }
-        }
-      } catch {
-        // 에러는 ErrorAlertModal에서 표시
-      } finally {
-        this.detailStatusUpdating = false
-      }
-    },
-
-    // 썸네일 줌/드래그
-    onDetailImgWheel(e) {
-      const delta = e.deltaY < 0 ? 1.25 : 1 / 1.25
-      const rect = e.currentTarget.getBoundingClientRect()
-      const mx = e.clientX - rect.left
-      const my = e.clientY - rect.top
-      const newScale = Math.min(Math.max(this.detailImgScale * delta, 0.25), 3)
-      const actualDelta = newScale / this.detailImgScale
-      this.detailImgOffsetX = mx - (mx - this.detailImgOffsetX) * actualDelta
-      this.detailImgOffsetY = my - (my - this.detailImgOffsetY) * actualDelta
-      this.detailImgScale = newScale
-    },
-    onDetailImgMouseDown(e) {
-      this.detailImgDragging = true
-      this.detailImgDragStart = { x: e.clientX, y: e.clientY }
-      this.detailImgDragStartOffset = { x: this.detailImgOffsetX, y: this.detailImgOffsetY }
-    },
-    onDetailImgMouseMove(e) {
-      if (!this.detailImgDragging) return
-      this.detailImgOffsetX = this.detailImgDragStartOffset.x + (e.clientX - this.detailImgDragStart.x)
-      this.detailImgOffsetY = this.detailImgDragStartOffset.y + (e.clientY - this.detailImgDragStart.y)
-    },
-    onDetailImgMouseUp() {
-      this.detailImgDragging = false
-    },
-    resetDetailImgView() {
-      this.detailImgScale = 1
-      this.detailImgOffsetX = 0
-      this.detailImgOffsetY = 0
-    },
-
-    async loadSeatMaps() {
-      this.seatMapLoading = true
-      try {
-        const venuesRes = await this.api.get(ENDPOINTS.adminVenueList({ page: 0, size: 100 }))
-        const venues = venuesRes?.content ?? venuesRes?.items ?? (Array.isArray(venuesRes) ? venuesRes : [])
-
-        const results = await Promise.allSettled(
-          venues.map((v) =>
-            this.api.get(ENDPOINTS.adminVenueSeatMapsList(v.id, { page: 0, size: 50 }))
-              .then((res) => {
-                const list = res?.content ?? res?.items ?? (Array.isArray(res) ? res : [])
-                return {
-                  venueId: v.id,
-                  venueName: v.name,
-                  seatMaps: list.map((sm) => ({
-                    id: sm.id,
-                    name: sm.name || '',
-                    status: sm.status ?? sm.seatMapStatus ?? 'DRAFT',
-                    thumbnailUrl: sm.thumbnailUrl ?? sm.thumbnail_url ?? null,
-                    size: sm.totalSeats ?? null,
-                    version: sm.version ?? null
-                  }))
-                }
-              })
-          )
-        )
-
-        this.venueGroups = results
-          .filter((r) => r.status === 'fulfilled')
-          .map((r) => r.value)
-        if (this.venueGroups.length > 0 && this.selectedVenueId === null) {
-          this.selectedVenueId = this.venueGroups[0].venueId
-        }
-      } catch (e) {
-        this.venueGroups = []
-      } finally {
-        this.seatMapLoading = false
-      }
-    }
   }
 }
 </script>

@@ -3,18 +3,18 @@
     <!-- Page Title -->
     <div>
       <h1 class="text-xl font-bold text-slate-900">가격 정책</h1>
-      <p class="mt-1 text-sm text-slate-500">공연 생성 후 가격 정책 설정 -> 구매 수량 정책 설정 -> 회차 등록 순서로 진행됩니다.</p>
+      <p class="mt-1 text-sm text-slate-500">공연 생성 후 가격 정책 설정 → 구매 수량 정책 설정 순으로 진행됩니다. 회차 등록은 공연 상세 페이지에서 진행합니다.</p>
     </div>
 
     <!-- Step Indicator Container -->
     <div v-if="fromCreate" class="rounded-2xl border border-slate-100 bg-white px-6 pb-12 pt-6 shadow-sm">
-      <StepIndicator :steps="['기본 정보', '가격 정책', '구매 수량 정책', '회차 등록']" :active="currentStepIndex" />
+      <StepIndicator :steps="['기본 정보', '가격 정책', '구매 수량 정책']" :active="currentStepIndex" />
     </div>
 
     <!-- Info Alert -->
     <div v-if="fromCreate" class="rounded-xl border border-green-200 bg-green-50 px-4 py-3">
       <p class="text-sm font-medium text-green-800">공연이 생성되었습니다.</p>
-      <p class="mt-0.5 text-sm text-green-700">가격 정책과 구매 수량 정책을 설정한 뒤 회차를 등록하세요.</p>
+      <p class="mt-0.5 text-sm text-green-700">가격 정책과 구매 수량 정책을 설정하면 공연 상세 페이지로 이동합니다. 회차 등록은 공연 상세 페이지에서 진행합니다.</p>
     </div>
 
     <!-- Header + Policy List Card -->
@@ -346,7 +346,7 @@ export default {
         return '구매 수량 정책 등록 필요'
       }
 
-      return '다음: 회차 등록 ->'
+      return '완료: 공연 상세 보기 →'
     },
     fromCreate() {
       return this.$route.query?.from === 'create'
@@ -592,12 +592,6 @@ export default {
         this.submitting = false
       }
     },
-    goToSchedulesStep() {
-      if (!this.canProceedToSchedules) return
-      const concertId = this.$route.params.concertId
-      if (!concertId) return
-      this.$router.push(`/organizer/concerts/${concertId}/schedules?from=create`)
-    },
     handleBottomAction() {
       const concertId = this.$route.params.concertId
       if (!concertId) return
@@ -614,7 +608,7 @@ export default {
 
       if (!this.hasPurchaseLimitPolicy) return
 
-      this.$router.push(`/organizer/concerts/${concertId}/schedules?from=create`)
+      this.$router.push(`/organizer/concerts/${concertId}`)
     },
   },
 }

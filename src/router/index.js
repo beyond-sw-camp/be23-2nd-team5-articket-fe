@@ -83,6 +83,7 @@ import AdminUsersView from '../views/admin/AdminUsersView.vue'
 import AdminUserOrdersView from '../views/admin/AdminUserOrdersView.vue'
 import AdminUserConcertsView from '../views/admin/AdminUserConcertsView.vue'
 import AdminSeatMapDetailView from '../views/admin/AdminSeatMapDetailView.vue'
+import AdminVenueInsightView from '../views/admin/AdminVenueInsightView.vue'
 // errors
 import ForbiddenView from '../views/system/ForbiddenView.vue'
 import NotFoundView from '../views/system/NotFoundView.vue'
@@ -196,6 +197,7 @@ const routes = [
     children: [
       { path: '', redirect: '/admin/dashboard' },
       childRoute('dashboard', AdminDashboardView),
+      childRoute('venue-insights', AdminVenueInsightView),
       childRoute('venues', AdminVenuesView),
       childRoute('venues/:venueId', AdminVenueDetailView),
       childRoute('venues/:venueId/edit', AdminVenueEditView),

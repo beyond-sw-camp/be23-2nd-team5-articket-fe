@@ -1,7 +1,7 @@
 <template>
   <div class="grid gap-4">
-    <!-- 월 네비게이션 -->
-    <div class="flex items-center justify-between">
+    <!-- 월 네비게이션 (외부 controlledYear가 없을 때만 표시) -->
+    <div v-if="controlledYear === null" class="flex items-center justify-between">
       <button type="button" class="rounded-lg p-1.5 hover:bg-slate-100" @click="prevMonth">
         <ChevronLeft class="h-4 w-4 text-slate-600" />
       </button>
@@ -79,20 +79,26 @@ export default {
     availableDates: { type: Array, default: () => [] },
     schedulesByDate: { type: Object, default: () => ({}) },
     modelValue: { type: String, default: null },
-    adminMode: { type: Boolean, default: false }
+    adminMode: { type: Boolean, default: false },
+    /** 외부에서 표시 월을 제어할 때 사용 (null이면 내부 네비게이션 사용) */
+    controlledYear: { type: Number, default: null },
+    controlledMonth: { type: Number, default: null }
   },
   emits: ['select-schedule', 'update:selectedDate', 'update:modelValue'],
   data() {
     const init = this._firstAvailableDate()
     return {
-      currentYear: init.getFullYear(),
-      currentMonth: init.getMonth(),
+      currentYear: this.controlledYear !== null ? this.controlledYear : init.getFullYear(),
+      currentMonth: this.controlledMonth !== null ? this.controlledMonth : init.getMonth(),
       selectedDate: null,
       weekDays: ['일', '월', '화', '수', '목', '금', '토']
     }
   },
   watch: {
+    controlledYear(val) { if (val !== null) this.currentYear = val },
+    controlledMonth(val) { if (val !== null) this.currentMonth = val },
     availableDates(val) {
+      if (this.controlledYear !== null) return
       if (val && val.length > 0) {
         const d = new Date(val[0])
         if (!isNaN(d.getTime())) {
