@@ -60,7 +60,53 @@
             <span v-if="item.category">{{ categoryLabel(item.category) }}</span>
             <span v-if="(item.ageLimit ?? item.age_limit) != null">{{ ageLabel(item.ageLimit ?? item.age_limit) }}</span>
           </div>
-          <div v-if="item.priceRange" class="mt-2 text-sm font-medium text-slate-700">
+
+          <div class="mt-4 grid grid-cols-2 gap-4 border-t border-slate-100 pt-4 sm:grid-cols-4">
+            <div>
+              <div class="text-xs font-medium text-slate-400">공연 시작일</div>
+              <div class="mt-0.5 text-sm font-semibold text-slate-700">{{ formatDate(item.scheduleStartDate) }}</div>
+            </div>
+            <div>
+              <div class="text-xs font-medium text-slate-400">공연 종료일</div>
+              <div class="mt-0.5 text-sm font-semibold text-slate-700">{{ formatDate(item.scheduleEndDate) }}</div>
+            </div>
+            <div>
+              <div class="text-xs font-medium text-slate-400">티켓 오픈</div>
+              <div class="mt-0.5 text-sm font-semibold text-slate-700">{{ formatDateTime(item.ticketingOpenAt) }}</div>
+            </div>
+          </div>
+
+          <div class="mt-6 flex flex-wrap gap-6">
+            <div class="flex items-center gap-2">
+              <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+                <Ticket class="h-5 w-5" />
+              </div>
+              <div>
+                <div class="text-xs font-medium text-slate-400">총 예매 건수</div>
+                <div class="text-lg font-bold text-slate-900">{{ (item.bookingCount || 0).toLocaleString() }}</div>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-red-600">
+                <Heart class="h-5 w-5" />
+              </div>
+              <div>
+                <div class="text-xs font-medium text-slate-400">좋아요</div>
+                <div class="text-lg font-bold text-slate-900">{{ (item.likeCount || 0).toLocaleString() }}</div>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
+                <MessageSquare class="h-5 w-5" />
+              </div>
+              <div>
+                <div class="text-xs font-medium text-slate-400">리뷰 수</div>
+                <div class="text-lg font-bold text-slate-900">{{ (item.reviewCount || 0).toLocaleString() }}</div>
+              </div>
+            </div>
+          </div>
+
+          <div v-if="item.priceRange" class="mt-4 text-sm font-medium text-slate-700">
             {{ item.priceRange }}
           </div>
         </div>
@@ -302,7 +348,7 @@
 </template>
 
 <script>
-import { ChevronLeft, ChevronRight, MapPin, Ticket, Settings, CalendarDays, Send, Receipt, Pencil, Users } from 'lucide-vue-next'
+import { ChevronLeft, ChevronRight, MapPin, Ticket, Settings, CalendarDays, Send, Receipt, Pencil, Users, Heart, MessageSquare } from 'lucide-vue-next'
 import UiCard from '../../components/common/UiCard.vue'
 import UiButton from '../../components/common/UiButton.vue'
 import UiBadge from '../../components/common/UiBadge.vue'
@@ -325,6 +371,8 @@ export default {
     Receipt,
     Pencil,
     Users,
+    Heart,
+    MessageSquare,
     UiCard,
     UiButton,
     UiBadge,
@@ -374,15 +422,16 @@ export default {
         DRAFT: '초안',
         PUBLISHED: '게시',
         ENDED: '종료',
-        AVAILABLE: 'AVAILABLE'
+        AVAILABLE: 'AVAILABLE',
+        UPCOMING: '오픈대기'
       }
       return m[s] ?? s ?? '-'
     },
     statusTone(s) {
-      return s === 'PUBLISHED' ? 'solid' : 'soft'
+      return (s === 'PUBLISHED' || s === 'AVAILABLE') ? 'solid' : 'soft'
     },
     statusColor(s) {
-      if (s === 'PUBLISHED') return 'red'
+      if (s === 'PUBLISHED' || s === 'AVAILABLE') return 'red'
       if (s === 'ENDED') return 'slate'
       return 'amber'
     },
@@ -393,6 +442,16 @@ export default {
       if (age == null || age === '') return ''
       if (age === 0) return '전체관람가'
       return `${age}세 이상`
+    },
+    formatDate(d) {
+      if (!d) return '-'
+      const date = new Date(d)
+      return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}`
+    },
+    formatDateTime(d) {
+      if (!d) return '-'
+      const date = new Date(d)
+      return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
     },
     onThumbError(e) {
       e.target.style.display = 'none'
