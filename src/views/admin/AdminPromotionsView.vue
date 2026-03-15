@@ -3,7 +3,7 @@
     <!-- 헤더 -->
     <div class="flex items-end justify-between gap-3">
       <div>
-        <h1 class="text-xl font-bold text-slate-900">프로모션 배너 관리</h1>
+        <h1 class="mgmt-page-title">프로모션 배너 관리</h1>
         <p class="mt-1 text-sm text-slate-500">홈 히어로 배너를 등록하고 노출 순서를 관리합니다.</p>
       </div>
       <div class="flex items-center gap-2">

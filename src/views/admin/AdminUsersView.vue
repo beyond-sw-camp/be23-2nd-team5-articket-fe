@@ -2,7 +2,7 @@
   <div class="grid gap-4">
     <div class="flex items-end justify-between gap-3">
       <div>
-        <h1 class="text-xl font-bold text-slate-900">회원 관리</h1>
+        <h1 class="mgmt-page-title">회원 관리</h1>
         <p class="mt-1 text-sm text-slate-500">전체 회원 목록을 조회하고 검색합니다.</p>
       </div>
       <UiBadge tone="soft">ADMIN</UiBadge>

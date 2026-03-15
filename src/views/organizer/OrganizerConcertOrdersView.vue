@@ -1,9 +1,9 @@
-﻿<template>
+<template>
   <div class="grid gap-4">
     <UiCard>
       <div class="flex items-start justify-between gap-3">
         <div>
-          <div class="text-sm font-semibold text-slate-900">주문 목록</div>
+          <div class="mgmt-section-title">주문 목록</div>
           <div class="mt-1 text-sm text-slate-500">주문 ID를 클릭하면 상세 내역을 확인할 수 있습니다.</div>
         </div>
         <div class="flex items-center gap-2">

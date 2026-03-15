@@ -2,8 +2,8 @@
   <div class="space-y-6">
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-xl font-bold text-slate-900">공연 생성</h1>
-        <p class="mt-1 text-sm text-slate-500">공연 생성 후 정책(가격, 구매 수량 제한) 설정 순서로 진행됩니다</p>
+        <h1 class="mgmt-page-title">공연 생성</h1>
+        <p class="mgmt-page-subtitle">공연 생성 후 정책(가격, 구매 수량 제한) 설정 순서로 진행됩니다</p>
       </div>
       <UiButton variant="ghost" class="h-9 px-3 text-sm" @click="$router.push('/organizer/concerts')">
         <- 목록
@@ -17,7 +17,7 @@
     <UiCard>
       <form id="concert-create-form" class="space-y-6" @submit.prevent="submitCreate">
         <section>
-          <h2 class="text-sm font-semibold text-slate-900">기본 정보</h2>
+          <h2 class="mgmt-section-title">기본 정보</h2>
           <div class="mt-4 grid gap-4 sm:grid-cols-2">
             <div class="sm:col-span-2">
               <label class="block text-sm font-medium text-slate-700">공연 제목</label>
@@ -114,7 +114,7 @@
         </section>
 
         <section class="border-t border-slate-100 pt-6">
-          <h2 class="text-sm font-semibold text-slate-900">공연장 · 좌석 배치</h2>
+          <h2 class="mgmt-section-title">공연장 · 좌석 배치</h2>
           <div class="mt-4 space-y-4">
             <div>
               <label class="block text-sm font-medium text-slate-700">공연장</label>

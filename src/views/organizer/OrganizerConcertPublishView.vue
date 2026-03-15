@@ -1,8 +1,8 @@
 <template>
   <div class="grid gap-4">
     <UiCard>
-      <div class="text-sm font-semibold text-slate-900">공연 게시</div>
-      <div class="mt-1 text-sm text-slate-500">
+      <div class="mgmt-page-title">공연 게시</div>
+      <div class="mgmt-page-subtitle">
         공연을 게시하면 일반 사용자에게 노출됩니다. 게시 전 회차와 좌석 정보를 확인하세요.
       </div>
       <div class="mt-4 flex flex-wrap gap-3">

@@ -4,8 +4,8 @@
     <!-- ── 페이지 헤더 ── -->
     <div class="flex items-center justify-between gap-4">
       <div class="shrink-0">
-        <div class="text-sm font-semibold text-slate-900">공연장 · 좌석맵 인사이트</div>
-        <div class="mt-0.5 text-xs text-slate-400">공연장별 좌석맵 운영 현황 및 공연 일정 분석</div>
+        <div class="mgmt-page-title">공연장 · 좌석맵 인사이트</div>
+        <div class="mgmt-page-subtitle">공연장별 좌석맵 운영 현황 및 공연 일정 분석</div>
       </div>
       <div class="flex flex-1 items-center justify-end gap-3">
         <!-- 공연장 검색 -->
@@ -39,7 +39,7 @@
     </div>
 
     <!-- ── 공연장 목록 ── -->
-    <div class="rounded-2xl border border-slate-200 bg-white">
+    <div class="rounded-2xl border border-slate-200 bg-white shadow-sm">
 
       <!-- 로딩 -->
       <div v-if="venueLoading" class="flex items-center justify-center py-16 text-sm text-slate-400">
@@ -129,9 +129,9 @@
       <div class="grid gap-4 lg:grid-cols-[300px_1fr]">
 
         <!-- 왼쪽: 좌석맵 목록 -->
-        <div class="rounded-2xl border border-slate-200 bg-white overflow-hidden">
-          <div class="border-b border-slate-100 px-4 py-3 flex items-center justify-between">
-            <span class="text-xs font-semibold text-slate-600">좌석맵</span>
+        <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <div class="flex items-center justify-between border-b border-slate-100 bg-slate-50 px-4 py-3">
+            <span class="mgmt-section-title">좌석맵</span>
             <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-500">
               {{ seatMaps.length }}개
             </span>
@@ -216,8 +216,8 @@
               </svg>
             </div>
             <div>
-              <p class="text-sm font-semibold text-slate-700">좌석맵을 선택하세요</p>
-              <p class="mt-1 text-xs text-slate-400">왼쪽에서 좌석맵을 선택하면 인사이트를 확인할 수 있습니다</p>
+              <p class="mgmt-section-title">좌석맵을 선택하세요</p>
+              <p class="mgmt-section-subtitle">왼쪽에서 좌석맵을 선택하면 인사이트를 확인할 수 있습니다</p>
             </div>
           </div>
 
@@ -225,12 +225,12 @@
           <div v-else class="grid gap-4">
 
             <!-- 인사이트 헤더 카드 -->
-            <div class="flex items-start justify-between rounded-2xl border border-slate-200 bg-white px-5 py-4">
+            <div class="flex items-start justify-between rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
               <div>
                 <div class="flex flex-wrap items-center gap-2">
-                  <span class="text-xs text-slate-400">{{ selectedVenue.name }}</span>
+                  <span class="text-xs text-slate-500">{{ selectedVenue.name }}</span>
                   <span class="text-xs text-slate-200">/</span>
-                  <span class="text-base font-bold text-slate-900">{{ selectedSeatMapDetail.name }}</span>
+                  <span class="text-sm font-semibold text-slate-900">{{ selectedSeatMapDetail.name }}</span>
                   <span
                     class="rounded-full px-2 py-0.5 text-xs font-semibold"
                     :class="{
@@ -264,20 +264,20 @@
 
             <!-- 로딩 -->
             <div v-if="detailConcertsLoading"
-              class="flex h-64 items-center justify-center rounded-2xl border border-slate-200 bg-white text-sm text-slate-400">
+              class="flex h-64 items-center justify-center rounded-2xl border border-slate-200 bg-white text-sm text-slate-500 shadow-sm">
               불러오는 중…
             </div>
 
             <template v-else>
               <!-- 월 네비게이션 -->
-              <div class="flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-5 py-3">
+              <div class="flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-5 py-3 shadow-sm">
                 <button
-                  class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
+                  class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700"
                   @click="prevDetailMonth"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
                 </button>
-                <span class="text-sm font-bold text-slate-900">{{ detailViewYear }}년 {{ detailViewMonth + 1 }}월</span>
+                <span class="text-sm font-semibold text-slate-900">{{ detailViewYear }}년 {{ detailViewMonth + 1 }}월</span>
                 <button
                   class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
                   @click="nextDetailMonth"
@@ -289,7 +289,7 @@
               <!-- KPI 카드 행 -->
               <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 <!-- 도넛: 공연장 점유율 -->
-                <div class="flex flex-col items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white p-5">
+                <div class="flex flex-col items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                   <div class="relative h-20 w-20">
                     <svg class="h-full w-full -rotate-90" viewBox="0 0 100 100">
                       <circle cx="50" cy="50" r="38" stroke="currentColor" stroke-width="10" fill="transparent" class="text-slate-100" />
@@ -303,31 +303,31 @@
                       />
                     </svg>
                     <div class="absolute inset-0 flex items-center justify-center">
-                      <span class="text-lg font-black text-slate-900">{{ detailViewOccupancy }}%</span>
+                      <span class="text-2xl font-bold text-slate-900">{{ detailViewOccupancy }}%</span>
                     </div>
                   </div>
                   <div class="text-center">
                     <p class="text-xs font-semibold text-slate-700">공연장 점유율</p>
-                    <p class="mt-0.5 text-[10px] text-slate-400">{{ detailOccupiedDays }}일 / {{ detailDaysInMonth }}일</p>
+                    <p class="mt-0.5 text-xs text-slate-500">{{ detailOccupiedDays }}일 / {{ detailDaysInMonth }}일</p>
                   </div>
                 </div>
 
-                <div class="flex flex-col justify-center rounded-2xl border border-slate-200 bg-white p-5">
-                  <p class="text-[10px] font-medium uppercase tracking-wider text-slate-400">이달 회차</p>
-                  <p class="mt-1.5 text-3xl font-black text-slate-900">{{ detailThisMonthScheduleCount }}</p>
-                  <p class="mt-0.5 text-[10px] text-slate-400">회차 수</p>
+                <div class="flex flex-col justify-center rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                  <p class="text-xs font-medium text-slate-500">이달 회차</p>
+                  <p class="mt-1.5 text-2xl font-bold text-slate-900">{{ detailThisMonthScheduleCount }}</p>
+                  <p class="mt-0.5 text-xs text-slate-500">회차 수</p>
                 </div>
 
-                <div class="flex flex-col justify-center rounded-2xl border border-slate-200 bg-white p-5">
-                  <p class="text-[10px] font-medium uppercase tracking-wider text-slate-400">이달 공연</p>
-                  <p class="mt-1.5 text-3xl font-black text-slate-900">{{ detailThisMonthConcertCount }}</p>
-                  <p class="mt-0.5 text-[10px] text-slate-400">공연 수</p>
+                <div class="flex flex-col justify-center rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                  <p class="text-xs font-medium text-slate-500">이달 공연</p>
+                  <p class="mt-1.5 text-2xl font-bold text-slate-900">{{ detailThisMonthConcertCount }}</p>
+                  <p class="mt-0.5 text-xs text-slate-500">공연 수</p>
                 </div>
 
-                <div class="flex flex-col justify-center rounded-2xl border border-slate-200 bg-white p-5">
-                  <p class="text-[10px] font-medium uppercase tracking-wider text-slate-400">누적 공연</p>
-                  <p class="mt-1.5 text-3xl font-black text-slate-900">{{ detailConcerts.length }}</p>
-                  <p class="mt-0.5 text-[10px] text-slate-400">전체</p>
+                <div class="flex flex-col justify-center rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                  <p class="text-xs font-medium text-slate-500">누적 공연</p>
+                  <p class="mt-1.5 text-2xl font-bold text-slate-900">{{ detailConcerts.length }}</p>
+                  <p class="mt-0.5 text-xs text-slate-500">전체</p>
                 </div>
               </div>
 
@@ -335,10 +335,10 @@
               <div class="grid gap-4 lg:grid-cols-3">
 
                 <!-- 캘린더 + 필터 칩 -->
-                <div class="lg:col-span-2 flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-5">
+                <div class="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm lg:col-span-2">
                   <!-- 공연 필터 칩 -->
                   <div>
-                    <p class="mb-2.5 text-xs font-semibold uppercase tracking-wider text-slate-400">공연 필터</p>
+                    <p class="mb-2.5 text-xs font-semibold text-slate-600">공연 필터</p>
                     <div v-if="detailViewConcerts.length === 0" class="text-xs text-slate-300">이 달 공연 없음</div>
                     <div v-else class="flex flex-wrap gap-1.5">
                       <button
@@ -377,8 +377,8 @@
                 <!-- 사이드: 공연 상태 + 누적 지표 -->
                 <div class="flex flex-col gap-4">
                   <!-- 공연 상태 분포 -->
-                  <div class="rounded-2xl border border-slate-200 bg-white p-5">
-                    <p class="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-400">공연 상태</p>
+                  <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                    <p class="mb-3 text-xs font-semibold text-slate-600">공연 상태</p>
                     <div v-if="detailConcerts.length === 0" class="py-4 text-center text-xs text-slate-300">공연 없음</div>
                     <div v-else class="space-y-2.5">
                       <div v-for="item in detailConcertStatusBreakdown" :key="item.status"
@@ -402,8 +402,8 @@
                   </div>
 
                   <!-- 누적 지표 -->
-                  <div class="rounded-2xl border border-slate-200 bg-white p-5">
-                    <p class="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-400">누적 지표</p>
+                  <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                    <p class="mb-3 text-xs font-semibold text-slate-600">누적 지표</p>
                     <div class="space-y-3">
                       <div class="flex items-center justify-between">
                         <span class="text-xs text-slate-500">전체 공연</span>
@@ -556,10 +556,10 @@ export default {
         else counts.ENDED++
       }
       return [
-        { status: 'AVAILABLE', label: '예매중',    count: counts.AVAILABLE, dotClass: 'bg-red-400',   barClass: 'bg-red-400' },
-        { status: 'UPCOMING',  label: '오픈대기',  count: counts.UPCOMING,  dotClass: 'bg-amber-400', barClass: 'bg-amber-400' },
-        { status: 'DRAFT',     label: '초안',      count: counts.DRAFT,     dotClass: 'bg-slate-300', barClass: 'bg-slate-300' },
-        { status: 'ENDED',     label: '종료/기타', count: counts.ENDED,     dotClass: 'bg-slate-200', barClass: 'bg-slate-200' },
+        { status: 'AVAILABLE', label: '예매중',    count: counts.AVAILABLE, dotClass: 'bg-red-500',   barClass: 'bg-red-500' },
+        { status: 'UPCOMING',  label: '오픈대기',  count: counts.UPCOMING,  dotClass: 'bg-amber-500', barClass: 'bg-amber-500' },
+        { status: 'DRAFT',     label: '초안',      count: counts.DRAFT,     dotClass: 'bg-slate-400', barClass: 'bg-slate-400' },
+        { status: 'ENDED',     label: '종료/기타', count: counts.ENDED,     dotClass: 'bg-slate-300', barClass: 'bg-slate-300' },
       ].filter(item => item.count > 0)
     },
   },

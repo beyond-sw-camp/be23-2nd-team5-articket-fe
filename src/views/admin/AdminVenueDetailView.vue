@@ -7,8 +7,8 @@
     <template v-else-if="venue">
       <div class="flex items-center justify-between gap-3">
         <div>
-          <h1 class="text-xl font-bold text-slate-900">{{ venue.name }}</h1>
-          <p class="mt-1 text-sm text-slate-500">공연장 상세 정보</p>
+          <h1 class="mgmt-page-title">{{ venue.name }}</h1>
+          <p class="mgmt-page-subtitle">공연장 상세 정보</p>
         </div>
         <UiBadge :tone="venueStatus === 'ACTIVE' ? 'soft' : 'outline'" :color="venueStatus === 'ACTIVE' ? 'green' : 'slate'">
           {{ venueStatus === 'ACTIVE' ? '활성' : (venueStatus === 'INACTIVE' ? '비활성' : venueStatus) }}
@@ -64,7 +64,7 @@
       <!-- 공연 목록 -->
       <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white">
         <div class="flex items-center justify-between border-b border-slate-100 bg-slate-50 px-4 py-3">
-          <span class="text-sm font-semibold text-slate-700">이 공연장의 공연</span>
+          <span class="mgmt-section-title">이 공연장의 공연</span>
           <span v-if="concertsLoading" class="text-xs text-slate-400">불러오는 중…</span>
           <span v-else class="text-xs text-slate-400">{{ concerts.length }}건</span>
         </div>

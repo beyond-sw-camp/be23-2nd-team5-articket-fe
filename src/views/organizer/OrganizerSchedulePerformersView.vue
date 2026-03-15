@@ -2,8 +2,8 @@
   <div class="grid gap-4">
     <div class="flex flex-wrap items-center justify-between gap-3">
       <div>
-        <div class="text-sm font-semibold text-slate-900">회차 출연진 관리</div>
-        <div class="mt-1 text-sm text-slate-500">스케줄 ID: {{ scheduleId }} · 추가/수정/삭제</div>
+        <div class="mgmt-page-title">회차 출연진 관리</div>
+        <div class="mgmt-page-subtitle">스케줄 ID: {{ scheduleId }} · 추가/수정/삭제</div>
       </div>
       <UiButton variant="ghost" class="h-10 px-3" @click="$router.push('/organizer/concerts')">공연 목록</UiButton>
     </div>

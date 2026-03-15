@@ -19,3 +19,19 @@
     @apply text-slate-900 antialiased;
   }
 }
+
+/* 관리자(ADMIN/ORGANIZER) 타이틀·소제목 통일 */
+@layer components {
+  .mgmt-page-title {
+    @apply text-lg font-semibold text-slate-900;
+  }
+  .mgmt-page-subtitle {
+    @apply mt-0.5 text-xs font-normal text-slate-500;
+  }
+  .mgmt-section-title {
+    @apply text-sm font-semibold text-slate-700;
+  }
+  .mgmt-section-subtitle {
+    @apply mt-0.5 text-xs font-normal text-slate-500;
+  }
+}

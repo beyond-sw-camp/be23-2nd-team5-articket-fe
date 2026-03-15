@@ -3,8 +3,8 @@
     <UiCard>
       <div class="flex items-start justify-between gap-3">
         <div>
-          <div class="text-sm font-semibold text-slate-900">좌석맵 목록/버전 생성</div>
-          <div class="mt-1 text-sm text-slate-500">{{ venue ? venue.name : '' }}</div>
+          <div class="mgmt-page-title">좌석맵 목록/버전 생성</div>
+          <div class="mgmt-page-subtitle">{{ venue ? venue.name : '' }}</div>
         </div>
         <UiBadge tone="soft">ADMIN</UiBadge>
       </div>

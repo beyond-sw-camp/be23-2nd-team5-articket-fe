@@ -3,8 +3,8 @@
     <UiCard>
       <div class="flex items-start justify-between gap-3">
         <div>
-          <div class="text-sm font-semibold text-slate-900">정책 수정 / 삭제</div>
-          <div v-if="policy" class="mt-1 text-sm text-slate-500">정책 ID: {{ policy.id }}</div>
+          <div class="mgmt-page-title">정책 수정 / 삭제</div>
+          <div v-if="policy" class="mgmt-page-subtitle">정책 ID: {{ policy.id }}</div>
         </div>
         <div class="flex gap-2">
           <UiBadge tone="soft">ORGANIZER</UiBadge>
@@ -21,7 +21,7 @@
 
     <template v-else-if="policy">
       <UiCard>
-        <div class="text-sm font-semibold text-slate-900">정책 수정</div>
+        <div class="mgmt-section-title">정책 수정</div>
         <form class="mt-4 grid gap-4" @submit.prevent="submitEdit">
           <div>
             <label class="block text-xs font-semibold text-slate-500">정책 유형</label>
@@ -55,7 +55,7 @@
       </UiCard>
 
       <UiCard>
-        <div class="text-sm font-semibold text-slate-900">정책 삭제</div>
+        <div class="mgmt-section-title">정책 삭제</div>
         <div class="mt-1 text-sm text-slate-500">이 작업은 되돌릴 수 없습니다.</div>
         <p v-if="deleteError" class="mt-2 text-sm text-red-600">{{ deleteError }}</p>
         <div class="mt-4 flex justify-end">

@@ -3,8 +3,8 @@
     <div class="flex items-center gap-3">
       <UiButton variant="ghost" class="h-9 px-3" @click="$router.push('/admin/users')">← 목록</UiButton>
       <div>
-        <h1 class="text-xl font-bold text-slate-900">공연/스케줄 내역</h1>
-        <p class="mt-1 text-sm text-slate-500">회원 ID: {{ userId }}</p>
+        <h1 class="mgmt-page-title">공연/스케줄 내역</h1>
+        <p class="mgmt-page-subtitle">회원 ID: {{ userId }}</p>
       </div>
     </div>
 
@@ -19,7 +19,7 @@
 
     <template v-else>
       <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-        <div class="border-b border-slate-100 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-600">공연 목록</div>
+        <div class="border-b border-slate-100 bg-slate-50 px-4 py-3 mgmt-section-title">공연 목록</div>
         <table class="w-full text-sm">
           <thead class="border-b border-slate-100 bg-slate-50">
             <tr>

@@ -22,7 +22,7 @@
           <ChevronLeft class="h-5 w-5 mr-0.5" />
           상세로
         </UiButton>
-        <h1 class="text-xl font-bold text-slate-900">기본 정보 수정</h1>
+        <h1 class="mgmt-page-title">기본 정보 수정</h1>
       </div>
 
       <!-- Main card: 제목/뱃지/폼 -->
@@ -30,7 +30,7 @@
         <div class="mb-5 flex items-start justify-between gap-4">
           <div>
             <div class="flex items-center gap-2">
-              <div class="text-sm font-semibold text-slate-900">기본 정보</div>
+              <div class="mgmt-section-title">기본 정보</div>
               <UiBadge tone="soft">ORGANIZER</UiBadge>
             </div>
             <p class="mt-1 text-sm text-slate-500">

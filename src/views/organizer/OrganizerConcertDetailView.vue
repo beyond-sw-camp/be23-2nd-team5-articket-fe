@@ -20,7 +20,7 @@
             <ChevronLeft class="mr-1 h-4 w-4" /> 목록으로 돌아가기
           </UiButton>
           <div class="mt-1 flex items-center gap-3">
-            <h1 class="text-2xl font-bold text-slate-900">{{ item.title }}</h1>
+            <h1 class="mgmt-page-title">{{ item.title }}</h1>
             <UiBadge :tone="statusTone(item.status)" :color="statusColor(item.status)">
               {{ statusLabel(item.status) }}
             </UiBadge>
@@ -52,8 +52,8 @@
           <UiCard class="border-slate-200 shadow-sm">
             <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
               <div>
-                <h2 class="text-base font-bold text-slate-900">공연 회차 관리</h2>
-                <p class="text-xs text-slate-500">회차별 예매 기간, 판매 현황 및 출연진을 관리합니다.</p>
+                <h2 class="mgmt-section-title">공연 회차 관리</h2>
+                <p class="mgmt-section-subtitle">회차별 예매 기간, 판매 현황 및 출연진을 관리합니다.</p>
               </div>
               <UiButton variant="solid" color="red" class="h-9 px-4 text-xs font-bold shadow-sm" @click="openCreateModal">
                 + 새 회차 등록
@@ -123,7 +123,7 @@
               </div>
               <div class="flex-1 p-5">
                 <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-                  <h2 class="font-bold text-slate-900">기본 정보</h2>
+                  <h2 class="mgmt-section-title">기본 정보</h2>
                   <span class="text-[10px] font-medium text-slate-400">ID: {{ item.id }}</span>
                 </div>
                 <div class="mt-4 grid grid-cols-2 gap-x-4 gap-y-5 text-sm">
@@ -155,7 +155,7 @@
           <!-- 상세 설명 이미지 -->
           <div v-if="item.detailImgUrls && item.detailImgUrls.length > 0">
             <div class="mb-3 flex items-center justify-between px-1">
-              <h2 class="text-sm font-bold text-slate-800">상세 설명 이미지 ({{ item.detailImgUrls.length }})</h2>
+              <h2 class="mgmt-section-title">상세 설명 이미지 ({{ item.detailImgUrls.length }})</h2>
               <p class="text-[10px] text-slate-400">* 사용자 앱 노출 이미지</p>
             </div>
             <div class="flex gap-3 overflow-x-auto pb-4 scrollbar-hide">
@@ -174,7 +174,7 @@
           <!-- 판매 현황 요약 카드 -->
           <UiCard class="shadow-xl shadow-slate-200/50 border-slate-200">
             <div class="flex items-center justify-between">
-              <h2 class="font-bold text-slate-900">전체 판매 지표</h2>
+              <h2 class="mgmt-section-title">전체 판매 지표</h2>
               <UiButton variant="ghost" class="h-7 px-2 text-[10px] text-slate-500" @click="$router.push(`/organizer/concerts/${item.id}/orders`)">
                 주문 상세 <ChevronRight class="ml-1 h-3 w-3" />
               </UiButton>
@@ -213,7 +213,7 @@
 
           <!-- 소셜 반응 카드 -->
           <UiCard class="border-slate-200">
-            <h2 class="text-sm font-bold text-slate-800">소셜 반응</h2>
+            <h2 class="mgmt-section-title">소셜 반응</h2>
             <div class="mt-4 grid grid-cols-2 gap-3">
               <div class="rounded-2xl border border-slate-100 bg-slate-50/50 p-4 text-center">
                 <Heart class="mx-auto mb-1 h-5 w-5 text-red-500 fill-red-50" />

@@ -2,7 +2,7 @@
   <UiCard>
     <div class="flex items-start justify-between gap-3">
       <div>
-        <div class="text-sm font-semibold text-slate-900">좌석맵 게시/폐기</div>
+        <div class="mgmt-page-title">좌석맵 게시/폐기</div>
         <div class="mt-1 text-sm text-slate-500">PATCH /seat-maps/admin/updateStatus/{{ seatMapId }}?status=...</div>
       </div>
       <UiBadge tone="soft">ADMIN</UiBadge>

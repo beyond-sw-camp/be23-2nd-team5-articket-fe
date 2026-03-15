@@ -2,10 +2,10 @@
   <div class="grid gap-6">
     <div class="flex items-end justify-between gap-4">
       <div>
-        <h1 class="text-2xl font-bold text-slate-900">
+        <h1 class="mgmt-page-title">
           {{ roleLabel }} 관리
         </h1>
-        <p class="mt-1 text-sm text-slate-500">
+        <p class="mgmt-page-subtitle">
           {{ roleLabel }} 전용 메뉴를 선택하세요
         </p>
       </div>
@@ -72,23 +72,28 @@
 </template>
 
 <script>
-import { LayoutGrid, Ticket, Users2, Building2, Package, CirclePlus } from 'lucide-vue-next'
+import { LayoutGrid, Ticket, Users2, LineChart, ReceiptText, Map, CirclePlus, Megaphone } from 'lucide-vue-next'
 import UiBadge from '../../components/common/UiBadge.vue'
 import UiButton from '../../components/common/UiButton.vue'
 import { getRole } from '../../composables/useRole'
 
+/* 좌측 패널(ManagementLayout) ORGANIZER_NAV와 동일한 항목·순서·라벨 */
 const ORGANIZER_MENUS = [
   { to: '/organizer/dashboard', label: '대시보드', desc: '판매 현황, 오픈/마감 알림', iconComponent: LayoutGrid },
-  { to: '/organizer/concerts', label: '공연 관리', desc: '내 공연 관리', iconComponent: Ticket },
+  { to: '/organizer/reports', label: '정산/리포트', desc: '매출·환불·정산 내역', iconComponent: ReceiptText },
+  { to: '/organizer/seat-insights', label: '좌석 인사이트', desc: '구역·등급별 판매 현황', iconComponent: LineChart },
+  { to: '/organizer/concerts', label: '공연 관리', desc: '내 공연 목록 및 관리', iconComponent: Ticket },
   { to: '/organizer/performers', label: '아티스트 관리', desc: '출연진 관리', iconComponent: Users2 },
 ]
 
+/* 좌측 패널(ManagementLayout) ADMIN_NAV와 동일한 항목·순서·라벨 */
 const ADMIN_MENUS = [
   { to: '/admin/dashboard', label: '대시보드', desc: '운영 요약', iconComponent: LayoutGrid },
-  { to: '/admin/venues', label: '공연장', desc: '공연장·좌석맵 관리', iconComponent: Building2 },
-  { to: '/admin/users', label: '회원관리', desc: '사용자 관리', iconComponent: Users2 },
-  { to: '/admin/orders', label: '주문', desc: '주문 조회', iconComponent: Package },
+  { to: '/admin/venue-insights', label: '공연장 인사이트', desc: '공연장·좌석맵 운영 현황', iconComponent: Map },
+  { to: '/admin/venues', label: '공연장 관리', desc: '공연장·좌석맵 관리', iconComponent: Ticket },
+  { to: '/admin/users', label: '회원 관리', desc: '사용자 관리', iconComponent: Users2 },
   { to: '/admin/pending-organizers', label: '주최자 승인', desc: '주최자 신청 검토', iconComponent: CirclePlus },
+  { to: '/admin/promotions', label: '프로모션 배너', desc: '홈 배너 관리', iconComponent: Megaphone },
 ]
 
 export default {
@@ -97,9 +102,11 @@ export default {
     LayoutGrid,
     Ticket,
     Users2,
-    Building2,
-    Package,
+    LineChart,
+    ReceiptText,
+    Map,
     CirclePlus,
+    Megaphone,
     UiBadge,
     UiButton,
   },

@@ -2,8 +2,8 @@
   <div class="grid gap-4">
     <div class="flex flex-wrap items-center justify-between gap-3">
       <div>
-        <div class="text-sm font-semibold text-slate-900">메인 캐스트 관리</div>
-        <div class="mt-1 text-sm text-slate-500">공연 ID: {{ concertId }} · 공연 레벨 출연진 추가/수정/삭제</div>
+        <div class="mgmt-page-title">메인 캐스트 관리</div>
+        <div class="mgmt-page-subtitle">공연 ID: {{ concertId }} · 공연 레벨 출연진 추가/수정/삭제</div>
       </div>
       <UiButton variant="ghost" class="h-10 px-3" @click="$router.push(`/organizer/concerts/${concertId}`)">공연 상세</UiButton>
     </div>

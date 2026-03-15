@@ -3,7 +3,7 @@
     <UiCard>
       <div class="flex items-start justify-between gap-3">
         <div>
-          <div class="text-sm font-semibold text-slate-900">ADMIN Stub: {{ preset.title }}</div>
+          <div class="mgmt-page-title">ADMIN Stub: {{ preset.title }}</div>
           <div class="mt-1 text-sm text-slate-500">요구사항: stub 페이지 + 테이블 UI</div>
         </div>
         <UiBadge tone="soft">ADMIN</UiBadge>
