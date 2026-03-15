@@ -48,7 +48,6 @@ import OrganizerNewConcertView from '../views/organizer/OrganizerNewConcertView.
 import OrganizerConcertDetailView from '../views/organizer/OrganizerConcertDetailView.vue'
 import OrganizerConcertEditView from '../views/organizer/OrganizerConcertEditView.vue'
 import OrganizerConcertPublishView from '../views/organizer/OrganizerConcertPublishView.vue'
-import OrganizerConcertSchedulesView from '../views/organizer/OrganizerConcertSchedulesView.vue'
 import OrganizerScheduleEditView from '../views/organizer/OrganizerScheduleEditView.vue'
 import OrganizerSchedulePricesView from '../views/organizer/OrganizerSchedulePricesView.vue'
 import OrganizerConcertPoliciesView from '../views/organizer/OrganizerConcertPoliciesView.vue'
@@ -175,7 +174,6 @@ const routes = [
       childRoute('concerts/:concertId', OrganizerConcertDetailView),
       childRoute('concerts/:concertId/edit', OrganizerConcertEditView),
       childRoute('concerts/:concertId/publish', OrganizerConcertPublishView),
-      childRoute('concerts/:concertId/schedules', OrganizerConcertSchedulesView),
       childRoute('schedules/:scheduleId', OrganizerScheduleEditView),
       childRoute('schedules/:scheduleId/prices', OrganizerSchedulePricesView),
       childRoute('concerts/:concertId/policies', OrganizerConcertPoliciesView),

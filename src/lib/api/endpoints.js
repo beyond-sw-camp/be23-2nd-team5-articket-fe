@@ -129,6 +129,7 @@
     const p = new URLSearchParams()
     if (params.page != null) p.set('page', String(params.page))
     if (params.size != null) p.set('size', String(params.size))
+    if (params.keyword) p.set('keyword', params.keyword)
     const q = p.toString()
     return `/concerts/organizer${q ? `?${q}` : ''}`
   },

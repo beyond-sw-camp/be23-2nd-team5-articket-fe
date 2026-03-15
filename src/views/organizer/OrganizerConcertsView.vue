@@ -1,11 +1,23 @@
 <template>
   <div class="grid gap-4">
-    <div class="flex items-end justify-between gap-3">
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <div>
         <div class="text-sm font-semibold text-slate-900">내 공연 목록</div>
         <div class="mt-1 text-sm text-slate-500">주최자 본인 공연 목록 (상태, 카테고리, 판매/좋아요 통계 및 공연 기간)</div>
       </div>
-      <UiButton class="h-11 px-5" @click="$router.push('/organizer/concerts/new')">공연 생성</UiButton>
+      <div class="flex items-center gap-2">
+        <div class="relative">
+          <Search class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <input
+            v-model="searchQuery"
+            type="text"
+            placeholder="공연명 검색..."
+            class="h-11 w-64 rounded-xl border border-slate-200 bg-white pl-10 pr-4 text-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500 transition-all"
+            @keyup.enter="handleSearch"
+          />
+        </div>
+        <UiButton class="h-11 px-5" @click="$router.push('/organizer/concerts/new')">공연 생성</UiButton>
+      </div>
     </div>
 
     <div v-if="loading" class="rounded-2xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500">
@@ -53,7 +65,7 @@
       </template>
     </UiTable>
 
-    <div v-if="!loading && totalPages > 1" class="flex items-center justify-center gap-2">
+    <div v-if="!loading && totalPages > 0" class="flex items-center justify-center gap-2">
       <UiButton variant="ghost" class="h-9 px-3" :disabled="page <= 0" @click="goPage(page - 1)">
         이전
       </UiButton>
@@ -66,7 +78,7 @@
 </template>
 
 <script>
-import { Ticket, Heart, MessageSquare } from 'lucide-vue-next'
+import { Ticket, Heart, MessageSquare, Search } from 'lucide-vue-next'
 import UiTable from '../../components/common/UiTable.vue'
 import UiBadge from '../../components/common/UiBadge.vue'
 import UiButton from '../../components/common/UiButton.vue'
@@ -79,6 +91,7 @@ export default {
     Ticket,
     Heart,
     MessageSquare,
+    Search,
     UiTable,
     UiBadge,
     UiButton
@@ -99,6 +112,7 @@ export default {
       page: 0,
       size: 10,
       totalPages: 0,
+      searchQuery: '',
       api: null
     }
   },
@@ -118,6 +132,10 @@ export default {
       const date = new Date(d)
       return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}`
     },
+    handleSearch() {
+      this.page = 0
+      this.load()
+    },
     goPage(p) {
       if (p < 0 || p >= this.totalPages) return
       this.page = p
@@ -126,7 +144,9 @@ export default {
     async load() {
       this.loading = true
       try {
-        const res = await this.api.get(ENDPOINTS.organizerConcerts({ page: this.page, size: this.size }))
+        const params = { page: this.page, size: this.size }
+        if (this.searchQuery.trim()) params.keyword = this.searchQuery.trim()
+        const res = await this.api.get(ENDPOINTS.organizerConcerts(params))
         this.items = res?.content ?? res?.items ?? (Array.isArray(res) ? res : [])
         this.totalPages = res?.totalPages ?? 1
       } finally {
