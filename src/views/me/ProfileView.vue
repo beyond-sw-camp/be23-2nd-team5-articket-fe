@@ -14,6 +14,14 @@
         >
           프로필 수정
         </UiButton>
+
+        <UiButton
+          variant="ghost"
+          class="!h-10 !rounded-xl !px-4 !text-sm !font-semibold !border-red-200 !text-red-600 hover:!bg-red-50"
+          @click="deleteModalOpen = true"
+          >
+          회원 탈퇴
+        </UiButton>
       </div>
     </div>
 
@@ -29,6 +37,12 @@
     </div>
 
     <template v-else-if="profile">
+      <div
+        v-if="verificationNotice"
+        class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800"
+      >
+        {{ verificationNotice }}
+      </div>
       <!-- Section 1: 프로필 상단 카드 -->
       <section class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
         <div class="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between border-b border-slate-100 pb-6">
@@ -251,6 +265,49 @@
         </div>
       </template>
     </UiModal>
+    <UiModal
+      :open="deleteModalOpen"
+      title="회원 탈퇴"
+      max-width-class="max-w-md"
+      @close="deleteModalOpen = false"
+    >
+      <div class="space-y-3 py-2">
+        <p class="text-sm text-slate-700">
+          정말 회원 탈퇴를 진행하시겠습니까?
+        </p>
+        <p class="text-sm text-slate-700">
+          탈퇴 후에는 로그인 정보가 삭제되며 다시 로그인해야 합니다.
+        </p>
+        <p class="text-sm font-semibold text-red-600">
+          같은 이메일로 재가입은 가능하지만, 기존 계정 정보는 복구되지 않을 수 있습니다.
+        </p>
+
+        <div v-if="deleteError" class="rounded-lg bg-red-50 p-3 text-xs font-medium text-red-600">
+          {{ deleteError }}
+        </div>
+      </div>
+
+      <template #footer>
+        <div class="flex gap-2">
+          <UiButton
+            variant="ghost"
+            class="flex-1 !h-10 !rounded-xl !text-sm"
+            @click="deleteModalOpen = false"
+          >
+            취소
+          </UiButton>
+
+          <UiButton
+            variant="primary"
+            class="flex-[2] !h-10 !rounded-xl !bg-red-600 hover:!bg-red-700 !text-sm"
+            :disabled="deleting"
+            @click="handleDeleteAccount"
+          >
+            회원 탈퇴
+          </UiButton>
+        </div>
+      </template>
+    </UiModal>
   </div>
 </template>
 
@@ -308,7 +365,13 @@ export default {
       editForm: {
         name: '',
         phoneNumber: ''
-      }
+      },
+
+      deleteModalOpen: false,
+      deleting: false,
+      deleteError: '',
+
+      verificationNotice: ''
     }
   },
   computed: {
@@ -322,7 +385,7 @@ export default {
       return this.profile?.ageVerifiedAt ?? null
     },
     verifiedBirthDateFormatted() {
-      const raw = this.profile?.verifiedBirthDate ?? this.profile?.birthDate ?? null
+      const raw = this.profile?.ageVerifiedAt ?? null
       if (!raw) return '-'
       const d = new Date(raw)
       return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일`
@@ -371,8 +434,8 @@ export default {
     },
   },
   created() {
-    const { refetch, fetchGenrePreferences, fetchRecentActivities, updateProfile } = useMe()
-    this.me = { refetch, fetchGenrePreferences, fetchRecentActivities, updateProfile }
+    const { refetch, fetchGenrePreferences, fetchRecentActivities, updateProfile, deleteAccount } = useMe()
+    this.me = { refetch, fetchGenrePreferences, fetchRecentActivities, updateProfile, deleteAccount }
   },
   mounted() {
     this.load()
@@ -409,21 +472,55 @@ export default {
       this.editModalOpen = false
     },
     async handleUpdateProfile() {
+      // 중복 클릭 방지용
       if (this.updating) return
       this.updating = true
       this.updateError = ''
-      
+      // “본인인증 해제” 안내 문구 초기화
+      this.verificationNotice = ''
+
+      // 수정하기 전 사용자가 본인인증 상태였는지 저장
+      const wasVerified = !!this.profile?.ageVerifiedAt
+
       try {
         await this.me.updateProfile({
           name: this.editForm.name,
           phoneNumber: this.editForm.phoneNumber
         })
+        // 수정이 끝난 뒤 서버에서 최신 회원 정보를 다시 가져옴
         this.profile = await this.me.refetch()
         this.closeEditModal()
+        
+        // 수정 후에도 본인인증 상태인지 다시 확인
+        const isVerifiedNow = !!this.profile?.ageVerifiedAt
+        // 수정 전에는 인증되어 있었고, 수정 후에는 인증이 풀렸으면
+        if (wasVerified && !isVerifiedNow) {
+          this.verificationNotice = '이름 또는 전화번호 변경으로 본인인증이 해제되었습니다. 다시 인증해 주세요.'
+        }
       } catch (e) {
-        this.updateError = e.responseData?.message || e.message || '저장 중 오류가 발생했습니다.'
+        this.updateError = e.responseData?.message || e.message || '수정 중 오류가 발생했습니다.'
       } finally {
         this.updating = false
+      }
+    },
+
+    async handleDeleteAccount() {
+      if (this.deleting) return
+      this.deleting = true
+      this.deleteError = ''
+
+      try {
+        await this.me.deleteAccount()
+
+        localStorage.removeItem('accessToken')
+        localStorage.removeItem('refreshToken')
+        localStorage.removeItem('isVerified')
+
+        window.location.href = '/'
+      } catch (e) {
+        this.deleteError = e.responseData?.message || e.message || '회원 탈퇴 중 오류가 발생했습니다.'
+      } finally {
+        this.deleting = false
       }
     }
   },
