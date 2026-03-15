@@ -78,7 +78,7 @@
 </template>
 
 <script>
-import { Ticket, LayoutGrid, CirclePlus, Users2, User, LineChart, ReceiptText, Megaphone } from 'lucide-vue-next'
+import { Ticket, LayoutGrid, CirclePlus, Users2, User, LineChart, ReceiptText, Megaphone, Map } from 'lucide-vue-next'
 import { getRole } from '../composables/useRole'
 import { useMe } from '../composables/useMe'
 import { useSSE } from '../composables/useSSE'
@@ -98,8 +98,9 @@ const ORGANIZER_NAV = [
 
 const ADMIN_NAV = [
   { to: '/admin/dashboard', label: '대시보드', icon: LayoutGrid },
-  { to: '/admin/venues', label: '공연장', icon: Ticket },
-  { to: '/admin/users', label: '회원관리', icon: Users2 },
+  { to: '/admin/venue-insights', label: '공연장 인사이트', icon: Map },
+  { to: '/admin/venues', label: '공연장 관리', icon: Ticket },
+  { to: '/admin/users', label: '회원 관리', icon: Users2 },
   { to: '/admin/pending-organizers', label: '주최자 승인', icon: CirclePlus },
   { to: '/admin/promotions', label: '프로모션 배너', icon: Megaphone }
 ]
@@ -115,6 +116,7 @@ export default {
     LineChart,
     ReceiptText,
     Megaphone,
+    Map,
     NotificationPanel,
     ProfileDropdown,
   },

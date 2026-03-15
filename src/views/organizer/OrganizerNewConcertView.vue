@@ -3,7 +3,7 @@
     <div class="flex items-center justify-between">
       <div>
         <h1 class="text-xl font-bold text-slate-900">공연 생성</h1>
-        <p class="mt-1 text-sm text-slate-500">공연 생성 후 정책(가격) 설정 -> 회차 추가 순서로 진행됩니다</p>
+        <p class="mt-1 text-sm text-slate-500">공연 생성 후 정책(가격, 구매 수량 제한) 설정 순서로 진행됩니다</p>
       </div>
       <UiButton variant="ghost" class="h-9 px-3 text-sm" @click="$router.push('/organizer/concerts')">
         <- 목록
@@ -11,7 +11,7 @@
     </div>
 
     <div class="rounded-2xl border border-slate-100 bg-white px-6 pb-12 pt-6 shadow-sm">
-      <StepIndicator :steps="['기본 정보', '가격 정책', '구매 수량 정책', '회차 등록']" :active="0" />
+      <StepIndicator :steps="['기본 정보', '가격 정책', '구매 수량 정책']" :active="0" />
     </div>
 
     <UiCard>
