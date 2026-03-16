@@ -209,14 +209,13 @@ export default {
       },
       showPassword: false,
 
-      baseUrl: import.meta.env.VITE_FRONT_BASE || 'http://localhost:3000',
       googleUrl: 'https://accounts.google.com/o/oauth2/auth',
       googleClientId: import.meta.env.VITE_GOOGLE_CLIENT_ID || '',
-      googleRedirectUrl: `${baseUrl || 'http://localhost:8080'}/oauth/google/redirect`,
+      googleRedirectUrl: 'https://www.articket.cloud/oauth/google/redirect',
       googleScope: 'openid email profile',
       kakaoUrl: 'https://kauth.kakao.com/oauth/authorize',
       kakaoClientId: import.meta.env.VITE_KAKAO_CLIENT_ID || '',
-      kakaoRedirectUrl: `${baseUrl || 'http://localhost:8080'}/oauth/kakao/redirect`,
+      kakaoRedirectUrl: 'https://www.articket.cloud/oauth/kakao/redirect',
 
       loading: false,
       socialLoading: null,
