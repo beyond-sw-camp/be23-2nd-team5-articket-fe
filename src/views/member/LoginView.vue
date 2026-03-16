@@ -251,7 +251,8 @@ export default {
           const redirect = this.$route.query.redirect || '/'
           try {
             const accessToken = localStorage.getItem('accessToken')
-            await axios.get('http://localhost:8080/member/isVerified', {
+            const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8080';
+            await axios.get(`${API_BASE}/member/isVerified`, {
               headers: {
                 Authorization: `Bearer ${accessToken}`,
               },
