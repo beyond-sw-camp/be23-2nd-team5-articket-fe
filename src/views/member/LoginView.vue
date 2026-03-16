@@ -208,14 +208,15 @@ export default {
         password: null,
       },
       showPassword: false,
+
+      baseUrl: import.meta.env.VITE_API_BASE || 'http://localhost:8080',
       googleUrl: 'https://accounts.google.com/o/oauth2/auth',
-      googleClientId:
-        '599309681059-fednm54eedpe0j7pnnbcu46qivi3pc8a.apps.googleusercontent.com',
-      googleRedirectUrl: 'http://localhost:3000/oauth/google/redirect',
+      googleClientId: import.meta.env.VITE_GOOGLE_CLIENT_ID || '',
+      googleRedirectUrl: `${import.meta.env.VITE_API_BASE || 'http://localhost:8080'}/oauth/google/redirect`,
       googleScope: 'openid email profile',
       kakaoUrl: 'https://kauth.kakao.com/oauth/authorize',
-      kakaoClientId: '565c6e3d28006bfb16e10acd001d4074',
-      kakaoRedirectUrl: 'http://localhost:3000/oauth/kakao/redirect',
+      kakaoClientId: import.meta.env.VITE_KAKAO_CLIENT_ID || '',
+      kakaoRedirectUrl: `${import.meta.env.VITE_API_BASE || 'http://localhost:8080'}/oauth/kakao/redirect`,
 
       loading: false,
       socialLoading: null,
