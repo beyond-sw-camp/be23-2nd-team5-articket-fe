@@ -251,7 +251,7 @@ export default {
           const redirect = this.$route.query.redirect || '/'
           try {
             const accessToken = localStorage.getItem('accessToken')
-            await axios.get('http://localhost:8082/member/isVerified', {
+            await axios.get('http://localhost:8080/member/isVerified', {
               headers: {
                 Authorization: `Bearer ${accessToken}`,
               },

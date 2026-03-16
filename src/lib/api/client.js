@@ -5,7 +5,7 @@ import { showErrorAlert } from '../../composables/useErrorToast'
 export { parseErrorResponse, getMessageFromResponse } from './parseError'
 
 const DEFAULTS = {
-  baseUrl: import.meta.env.VITE_API_BASE || 'http://localhost:8082',
+  baseUrl: import.meta.env.VITE_API_BASE || 'http://localhost:8080',
 }
 
 const REFRESH_PATH = '/member/refresh-at'

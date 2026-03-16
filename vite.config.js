@@ -11,7 +11,7 @@ export default defineConfig({
     proxy: {
       // /api/* → 백엔드로 전달. rewrite 제거 시 백엔드 경로가 /api/files/1 형태일 때 사용
       '/api': {
-        target: process.env.VITE_API_BASE || 'http://localhost:8082',
+        target: process.env.VITE_API_BASE || 'http://localhost:8080',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ''),
       },

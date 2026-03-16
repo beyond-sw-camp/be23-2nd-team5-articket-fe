@@ -728,7 +728,7 @@ export default {
       if (!raw || typeof raw !== 'string') return ''
       const s = raw.trim()
       if (s.startsWith('http://') || s.startsWith('https://')) return s
-      const base = (import.meta.env.VITE_API_BASE || 'http://localhost:8082').replace(/\/$/, '')
+      const base = (import.meta.env.VITE_API_BASE || 'http://localhost:8080').replace(/\/$/, '')
       return s.startsWith('/') ? base + s : base + '/' + s
     },
     async loadHeroBanners() {

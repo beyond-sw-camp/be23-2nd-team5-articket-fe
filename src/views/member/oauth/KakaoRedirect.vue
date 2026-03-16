@@ -102,7 +102,7 @@
 import axios from 'axios'
 import { useInicis } from '../../../composables/useInicis'
 
-const API_BASE = 'http://localhost:8082'
+const API_BASE = 'http://localhost:8080'
 
 export default {
   name: 'KakaoRedirect',

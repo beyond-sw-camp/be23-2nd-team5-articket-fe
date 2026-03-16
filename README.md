@@ -781,7 +781,7 @@ VITE_KAKAO_CLIENT_ID=your_kakao_client_id
 VITE_KAKAO_CLIENT_SECRET=your_kakao_client_secret
 
 # Backend
-VITE_API_BASE_URL=http://localhost:8082
+VITE_API_BASE_URL=http://localhost:8080
 ```
 
 #### 4) Backend `application.yml` 설정(예시)
@@ -827,7 +827,7 @@ oauth2:
 async sendCodeToServer(code) {
     try {
         // 1. 백엔드에 인가 코드 전달
-        const response = await axios.post("http://localhost:8082/member/google/doLogin", { code });
+        const response = await axios.post("http://localhost:8080/member/google/doLogin", { code });
         
         // 2. 백엔드로부터 발급된 우리 서비스 전용 토큰 저장
         localStorage.setItem("accessToken", response.data.access_token);
@@ -1020,7 +1020,7 @@ Vue 3 Composition API 기반의 SSE 연결·상태 관리를 담당하는 compos
 - **heartbeatTimeout**: 1시간 설정으로 장시간 연결 유지
 
 ```javascript
-const SSE_URL = `${import.meta.env.VITE_API_BASE || 'http://localhost:8082'}/sse/connect`
+const SSE_URL = `${import.meta.env.VITE_API_BASE || 'http://localhost:8080'}/sse/connect`
 const SSE_EVENTS = ['payment', 'concert', 'admin']
 
 es.addEventListener('connect', (e) => {

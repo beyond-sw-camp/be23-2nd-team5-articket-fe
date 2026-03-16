@@ -370,7 +370,7 @@ export default {
     // keepalive: true → 페이지 이탈 시에도 요청 완료 보장 (axios는 unmount 시 취소됨)
     if (!this.proceedingToCheckout && this.selected.length > 0) {
       const toRelease = [...this.selected]
-      const baseUrl = import.meta.env.VITE_API_BASE || 'http://localhost:8082'
+      const baseUrl = import.meta.env.VITE_API_BASE || 'http://localhost:8080'
       const token = localStorage.getItem('accessToken')
       toRelease.forEach(seatId => {
         fetch(`${baseUrl}/seat-holds/${seatId}`, {
@@ -960,7 +960,7 @@ export default {
 
     // ── WebSocket (STOMP) 연결 ──
     connectWebSocket() {
-      const baseUrl = import.meta.env.VITE_API_BASE || 'http://localhost:8082'
+      const baseUrl = import.meta.env.VITE_API_BASE || 'http://localhost:8080'
       const client = new Client({
         webSocketFactory: () => new SockJS(`${baseUrl}/ws-seatHold`),
         reconnectDelay: 5000,
@@ -1024,7 +1024,7 @@ export default {
       // keepalive: true → 페이지 언로드 이후에도 요청 완료 보장
       if (!this.proceedingToCheckout && this.selected.length > 0) {
         const toRelease = [...this.selected]
-        const baseUrl = import.meta.env.VITE_API_BASE || 'http://localhost:8082'
+        const baseUrl = import.meta.env.VITE_API_BASE || 'http://localhost:8080'
         const token = localStorage.getItem('accessToken')
         toRelease.forEach(seatId => {
           fetch(`${baseUrl}/seat-holds/${seatId}`, {

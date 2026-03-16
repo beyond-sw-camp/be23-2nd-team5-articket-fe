@@ -1,7 +1,7 @@
 import { reactive } from 'vue'
 import { EventSourcePolyfill } from 'event-source-polyfill'
 
-const SSE_URL = `${import.meta.env.VITE_API_BASE || 'http://localhost:8082'}/sse/connect`
+const SSE_URL = `${import.meta.env.VITE_API_BASE || 'http://localhost:8080'}/sse/connect`
 const SSE_EVENTS = ['payment', 'concert', 'admin']
 const MAX_RECONNECT_ATTEMPTS = 5
 const BASE_RECONNECT_DELAY_MS = 3000
