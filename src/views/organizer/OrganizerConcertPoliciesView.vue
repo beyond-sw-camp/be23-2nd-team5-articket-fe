@@ -6,8 +6,8 @@
       <p class="mt-1 text-sm text-slate-500">공연 생성 후 가격 정책 설정 → 구매 수량 정책 설정 순으로 진행됩니다. 회차 등록은 공연 상세 페이지에서 진행합니다.</p>
     </div>
 
-    <!-- Step Indicator Container -->
-    <div v-if="fromCreate" class="rounded-2xl border border-slate-100 bg-white px-6 pb-12 pt-6 shadow-sm">
+    <!-- Step Indicator Container (공연 생성 플로우 뿐 아니라, 상세 → 정책 설정 진입 시에도 3단계 표시) -->
+    <div class="rounded-2xl border border-slate-100 bg-white px-6 pb-12 pt-6 shadow-sm">
       <StepIndicator :steps="['기본 정보', '가격 정책', '구매 수량 정책']" :active="currentStepIndex" />
     </div>
 
@@ -145,9 +145,8 @@
       </div>
     </UiCard>
 
-    <!-- Navigation Footer (Fixed & Centered in Content Area) -->
+    <!-- Navigation Footer (가격/구매 제한 2단계 모두 이 페이지에서 설정하는 공통 플로우) -->
     <div
-      v-if="fromCreate"
       class="fixed bottom-6 left-64 right-0 z-50 flex justify-center px-6 pointer-events-none"
     >
       <div
