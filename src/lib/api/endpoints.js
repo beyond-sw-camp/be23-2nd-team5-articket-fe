@@ -183,6 +183,7 @@
   organizerCreateSchedule: (concertId) => `/concerts/organizer/${concertId}/schedules`,
   organizerBulkCreateSchedules: (concertId) => `/concerts/organizer/${concertId}/schedules/bulk`,
   organizerUpdateSchedule: (scheduleId) => `/concerts/organizer/schedules/${scheduleId}`,
+  organizerDeleteSchedule: (scheduleId) => `/concerts/organizer/schedules/${scheduleId}`,
   concertPolicies: (concertId) => `/concerts/${concertId}/policies`,
   organizerCreatePolicy: (concertId) => `/concerts/organizer/${concertId}/policies`,
   organizerUpdatePolicy: (policyId) => `/concerts/organizer/policies/${policyId}`,
