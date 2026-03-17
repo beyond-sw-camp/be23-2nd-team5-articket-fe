@@ -239,8 +239,13 @@ let observer = null
 
 // ── Utils ─────────────────────────────────────────────────
 function mapConcert(c) {
+  // concertId가 따로 내려오는 경우 공연 단위 id로 사용하고,
+  // 없으면 fallback으로 기존 id를 사용한다.
+  const concertId = c.concertId ?? c.concert_id ?? c.concert?.id ?? c.id
   return {
-    id: c.id,
+    id: concertId,
+    // 필요 시 원본 엔티티 id를 확인할 수 있도록 보존
+    entityId: c.id,
     title: c.title ?? c.name ?? '',
     category: c.category ?? '',
     status: c.status ?? '',
@@ -339,13 +344,24 @@ async function loadBrowse() {
     const res = await api.get(
       ENDPOINTS.searchConcerts({
         category: genre.value,
+        status: 'PUBLISHED', // 둘러보기 영역은 게시된 공연 전체
         page: browsePage.value,
         size: PAGE_SIZE,
         sort: 'bookingCount,desc',
       }),
     )
     const list = res.content ?? res.items ?? (Array.isArray(res) ? res : [])
-    browseItems.value.push(...list.map(mapConcert))
+    const mapped = list.map(mapConcert)
+    // 같은 공연이 마지막 페이지에서 중복되어 내려오는 경우를 대비해 id 기준으로 중복 제거
+    const existingIds = new Set(browseItems.value.map((i) => i.id))
+    const merged = [...browseItems.value]
+    for (const item of mapped) {
+      if (!existingIds.has(item.id)) {
+        merged.push(item)
+        existingIds.add(item.id)
+      }
+    }
+    browseItems.value = merged
     if (list.length < PAGE_SIZE) {
       browseDone.value = true
     } else {
