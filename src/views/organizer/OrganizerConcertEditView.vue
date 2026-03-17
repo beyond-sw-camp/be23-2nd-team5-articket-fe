@@ -34,7 +34,7 @@
               <UiBadge tone="soft">ORGANIZER</UiBadge>
             </div>
             <p class="mt-1 text-sm text-slate-500">
-              공연 제목, 카테고리, 게시 상태, 관람 연령을 설정합니다.
+              공연 제목, 카테고리, 관람 연령을 설정합니다.
             </p>
           </div>
           <p class="hidden text-sm font-medium text-slate-700 sm:block">
@@ -144,19 +144,6 @@
             </select>
           </div>
           <div>
-            <label class="block text-sm font-medium text-slate-700">게시 상태</label>
-            <select
-              v-model="form.status"
-              required
-              class="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm text-slate-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
-            >
-              <option value="DRAFT">초안 (임시 저장)</option>
-              <option value="UPCOMING">오픈 대기 (정보 공개)</option>
-              <option value="AVAILABLE">예매 가능</option>
-              <option value="CLOSED">예매 마감</option>
-            </select>
-          </div>
-          <div>
             <label class="block text-sm font-medium text-slate-700">관람 연령</label>
             <input
               v-model.number="form.ageLimit"
@@ -242,7 +229,7 @@ export default {
     return {
       loading: false,
       item: null,
-      form: { title: '', category: 'CONCERT', status: 'DRAFT', ageLimit: null, thumImgUrl: '', seatMapId: null },
+      form: { title: '', category: 'CONCERT', ageLimit: null, thumImgUrl: '', seatMapId: null },
       saving: false,
       api: null,
       thumbFile: null,
@@ -284,7 +271,6 @@ export default {
         this.form = {
           title: detail.title ?? '',
           category: detail.category ?? 'CONCERT',
-          status: detail.status ?? 'DRAFT',
           ageLimit: detail.ageLimit ?? detail.age_limit ?? null,
           seatMapId: detail.seatMapId ?? detail.seat_map_id ?? detail.concertSeatMapResDto?.id ?? null,
           thumImgUrl: detail.thumImgUrl ?? detail.thum_img_url ?? ''
@@ -338,7 +324,6 @@ export default {
       const dto = {
         title: this.form.title,
         category: this.form.category ?? 'CONCERT',
-        status: this.form.status || 'DRAFT',
         ageLimit: (this.form.ageLimit != null && this.form.ageLimit !== '')
           ? Number(this.form.ageLimit)
           : 0,

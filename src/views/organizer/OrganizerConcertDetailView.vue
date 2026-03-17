@@ -36,9 +36,23 @@
           <UiButton variant="ghost" class="h-10 border border-slate-200 bg-white px-4 text-slate-600" @click="$router.push(`/organizer/concerts/${item.id}/edit`)">
             <Pencil class="mr-2 h-4 w-4 text-slate-500" /> 정보 수정
           </UiButton>
-          <UiButton v-if="item.status === 'DRAFT'" color="red" class="h-10 px-6 shadow-lg shadow-red-100" @click="$router.push(`/organizer/concerts/${item.id}/publish`)">
-            <Send class="mr-2 h-4 w-4" /> 공연 게시하기
-          </UiButton>
+            <UiButton
+              v-if="canHideConcert"
+              color="red"
+              class="h-10 px-6 shadow-lg shadow-red-100"
+              @click="hideConcert"
+            >
+              사용자 화면에서 숨기기
+            </UiButton>
+
+            <UiButton
+              v-if="canShowConcert"
+              color="red"
+              class="h-10 px-6 shadow-lg shadow-red-100"
+              @click="showConcert"
+            >
+              사용자 화면에 다시 노출
+            </UiButton>
         </div>
       </div>
 
@@ -106,8 +120,22 @@
                     <UiButton variant="ghost" class="h-7 px-2 text-[10px] font-bold text-slate-600 hover:bg-slate-100" @click="$router.push(`/organizer/schedules/${row.id}/performers`)">
                       출연진
                     </UiButton>
-                    <UiButton variant="ghost" class="h-7 px-2 text-[10px] font-bold text-slate-400" @click="openEditModal(row)">
+                    <UiButton
+                      variant="ghost"
+                      class="h-7 px-2 text-[10px] font-bold"
+                      :class="row.status === 'DRAFT' ? 'text-slate-400' : 'text-slate-300 cursor-not-allowed'"
+                      :disabled="row.status !== 'DRAFT'"
+                      @click="row.status === 'DRAFT' && openEditModal(row)"
+                    >
                       수정
+                    </UiButton>
+                    <UiButton
+                      v-if="row.status === 'DRAFT' || row.status === 'READY'"
+                      variant="ghost"
+                      class="h-7 px-2 text-[10px] font-bold text-red-500"
+                      @click="deleteSchedule(row)"
+                    >
+                      삭제
                     </UiButton>
                   </div>
                 </template>
@@ -291,22 +319,42 @@
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="block text-xs font-semibold text-slate-500">예매 오픈 *</label>
-            <input v-model="scheduleForm.bookingStart" type="datetime-local" class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:ring-1 focus:ring-red-500 outline-none shadow-sm" required />
+            <input
+              v-model="scheduleForm.bookingStart"
+              type="datetime-local"
+              class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:ring-1 focus:ring-red-500 outline-none shadow-sm disabled:bg-slate-100 disabled:text-slate-400"
+              :disabled="hasExistingSchedules"
+              required
+            />
           </div>
           <div>
             <label class="block text-xs font-semibold text-slate-500">예매 마감 *</label>
-            <input v-model="scheduleForm.bookingEnd" type="datetime-local" class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:ring-1 focus:ring-red-500 outline-none shadow-sm" required />
+            <input
+              v-model="scheduleForm.bookingEnd"
+              type="datetime-local"
+              class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:ring-1 focus:ring-red-500 outline-none shadow-sm disabled:bg-slate-100 disabled:text-slate-400"
+              :disabled="hasExistingSchedules"
+              required
+            />
           </div>
         </div>
 
-        <div>
-          <label class="block text-xs font-semibold text-slate-500">상태 *</label>
-          <select v-model="scheduleForm.status" class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:ring-1 focus:ring-red-500 outline-none shadow-sm">
-            <option value="DRAFT">DRAFT</option>
-            <option value="READY">READY</option>
-            <option value="OPEN">OPEN</option>
-          </select>
+      <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+        <div class="flex items-center justify-between gap-3">
+          <span class="text-sm font-semibold text-slate-500">회차 공개 상태</span>
+          <span
+            class="inline-flex items-center rounded-full px-2.5 py-1 text-sm font-bold"
+            :class="scheduleStatusRule.allowedStatus === 'DRAFT'
+              ? 'bg-slate-200 text-slate-700'
+              : 'bg-amber-100 text-amber-700'"
+          >
+            {{ scheduleStatusRule.label }}
+          </span>
         </div>
+        <p class="mt-2 text-sm text-slate-500 whitespace-pre-line">
+          {{ createScheduleBookingGuide }}
+        </p>
+      </div>
       </form>
       <template #footer>
         <div class="flex justify-end gap-2">
@@ -331,22 +379,44 @@
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="block text-xs font-semibold text-slate-500">예매 오픈 *</label>
-            <input v-model="editScheduleForm.bookingStart" type="datetime-local" class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:ring-1 focus:ring-red-500 outline-none shadow-sm" required />
+            <input
+              v-model="editScheduleForm.bookingStart"
+              type="datetime-local"
+              class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:ring-1 focus:ring-red-500 outline-none shadow-sm disabled:bg-slate-100 disabled:text-slate-400"
+              :disabled="hasMultipleSchedules"
+              required
+            />
           </div>
           <div>
             <label class="block text-xs font-semibold text-slate-500">예매 마감 *</label>
-            <input v-model="editScheduleForm.bookingEnd" type="datetime-local" class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:ring-1 focus:ring-red-500 outline-none shadow-sm" required />
+            <input
+              v-model="editScheduleForm.bookingEnd"
+              type="datetime-local"
+              class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:ring-1 focus:ring-red-500 outline-none shadow-sm disabled:bg-slate-100 disabled:text-slate-400"
+              :disabled="hasMultipleSchedules"
+              required
+            />
           </div>
         </div>
 
-        <div>
-          <label class="block text-xs font-semibold text-slate-500">상태 *</label>
-          <select v-model="editScheduleForm.status" class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:ring-1 focus:ring-red-500 outline-none shadow-sm">
-            <option value="DRAFT">DRAFT</option>
-            <option value="READY">READY</option>
-            <option value="OPEN">OPEN</option>
-          </select>
-        </div>
+      <div>
+        <label class="block text-xs font-semibold text-slate-500">상태 *</label>
+        <select
+          v-model="editScheduleForm.status"
+          class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:ring-1 focus:ring-red-500 outline-none shadow-sm"
+        >
+          <option
+            v-for="option in editScheduleStatusOptions"
+            :key="option.value"
+            :value="option.value"
+          >
+            {{ option.label }}
+          </option>
+        </select>
+        <p class="mt-2 text-xs text-slate-500">
+          {{ editScheduleStatusRule.help }}
+        </p>
+      </div>
       </form>
       <template #footer>
         <div class="flex justify-end gap-2">
@@ -445,14 +515,70 @@ export default {
       editScheduleModalOpen: false,
       editingSchedule: false,
       editScheduleId: null,
-      editScheduleForm: { playTime: '', bookingStart: '', bookingEnd: '', status: 'READY' },
+      editScheduleForm: { playTime: '', bookingStart: '', bookingEnd: '', status: 'DRAFT' },
       editScheduleFormError: ''
     }
   },
+
   computed: {
     occupancyDisplay() {
       const rate = this.stats?.occupancyRate
       return (rate == null || Number.isNaN(rate)) ? '0%' : `${Number(rate).toFixed(1)}%`
+    },
+    hasExistingSchedules() {
+    return Array.isArray(this.schedules) && this.schedules.length > 0
+    },
+    baseScheduleBookingWindow() {
+      if (!this.hasExistingSchedules) return null
+
+      const base = this.schedules[0]
+      return {
+        bookingStart: base.bookingStart ?? '',
+        bookingEnd: base.bookingEnd ?? ''
+      }
+    },
+    createScheduleBookingGuide() {
+      const baseGuide = this.hasExistingSchedules
+        ? '기존 회차가 있어 예매 오픈/마감 시간은 첫 회차 기준으로 동일하게 적용됩니다.'
+        : this.scheduleStatusRule.help
+
+      const statusMeaning = this.scheduleStatusRule.allowedStatus === 'DRAFT'
+        ? '노출 대기 : 사용자가 아직 볼 수 없는 상태'
+        : '오픈 예정 : 사용자는 볼 수 있지만 예매는 아직 불가능한 상태'
+
+      return `${baseGuide}\n\n${statusMeaning}`
+    },
+    canHideConcert() {
+      return ['UPCOMING', 'AVAILABLE', 'CLOSED'].includes(this.item?.status)
+    },
+    canShowConcert() {
+      return this.item?.status === 'HIDDEN'
+    },
+    scheduleStatusRule() {
+      return this.getScheduleStatusRule(this.scheduleForm.bookingStart)
+    },
+    editScheduleStatusRule() {
+      return this.getScheduleStatusRule(this.editScheduleForm.bookingStart)
+    },
+    scheduleStatusOptions() {
+      return this.getScheduleStatusOptions(this.scheduleForm.bookingStart)
+    },
+    editScheduleStatusOptions() {
+      return this.getScheduleStatusOptions(this.editScheduleForm.bookingStart)
+    }
+  },
+  watch: {
+    'scheduleForm.bookingStart': {
+      immediate: true,
+      handler() {
+        this.syncScheduleStatus()
+      }
+    },
+    'editScheduleForm.bookingStart': {
+      immediate: true,
+      handler() {
+        this.syncEditScheduleStatus()
+      }
     }
   },
   created() {
@@ -476,19 +602,30 @@ export default {
         d.setMinutes(d.getMinutes() - d.getTimezoneOffset())
         return d.toISOString().slice(0, 16)
       }
+
       return {
         playTime: fmtIso(nextWeek),
         bookingStart: fmtIso(now),
         bookingEnd: fmtIso(bookingEnd),
-        status: 'READY'
+        status: 'DRAFT'
       }
     },
     statusLabel(s) {
-      const m = { DRAFT: '초안', PUBLISHED: '게시중', AVAILABLE: '예매가능', UPCOMING: '오픈대기', ENDED: '종료' }
+      const m = { 
+        DRAFT: '초안',
+        UPCOMING: '오픈 예정',
+        AVAILABLE: '예매 가능',
+        CLOSED: '예매 마감',
+        HIDDEN: '숨김'
+       }
       return m[s] ?? s ?? '-'
     },
-    statusTone(s) { return (s === 'PUBLISHED' || s === 'AVAILABLE') ? 'solid' : 'soft' },
-    statusColor(s) { return (s === 'PUBLISHED' || s === 'AVAILABLE') ? 'red' : 'slate' },
+    statusTone(s) { return (s === 'AVAILABLE') ? 'solid' : 'soft' },
+    statusColor(s) {
+      if (s === 'AVAILABLE') return 'red'
+      if (s === 'HIDDEN') return 'slate'
+      return 'slate'
+    },
     categoryLabel(cat) { return getCategoryLabel(cat) },
     formatDate(d) {
       if (!d) return '-'
@@ -502,6 +639,14 @@ export default {
     },
     onThumbError(e) { e.target.style.display = 'none' },
     
+    getScheduleStatusGuide(status) {
+      const guides = {
+        DRAFT: '노출 대기: 관객에게 아직 보이지 않는 상태예요. 예매 오픈 30일 전 이전 회차에 사용해 주세요.',
+        READY: '오픈 예정: 관객에게는 노출되지만 아직 예매는 시작되지 않은 상태예요. 예매 오픈 30일 이내 회차에 사용해 주세요.'
+      }
+      return guides[status] ?? ''
+    },
+
     async load() {
       const concertId = this.$route.params.concertId
       if (!concertId) return
@@ -538,6 +683,17 @@ export default {
       this.bulkScheduleForm.playTimes = [this.getDefaultDateTime()]
       this.bulkMode = false
       this.scheduleFormError = ''
+
+      // 기존 회차가 있으면 첫 회차의 예매 오픈/마감 시간을 그대로 사용
+      if (this.hasExistingSchedules && this.baseScheduleBookingWindow) {
+        this.scheduleForm.bookingStart = this.toDateTimeLocalValue(this.baseScheduleBookingWindow.bookingStart)
+        this.scheduleForm.bookingEnd = this.toDateTimeLocalValue(this.baseScheduleBookingWindow.bookingEnd)
+      }
+
+      // 모달 열 때 bookingStart 기준으로 상태를 즉시 맞춤
+      const createRule = this.getScheduleStatusRule(this.scheduleForm.bookingStart)
+      this.scheduleForm.status = createRule.allowedStatus
+
       this.createScheduleModalOpen = true
     },
     closeCreateModal() { this.createScheduleModalOpen = false },
@@ -551,18 +707,16 @@ export default {
     removeBulkPlayTime(idx) { this.bulkScheduleForm.playTimes.splice(idx, 1) },
     openEditModal(row) {
       this.editScheduleId = row.id
-      const fmtLocal = (val) => {
-        if (!val) return ''
-        const d = new Date(val)
-        d.setMinutes(d.getMinutes() - d.getTimezoneOffset())
-        return d.toISOString().slice(0, 16)
-      }
       this.editScheduleForm = {
-        playTime: fmtLocal(row.playTime),
-        bookingStart: fmtLocal(row.bookingStart),
-        bookingEnd: fmtLocal(row.bookingEnd),
-        status: row.status ?? 'READY'
+        playTime: this.toDateTimeLocalValue(row.playTime),
+        bookingStart: this.toDateTimeLocalValue(row.bookingStart),
+        bookingEnd: this.toDateTimeLocalValue(row.bookingEnd),
+        status: row.status ?? 'DRAFT'
       }
+      // 수정 모달도 bookingStart 기준으로 상태 재동기화
+      const editRule = this.getScheduleStatusRule(this.editScheduleForm.bookingStart)
+      this.editScheduleForm.status = editRule.allowedStatus
+
       this.editScheduleFormError = ''
       this.editScheduleModalOpen = true
     },
@@ -589,6 +743,14 @@ export default {
       const concertId = this.$route.params.concertId
       this.creatingSchedule = true
       this.scheduleFormError = ''
+
+      if (this.hasExistingSchedules && this.baseScheduleBookingWindow) {
+        this.scheduleForm.bookingStart = this.toDateTimeLocalValue(this.baseScheduleBookingWindow.bookingStart)
+        this.scheduleForm.bookingEnd = this.toDateTimeLocalValue(this.baseScheduleBookingWindow.bookingEnd)
+      }
+      // 제출 직전 bookingStart 기준으로 상태를 다시 강제
+      this.scheduleForm.status = this.getScheduleStatusRule(this.scheduleForm.bookingStart).allowedStatus
+
       try {
         if (this.bulkMode) {
           await this.api.post(ENDPOINTS.organizerBulkCreateSchedules(concertId), {
@@ -648,6 +810,105 @@ export default {
       this.previewScale = 1
       this.previewOffsetX = 0
       this.previewOffsetY = 0
+    },
+    toDate(value) {
+      if (!value) return null
+      const date = new Date(value)
+      return Number.isNaN(date.getTime()) ? null : date
+    },
+    getThirtyDayBoundary() {
+      const now = new Date()
+      return new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)
+    },
+    
+    getScheduleStatusRule(bookingStart) {
+      const bookingDate = this.toDate(bookingStart)
+      if (!bookingDate) {
+        return {
+          allowedStatus: 'DRAFT',
+          label: '노출 대기',
+          help: '예매 오픈 시간을 먼저 선택해 주세요.'
+        }
+      }
+
+      const boundary = this.getThirtyDayBoundary()
+      const isAfterThirtyDays = bookingDate > boundary
+
+      if (bookingDate > boundary) {
+        return {
+          allowedStatus: 'DRAFT',
+          label: '노출 대기',
+          help: '예매 오픈이 30일보다 많이 남아 있어 노출 대기 상태로만 생성할 수 있어요.'
+        }
+      }
+
+      return {
+        allowedStatus: 'READY',
+        label: '오픈 예정',
+        help: '예매 오픈이 30일 이내라 오픈 예정 상태로만 생성할 수 있습니다.'
+      }
+    },
+    getScheduleStatusOptions(bookingStart) {
+      const rule = this.getScheduleStatusRule(bookingStart)
+      return [{ value: rule.allowedStatus, label: rule.label }]
+    },
+    syncScheduleStatus() {
+      const nextStatus = this.scheduleStatusRule.allowedStatus
+      if (this.scheduleForm.status !== nextStatus) {
+        this.scheduleForm.status = nextStatus
+      }
+    },
+    syncEditScheduleStatus() {
+      const nextStatus = this.editScheduleStatusRule.allowedStatus
+      if (this.editScheduleForm.status !== nextStatus) {
+        this.editScheduleForm.status = nextStatus
+      }
+    },
+    async hideConcert() {
+      if (!this.item?.id) return
+
+      try {
+        await this.api.post(`/concerts/organizer/${this.item.id}/hide`)
+        await this.load()
+      } catch (err) {
+        alert('공연 숨기기 중 오류가 발생했습니다.')
+      }
+    },
+    async showConcert() {
+      if (!this.item?.id) return
+
+      try {
+        await this.api.post(`/concerts/organizer/${this.item.id}/show`)
+        await this.load()
+      } catch (err) {
+        alert('공연 보이기 중 오류가 발생했습니다.')
+      }
+    },
+    toDateTimeLocalValue(val) {
+      if (!val) return ''
+      const d = new Date(val)
+      d.setMinutes(d.getMinutes() - d.getTimezoneOffset())
+      return d.toISOString().slice(0, 16)
+    },
+    hasMultipleSchedules() {
+      return Array.isArray(this.schedules) && this.schedules.length > 1
+    },
+    async deleteSchedule(row) {
+      if (!row?.id) return
+
+      const ok = window.confirm(
+        row.status === 'READY'
+          ? '오픈 예정 회차를 삭제할까요? 삭제 후에는 되돌릴 수 없습니다.'
+          : '노출 대기 회차를 삭제할까요? 삭제 후에는 되돌릴 수 없습니다.'
+      )
+      if (!ok) return
+
+      try {
+        await this.api.del(ENDPOINTS.organizerDeleteSchedule(row.id))
+        await this.load()
+      } catch (err) {
+        alert(err?.message || '회차 삭제 중 오류가 발생했습니다.')
+      }
     }
   }
 }
