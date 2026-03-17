@@ -287,11 +287,15 @@ export default {
       if (this.filters.regions?.length) params.regions = this.filters.regions
       if (this.filters.selectedDateStart) {
         const d = new Date(this.filters.selectedDateStart)
-        params.filterStartDate = d.toISOString().slice(0, 10)
+        // LocalDateTime 포맷(yyyy-MM-ddTHH:mm:ss)으로 하루 시작 시각 전달
+        const start = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0)
+        params.filterStartDate = start.toISOString().slice(0, 19)
       }
       if (this.filters.selectedDateEnd) {
         const d = new Date(this.filters.selectedDateEnd)
-        params.filterEndDate = d.toISOString().slice(0, 10)
+        // LocalDateTime 포맷(yyyy-MM-ddTHH:mm:ss)으로 하루 끝 시각 전달
+        const end = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59)
+        params.filterEndDate = end.toISOString().slice(0, 19)
       }
       return params
     },
