@@ -5,7 +5,7 @@ import { showErrorAlert } from '../../composables/useErrorToast'
 export { parseErrorResponse, getMessageFromResponse } from './parseError'
 
 const DEFAULTS = {
-  baseUrl: import.meta.env.VITE_API_BASE || 'http://localhost:8080',
+  baseUrl: import.meta.env.VITE_API_BASE || 'https://server.articket.cloud',
 }
 
 const REFRESH_PATH = '/member/refresh-at'
@@ -19,7 +19,12 @@ export function createApiClient(opts = {}) {
 
   const api = axios.create({
     baseURL: baseUrl,
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    },
     timeout: 10000,
   })
 
