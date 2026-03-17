@@ -52,15 +52,17 @@
       <!-- 회원가입 추이 차트 -->
       <div class="lg:col-span-2 flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div class="flex shrink-0 items-center justify-between border-b border-slate-100 bg-slate-50 px-4 py-3">
-          <div class="flex items-center gap-3">
-            <span class="mgmt-section-title">회원가입 추이</span>
-            <div class="flex gap-0.5 rounded-lg bg-slate-100 p-0.5">
-              <button
-                v-for="opt in chartRoleOptions" :key="opt.value"
-                class="rounded-md px-2.5 py-1 text-xs font-medium transition-colors"
-                :class="chartRole === opt.value ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'"
-                @click="chartRole = opt.value"
-              >{{ opt.label }}</button>
+          <div class="flex flex-col gap-1">
+            <div class="flex items-center gap-3">
+              <span class="mgmt-section-title">회원가입 추이</span>
+              <div class="flex gap-0.5 rounded-lg bg-slate-100 p-0.5">
+                <button
+                  v-for="opt in chartRoleOptions" :key="opt.value"
+                  class="rounded-md px-2.5 py-1 text-xs font-medium transition-colors"
+                  :class="chartRole === opt.value ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'"
+                  @click="chartRole = opt.value"
+                >{{ opt.label }}</button>
+              </div>
             </div>
           </div>
           <div class="flex gap-1">
