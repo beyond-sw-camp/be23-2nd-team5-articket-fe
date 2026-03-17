@@ -187,7 +187,8 @@
 
             <button
               type="button"
-              class="h-14 w-full rounded-xl bg-red-600 text-base font-bold text-white transition hover:bg-red-700"
+              class="h-14 w-full rounded-xl bg-red-600 text-base font-bold text-white transition hover:bg-red-700 disabled:bg-slate-300"
+              :disabled="isExpired"
               @click="handlePayment"
             >
               {{ (parseInt(order.amount) + 2000 * order.seatDetails.length).toLocaleString() }}원 결제하기
@@ -196,20 +197,45 @@
         </div>
       </div>
     </div>
+
+    <!-- 좌석 선점 만료 모달 -->
+    <UiModal
+      :open="showExpiredModal"
+      title="좌석 선점 시간 만료"
+      @close="handleGoBack"
+    >
+      <div class="py-4 text-center">
+        <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-50">
+          <AlertCircle class="h-6 w-6 text-red-600" />
+        </div>
+        <h3 class="text-lg font-bold text-slate-900">선점 시간이 만료되었습니다</h3>
+        <p class="mt-2 text-sm text-slate-600">
+          좌석 선점 시간이 초과되어 주문을 진행할 수 없습니다.<br />
+          공연 상세 페이지로 돌아가 좌석을 다시 선택해 주세요.
+        </p>
+      </div>
+      <template #footer>
+        <UiButton class="w-full" variant="primary" @click="handleGoBack">
+          공연 상세로 돌아가기
+        </UiButton>
+      </template>
+    </UiModal>
   </div>
 </template>
 
 <script>
-import { Clock, Ticket, User, CreditCard, Receipt } from 'lucide-vue-next'
+import { Clock, Ticket, User, CreditCard, Receipt, AlertCircle } from 'lucide-vue-next'
 import PortOne from '@portone/browser-sdk/v2'
 import { useApi } from '../../composables/useApi'
 import { useSeatHoldMock } from '../../composables/useSeatHoldMock'
 import { useMe } from '../../composables/useMe'
 import { ENDPOINTS } from '../../lib/api/endpoints'
+import UiModal from '../../components/common/UiModal.vue'
+import UiButton from '../../components/common/UiButton.vue'
 
 export default {
   name: 'PaymentView',
-  components: { Clock, Ticket, User, CreditCard, Receipt },
+  components: { Clock, Ticket, User, CreditCard, Receipt, AlertCircle, UiModal, UiButton },
   data() {
     return {
       api: null,
@@ -218,6 +244,7 @@ export default {
       holdExpiresAt: null,
       now: Date.now(),
       timerInterval: null,
+      showExpiredModal: false,
       agreements: {
         cancelFee: false,
         kakaoFinance: false,
@@ -247,6 +274,9 @@ export default {
     remainingMs() {
       if (!this.holdExpiresAt) return 0
       return Math.max(0, new Date(this.holdExpiresAt).getTime() - this.now)
+    },
+    isExpired() {
+      return this.holdExpiresAt != null && this.remainingMs <= 0
     },
     timerText() {
       const s = Math.floor(this.remainingMs / 1000)
@@ -283,6 +313,13 @@ export default {
       })
     },
   },
+  watch: {
+    remainingMs(newVal) {
+      if (newVal <= 0 && this.holdExpiresAt != null && !this.showExpiredModal) {
+        this.showExpiredModal = true
+      }
+    }
+  },
   created() {
     this.api = useApi()
     this.seatHoldMock = useSeatHoldMock()
@@ -300,6 +337,10 @@ export default {
       try {
         const hold = await this.seatHoldMock.getHold(this.holdId)
         this.holdExpiresAt = hold?.expiresAt ?? null
+        // 페이지 진입 시 이미 만료된 경우
+        if (this.isExpired) {
+          this.showExpiredModal = true
+        }
       } catch (_) {
         this.holdExpiresAt = null
       }
@@ -321,7 +362,19 @@ export default {
         this.agreements[key] = checked
       })
     },
+    handleGoBack() {
+      if (this.order?.concertId) {
+        this.$router.push(`/concerts/${this.order.concertId}`)
+      } else {
+        this.$router.push('/')
+      }
+    },
     async handlePayment() {
+      if (this.isExpired) {
+        this.showExpiredModal = true
+        return
+      }
+
       if (!this.allAgreed) {
         alert('모든 필수 항목에 동의해주세요.')
         return
