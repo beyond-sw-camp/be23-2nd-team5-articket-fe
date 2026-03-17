@@ -512,9 +512,12 @@ export default {
         const result = await this.api.get(
           ENDPOINTS.myOrders({ period: period || undefined, page: this.currentPage, size: PAGE_SIZE })
         )
-        const list = result.content ?? []
+        const rawList = result.content ?? []
+        // 결제 대기(PENDING) 상태의 주문은 예매내역 목록에서 제외
+        const list = rawList.filter((order) => order.status !== 'PENDING')
         this.totalPages = result.totalPages ?? 1
-        this.totalElements = result.totalElements ?? list.length
+        // 전체 건수는 필터링 결과 기준으로 표시 (페이지네이션은 서버 기준 totalPages 사용)
+        this.totalElements = list.length
         this.orders = list.map((order) => ({
           orderId: order.id ?? order.orderId ?? null,
           paymentId: order.paymentId,
