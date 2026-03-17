@@ -348,34 +348,34 @@ public class SeatHoldService {
 
         // Check-Then-Set을 원자적으로 수행하는 Lua 스크립트
         String luaScript = """
-            local seatKey    = KEYS[1]
-            local memberSet  = KEYS[2]
-            local takenKey   = KEYS[3]
-            local memberId   = ARGV[1]
-            local ttl        = tonumber(ARGV[2])
-            local setTtl     = tonumber(ARGV[3])
-
-            -- 1. 내가 이미 선점한 좌석인가?
-            if redis.call('EXISTS', seatKey) == 1 then return -2 end
-
-            -- 2. 다른 사람이 이미 선점한 좌석인가? (핵심 뮤텍스)
-            if redis.call('EXISTS', takenKey) == 1 then return 0 end
-
-            -- 3. 내 선점 개수가 최대치(2)를 초과하는가?
-            if redis.call('SCARD', memberSet) >= 2 then return -1 end
-
-            -- 4. 통과: 세 개의 키 모두 설정
-            redis.call('SET', seatKey, memberId, 'EX', ttl)
-            redis.call('SET', takenKey, memberId, 'EX', ttl)
-            redis.call('SADD', memberSet, tostring(KEYS[1]:match("seat:hold:%d+:(.+)")))
-            redis.call('EXPIRE', memberSet, setTtl)
-            return 1
-            """;
+                local seatKey    = KEYS[1]
+                local memberSet  = KEYS[2]
+                local takenKey   = KEYS[3]
+                local memberId   = ARGV[1]
+                local ttl        = tonumber(ARGV[2])
+                local setTtl     = tonumber(ARGV[3])
+                
+                -- 1. 내가 이미 선점한 좌석인가?
+                if redis.call('EXISTS', seatKey) == 1 then return -2 end
+                
+                -- 2. 다른 사람이 이미 선점한 좌석인가? (핵심 뮤텍스)
+                if redis.call('EXISTS', takenKey) == 1 then return 0 end
+                
+                -- 3. 내 선점 개수가 최대치(2)를 초과하는가?
+                if redis.call('SCARD', memberSet) >= 2 then return -1 end
+                
+                -- 4. 통과: 세 개의 키 모두 설정
+                redis.call('SET', seatKey, memberId, 'EX', ttl)
+                redis.call('SET', takenKey, memberId, 'EX', ttl)
+                redis.call('SADD', memberSet, tostring(KEYS[1]:match("seat:hold:%d+:(.+)")))
+                redis.call('EXPIRE', memberSet, setTtl)
+                return 1
+                """;
 
         Long result = stringRedisTemplate.execute(
-            new DefaultRedisScript<>(luaScript, Long.class),
-            List.of(seatKey, memberSetKey, takenKey),
-            String.valueOf(member.getId()), String.valueOf(holdTtl), "3600"
+                new DefaultRedisScript<>(luaScript, Long.class),
+                List.of(seatKey, memberSetKey, takenKey),
+                String.valueOf(member.getId()), String.valueOf(holdTtl), "3600"
         );
 
         if (result == -2L) throw new IllegalStateException("이미 선점한 좌석입니다.");
@@ -384,7 +384,7 @@ public class SeatHoldService {
 
         // 5. 선점 성공 → 모든 클라이언트에게 실시간 알림
         simpMessagingTemplate.convertAndSend("/topic/seat",
-            SeatStatusMessageDto.builder().seatId(seatId).status("HOLD").build());
+                SeatStatusMessageDto.builder().seatId(seatId).status("HOLD").build());
     }
 }
 ```
@@ -407,35 +407,35 @@ public void releaseSeat(Long seatId) {
 
     // 소유 확인 후 원자적 삭제
     String luaScript = """
-        local seatKey    = KEYS[1]
-        local takenKey   = KEYS[2]
-        local memberSet  = KEYS[3]
-        local seatId     = ARGV[1]
-
-        -- 내 소유인지 확인 (다른 사용자가 이미 선점했다면 무시)
-        if redis.call('EXISTS', seatKey) == 0 then return 0 end
-
-        -- 소유 확인 후 삭제
-        redis.call('DEL', seatKey, takenKey)
-        redis.call('SREM', memberSet, seatId)
-
-        -- 고아 키 방지: 선점 목록이 비어있으면 Set 자체를 삭제
-        if redis.call('SCARD', memberSet) == 0 then
-            redis.call('DEL', memberSet)
-        end
-        return 1
-        """;
+            local seatKey    = KEYS[1]
+            local takenKey   = KEYS[2]
+            local memberSet  = KEYS[3]
+            local seatId     = ARGV[1]
+            
+            -- 내 소유인지 확인 (다른 사용자가 이미 선점했다면 무시)
+            if redis.call('EXISTS', seatKey) == 0 then return 0 end
+            
+            -- 소유 확인 후 삭제
+            redis.call('DEL', seatKey, takenKey)
+            redis.call('SREM', memberSet, seatId)
+            
+            -- 고아 키 방지: 선점 목록이 비어있으면 Set 자체를 삭제
+            if redis.call('SCARD', memberSet) == 0 then
+                redis.call('DEL', memberSet)
+            end
+            return 1
+            """;
 
     Long result = stringRedisTemplate.execute(
-        new DefaultRedisScript<>(luaScript, Long.class),
-        List.of(seatKey, takenKey, memberSetKey),
-        String.valueOf(seatId)
+            new DefaultRedisScript<>(luaScript, Long.class),
+            List.of(seatKey, takenKey, memberSetKey),
+            String.valueOf(seatId)
     );
 
     if (result != null && result == 1L) {
         // 성공적으로 해제된 경우에만 브로드캐스트
         simpMessagingTemplate.convertAndSend("/topic/seat",
-            SeatStatusMessageDto.builder().seatId(seatId).status("RELEASE").build());
+                SeatStatusMessageDto.builder().seatId(seatId).status("RELEASE").build());
     }
 }
 ```
@@ -478,10 +478,10 @@ public class SeatHoldExpireListener implements MessageListener {
 
         // 모든 클라이언트에게 만료 알림 브로드캐스트
         simpMessagingTemplate.convertAndSend("/topic/seat",
-            SeatStatusMessageDto.builder()
-                .seatId(Long.parseLong(seatId))
-                .status("RELEASE")
-                .build());
+                SeatStatusMessageDto.builder()
+                        .seatId(Long.parseLong(seatId))
+                        .status("RELEASE")
+                        .build());
     }
 }
 ```
@@ -532,7 +532,7 @@ public class RedisConfig {
         container.setConnectionFactory(factory);
         // "__keyevent@1__:expired" → DB 1에서 발생한 expired 이벤트 구독
         container.addMessageListener(seatHoldExpireListener,
-            new PatternTopic("__keyevent@1__:expired"));
+                new PatternTopic("__keyevent@1__:expired"));
         return container;
     }
 }
@@ -591,7 +591,7 @@ public Long create(OrderCreateDto dto) {
         Seat seat = seatRepository.findById(seatId).orElseThrow(...);
         amount += seat.getPrice();
         ordering.getOrderList().add(
-            OrderDetail.builder().seat(seat).order(ordering).build()
+                OrderDetail.builder().seat(seat).order(ordering).build()
         );
     }
 
@@ -735,7 +735,7 @@ stringRedisTemplate.delete("seat:taken:" + seatId);
 ```java
 Long remaining = stringRedisTemplate.opsForSet().size(memberSetKey);
 if (remaining != null && remaining == 0) {
-    stringRedisTemplate.delete(memberSetKey);
+        stringRedisTemplate.delete(memberSetKey);
 }
 ```
 
@@ -819,7 +819,7 @@ spring:
   redis:
     host: localhost
     port: 6379
-  
+
 oauth2:
   google:
     client-id: ${GOOGLE_CLIENT_ID}
@@ -883,16 +883,16 @@ async sendCodeToServer(code) {
 public MemberLoginResDto googleLogin(@RequestBody RedirectDto redirectDto) {
     // 1. 구글로부터 AccessToken 교환
     AccessTokenDto accessTokenDto = googleService.getAccessToken(redirectDto.getCode());
-  
+
     // 2. 구글 사용자 프로필 획득
     GoogleProfileDto googleProfileDto = googleService.getGoogleProfile(accessTokenDto.getAccess_token());
-  
+
     // 3. 기존 회원 여부 확인 및 자동 가입 (JIT Provisioning)
     Member member = memberService.getMemberBySocialId(googleProfileDto.getSub());
     if (member == null) {
         member = memberService.createOauth(googleProfileDto.getSub(), googleProfileDto.getEmail(), SocialType.GOOGLE);
     }
-  
+
     // 4. 서비스 전용 토큰(AT/RT) 발급
     return MemberLoginResDto.builder()
             .access_token(jwtTokenProvider.createToken(member))
@@ -909,7 +909,7 @@ public MemberLoginResDto googleLogin(@RequestBody RedirectDto redirectDto) {
 public String createTokenRt(Member member) {
     Claims claims = Jwts.claims().setSubject(member.getEmail());
     claims.put("role", member.getRole().toString());
-  
+
     Date now = new Date();
     String token = Jwts.builder()
             .setClaims(claims)
@@ -1261,26 +1261,26 @@ Vue의 컴포넌트 생명주기와 지도의 렌더링 시점이 맞지 않아 
 
 ```java
 @Query("""
-    SELECT v, (6371 * acos(LEAST(1.0, GREATEST(-1.0,
-        cos(radians(:lat)) * cos(radians(va.latitude)) *
-        cos(radians(va.longitude) - radians(:lng)) +
-        sin(radians(:lat)) * sin(radians(va.latitude))
-    )))) AS distance
-    FROM Venue v
-    JOIN v.venueAddress va
-    WHERE (6371 * acos(LEAST(1.0, GREATEST(-1.0,
-        cos(radians(:lat)) * cos(radians(va.latitude)) *
-        cos(radians(va.longitude) - radians(:lng)) +
-        sin(radians(:lat)) * sin(radians(va.latitude))
-    )))) <= :radiusKm
-    ORDER BY distance ASC
-    """)
+        SELECT v, (6371 * acos(LEAST(1.0, GREATEST(-1.0,
+            cos(radians(:lat)) * cos(radians(va.latitude)) *
+            cos(radians(va.longitude) - radians(:lng)) +
+            sin(radians(:lat)) * sin(radians(va.latitude))
+        )))) AS distance
+        FROM Venue v
+        JOIN v.venueAddress va
+        WHERE (6371 * acos(LEAST(1.0, GREATEST(-1.0,
+            cos(radians(:lat)) * cos(radians(va.latitude)) *
+            cos(radians(va.longitude) - radians(:lng)) +
+            sin(radians(:lat)) * sin(radians(va.latitude))
+        )))) <= :radiusKm
+        ORDER BY distance ASC
+        """)
 Page<Object[]> findNearbyVenues(
-        @Param("lat") Double latitude, 
-        @Param("lng") Double longitude, 
-        @Param("radiusKm") Double radiusKm, 
-        Pageable pageable
-);
+                @Param("lat") Double latitude,
+                @Param("lng") Double longitude,
+                @Param("radiusKm") Double radiusKm,
+                Pageable pageable
+        );
 ```
 
 - **수학적 설계**: `acos` 함수의 파라미터가 범위를 벗어나 `NaN`이 발생하는 것을 방지하기 위해 `LEAST`와 `GREATEST`로 범위를 `[-1, 1]`로 제한하는 정밀함을 더했습니다.
