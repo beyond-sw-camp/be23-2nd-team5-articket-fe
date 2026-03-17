@@ -167,6 +167,17 @@ import { useApi } from '../../composables/useApi'
 import { useRole } from '../../composables/useRole'
 import { ENDPOINTS } from '../../lib/api/endpoints'
 
+const DEFAULT_POSTER =
+  'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=600&q=60'
+
+function resolveImageUrl(raw) {
+  if (!raw || typeof raw !== 'string') return DEFAULT_POSTER
+  const s = raw.trim()
+  if (s.startsWith('http://') || s.startsWith('https://')) return s
+  const base = (import.meta.env.VITE_API_BASE || 'http://localhost:8080').replace(/\/$/, '')
+  return s.startsWith('/') ? base + s : base + '/' + s
+}
+
 export default {
   name: 'PerformerDetailView',
   components: { Heart, UiButton },
@@ -218,7 +229,53 @@ export default {
           likeCount: detail.likeCount ?? 0,
           liked: detail.liked ?? false
         }
-        this.concerts = Array.isArray(concertsRes) ? concertsRes : concertsRes?.content ?? []
+        const rawConcerts = Array.isArray(concertsRes) ? concertsRes : concertsRes?.content ?? []
+        // 다른 API들과 필드명을 맞추기 위해 normalize
+        let normalized = rawConcerts.map((c) => {
+          const id = c.concertId ?? c.id
+          const status =
+            (c.status ??
+              c.concertStatus ??
+              c.concert_status ??
+              '').toString().toUpperCase()
+          // 썸네일 필드명은 API마다 다를 수 있으므로,
+          // 우선 알려진 필드명을 확인하고, 없으면 key 이름에 thum/thumb/poster/image 가 포함된 첫 번째 문자열을 사용
+          let posterRaw =
+            c.thumImgUrl ??
+            c.thum_img_url ??
+            c.posterUrl ??
+            c.thumbnailUrl ??
+            c.concertThumbnailUrl ??
+            c.imageUrl ??
+            c.posterImageUrl ??
+            ''
+          if (!posterRaw) {
+            const dynamicKey = Object.keys(c).find(
+              (k) =>
+                /(thum|thumb|poster|image)/i.test(k) &&
+                c[k] &&
+                typeof c[k] === 'string'
+            )
+            if (dynamicKey) posterRaw = c[dynamicKey]
+          }
+          return {
+            ...c,
+            id,
+            concertId: id,
+            status,
+            title: c.title ?? c.concertTitle ?? c.name ?? '',
+            concertTitle: c.concertTitle ?? c.title ?? c.name ?? '',
+            venueName: c.venueName ?? c.venue?.name ?? '',
+            scheduleStartDate:
+              c.scheduleStartDate ?? c.schedule_start_date ?? c.startDate ?? c.date ?? null,
+            scheduleEndDate: c.scheduleEndDate ?? c.schedule_end_date ?? null,
+            thumImgUrl: resolveImageUrl(posterRaw),
+            posterUrl: resolveImageUrl(posterRaw),
+          }
+        })
+
+        // 권한/노출 여부는 백엔드(performerConcerts)에서 이미 필터링된 결과를 사용한다.
+        this.concerts = normalized
         this.schedules = Array.isArray(schedulesRes) ? schedulesRes : schedulesRes?.content ?? []
       } catch {
         this.item = null
