@@ -205,13 +205,27 @@ export default {
   methods: {
     normalizeSeatMap(item) {
       const status = String(item?.status ?? item?.seatMapStatus ?? 'DRAFT').toUpperCase()
+
+      // 서버 응답에서 썸네일 값을 꺼냄
+      // 백엔드가 thumbnailUrl 또는 thumbnail_url 둘 중 하나로 줄 수 있어서 둘 다 대응
+      const rawThumb = item?.thumbnailUrl ?? item?.thumbnail_url ?? null
+
       return {
         id: item?.id,
         name: item?.name ?? '',
         venue_id: item?.venue_id ?? item?.venueId ?? item?.venue?.id,
         version: item?.version ?? null,
         status,
-        thumbnailUrl: item?.thumbnailUrl ?? item?.thumbnail_url ?? null
+        // 썸네일 캐시 방지 처리
+        thumbnailUrl: rawThumb
+          // data:image/... 형태의 Base64 문자열이면
+          // 그 자체가 이미지 데이터이므로 그대로 사용
+          ? (String(rawThumb).startsWith('data:')
+              ? rawThumb
+            // 일반 URL이면 뒤에 시간값을 붙여서
+            // 브라우저가 예전 이미지를 캐시에서 꺼내지 못하게 함
+              : `${rawThumb}${String(rawThumb).includes('?') ? '&' : '?'}t=${Date.now()}`)
+          : null
       }
     },
     async loadAll() {
