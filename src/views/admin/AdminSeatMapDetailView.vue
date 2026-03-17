@@ -296,13 +296,19 @@ export default {
     },
     normalizeSeatMap(item) {
       const status = String(item?.status ?? item?.seatMapStatus ?? 'DRAFT').toUpperCase()
+      const rawThumb = item?.thumbnailUrl ?? item?.thumbnail_url ?? null
+
       return {
         id: item?.id,
         name: item?.name ?? '',
         venue_id: item?.venue_id ?? item?.venueId ?? item?.venue?.id,
         version: item?.version ?? null,
         status,
-        thumbnailUrl: item?.thumbnailUrl ?? item?.thumbnail_url ?? null
+        thumbnailUrl: rawThumb
+          ? (String(rawThumb).startsWith('data:')
+              ? rawThumb
+              : `${rawThumb}${String(rawThumb).includes('?') ? '&' : '?'}t=${Date.now()}`)
+          : null
       }
     },
     async loadAll() {
