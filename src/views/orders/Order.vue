@@ -1,198 +1,199 @@
 <template>
-  <div class="mx-auto max-w-5xl space-y-6 p-4 pb-12 pt-10 md:p-8">
-    <div>
+  <div class="mx-auto max-w-6xl space-y-6">
+    <!-- 헤더 -->
+    <div class="px-1">
       <h1 class="text-xl font-bold text-slate-900 sm:text-2xl">티켓 결제</h1>
-      <p class="mt-1 text-sm text-slate-500">주문 정보를 확인하고 결제를 완료해 주세요.</p>
-    </div>
-
-    <!-- 결제 유효시간 (페이지 상단에 자연스럽게 배치) -->
-    <div
-      v-if="holdExpiresAt != null"
-      class="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm sm:px-5"
-      :class="remainingMs > 0 ? 'border-l-4 border-l-red-500' : 'border-l-4 border-l-slate-300'"
-    >
-      <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl" :class="remainingMs > 0 ? 'bg-red-50' : 'bg-slate-100'">
-        <Clock class="h-5 w-5" :class="remainingMs > 0 ? 'text-red-600' : 'text-slate-500'" />
-      </div>
-      <div class="min-w-0 flex-1">
-        <p class="text-sm font-medium text-slate-700">
-          {{ remainingMs > 0 ? '결제 유효시간이 지나면 좌석 선점이 해제됩니다.' : '선점 시간이 만료되었습니다.' }}
-        </p>
-        <p class="mt-0.5 text-lg font-bold tabular-nums" :class="remainingMs > 0 ? 'text-red-600' : 'text-slate-500'">
-          {{ remainingMs > 0 ? timerText : '00:00' }}
-        </p>
-      </div>
+      <p class="mt-1 text-sm text-slate-500">티켓 결제 · 주문 정보를 확인하고 결제를 완료해 주세요.</p>
     </div>
 
     <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
       <div class="space-y-6 md:col-span-2">
-        <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-          <div class="mb-4 flex items-center gap-2 border-b border-slate-100 pb-3">
-            <Ticket class="h-5 w-5 text-slate-500" />
-            <span class="text-base font-semibold text-slate-900">티켓 주문상세</span>
+        <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+          <div class="mb-5 flex items-center gap-2 border-b border-slate-100 pb-4">
+            <Ticket class="h-5 w-5 text-red-600" />
+            <h2 class="text-base font-bold text-slate-900">티켓 주문상세</h2>
           </div>
           <div v-if="order" class="space-y-4">
-            <div class="border-b border-slate-100 pb-4">
-              <p class="text-base font-bold text-slate-900">{{ order.concertName }}</p>
-              <p class="mt-1 text-sm text-slate-500">{{ order.scheduleDate }} | {{ order.venueName }}</p>
+            <div class="border-b border-slate-100 pb-5">
+              <h3 class="text-lg font-bold text-slate-900">{{ order.concertName }}</h3>
+              <p class="mt-1.5 text-sm font-medium text-slate-500">{{ order.scheduleDate }} | {{ order.venueName }}</p>
             </div>
             <div
               v-for="(seat, index) in order.seatDetails"
               :key="index"
-              class="flex items-center justify-between py-3"
+              class="flex items-center justify-between py-4"
               :class="index < order.seatDetails.length - 1 ? 'border-b border-slate-100' : ''"
             >
-              <span class="text-sm font-medium text-slate-700">{{ seat.seatDefName }} 1매</span>
-              <span class="text-sm font-semibold text-slate-900">{{ parseInt(seat.price).toLocaleString() }}원</span>
+              <span class="text-sm font-semibold text-slate-700">{{ seat.seatDefName }} 1매</span>
+              <span class="text-sm font-bold text-slate-900">{{ parseInt(seat.price).toLocaleString() }}원</span>
             </div>
           </div>
         </div>
 
-        <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-          <div class="mb-4 flex items-center gap-2 border-b border-slate-100 pb-3">
-            <User class="h-5 w-5 text-slate-500" />
-            <span class="text-base font-semibold text-slate-900">예매자 정보</span>
+        <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+          <div class="mb-5 flex items-center gap-2 border-b border-slate-100 pb-4">
+            <User class="h-5 w-5 text-red-600" />
+            <h2 class="text-base font-bold text-slate-900">예매자 정보</h2>
           </div>
-          <div class="space-y-0 text-sm">
-            <div class="flex items-center gap-4 border-b border-slate-100 py-3">
-              <span class="w-20 shrink-0 font-medium text-slate-500">예매자</span>
-              <span class="flex-1 font-semibold text-slate-900">{{ buyerName }}</span>
+          <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+            <div class="space-y-1">
+              <p class="text-[11px] font-medium text-slate-500 uppercase">예매자 (Name)</p>
+              <p class="text-sm font-semibold text-slate-900">{{ buyerName }}</p>
             </div>
-            <div class="flex items-center gap-4 border-b border-slate-100 py-3">
-              <span class="w-20 shrink-0 font-medium text-slate-500">생년월일</span>
-              <span class="flex-1 text-slate-900">{{ buyerBirthLabel }}</span>
+            <div class="space-y-1">
+              <p class="text-[11px] font-medium text-slate-500 uppercase">생년월일 (Birth)</p>
+              <p class="text-sm font-semibold text-slate-900">{{ buyerBirthLabel }}</p>
             </div>
-            <div class="flex items-center gap-4 border-b border-slate-100 py-3">
-              <span class="w-20 shrink-0 font-medium text-slate-500">이메일</span>
-              <span class="flex-1 text-slate-900 break-all">{{ buyerEmail }}</span>
+            <div class="space-y-1">
+              <p class="text-[11px] font-medium text-slate-500 uppercase">이메일 (Email)</p>
+              <p class="text-sm font-semibold text-slate-900 break-all">{{ buyerEmail }}</p>
             </div>
-            <div class="flex items-center gap-4 py-3">
-              <span class="w-20 shrink-0 font-medium text-slate-500">휴대폰</span>
-              <span class="flex-1 text-slate-900 break-all">{{ buyerPhone }}</span>
+            <div class="space-y-1">
+              <p class="text-[11px] font-medium text-slate-500 uppercase">휴대폰 (Phone)</p>
+              <p class="text-sm font-semibold text-slate-900 break-all">{{ buyerPhone }}</p>
             </div>
           </div>
         </div>
 
-        <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-          <div class="mb-4 flex items-center gap-2 border-b border-slate-100 pb-3">
-            <CreditCard class="h-5 w-5 text-slate-500" />
-            <span class="text-base font-semibold text-slate-900">결제수단</span>
+        <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+          <div class="mb-5 flex items-center gap-2 border-b border-slate-100 pb-4">
+            <CreditCard class="h-5 w-5 text-red-600" />
+            <h2 class="text-base font-bold text-slate-900">결제수단</h2>
           </div>
-          <div class="space-y-0">
-            <label class="flex items-center gap-3 py-4 text-sm font-medium text-slate-700">
+          <div class="rounded-xl bg-slate-50 p-4">
+            <label class="flex items-center gap-3 text-sm font-bold text-slate-700">
               <input
                 type="radio"
                 checked
                 disabled
                 class="h-4 w-4 border-slate-300 text-red-600 focus:ring-red-500"
               />
-              신용카드, 간편결제만 지원됩니다.
+              신용카드 / 간편결제
             </label>
+            <p class="mt-2 ml-7 text-xs text-slate-500 font-medium leading-relaxed">
+              현재 신용카드 및 간편결제 서비스만 이용 가능합니다.<br />
+              결제 시 팝업창에서 원하는 수단을 선택해 주세요.
+            </p>
           </div>
         </div>
 
-        <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-          <div class="mb-4 flex items-center justify-between border-b border-slate-100 pb-3">
-            <span class="text-base font-semibold text-slate-900">예매자동의</span>
-            <label class="flex cursor-pointer items-center gap-2 text-sm font-medium text-slate-700">
-              <input type="checkbox" :checked="allAgreed" @change="toggleAllAgreed" class="h-4 w-4 border-slate-300 text-red-600 focus:ring-red-500" />
+        <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+          <div class="mb-5 flex items-center justify-between border-b border-slate-100 pb-4">
+            <div class="flex items-center gap-2">
+              <Receipt class="h-5 w-5 text-red-600" />
+              <h2 class="text-base font-bold text-slate-900">예매자 동의</h2>
+            </div>
+            <label class="flex cursor-pointer items-center gap-2 text-xs font-bold text-slate-500 hover:text-red-600 transition-colors">
+              <input type="checkbox" :checked="allAgreed" @change="toggleAllAgreed" class="h-4 w-4 rounded-md border-slate-300 text-red-600 focus:ring-red-500" />
               전체동의
             </label>
           </div>
 
-          <div class="space-y-0">
-            <div class="border-b border-slate-100 pb-4">
-              <label class="flex cursor-pointer items-start gap-2 text-sm font-medium text-slate-700">
-                <input v-model="agreements.cancelFee" type="checkbox" class="mt-0.5 h-4 w-4 shrink-0 border-slate-300 text-red-600 focus:ring-red-500" />
-                [필수] 예매 및 취소 수수료/취소기한을 확인하였으며 동의합니다.
+          <div class="space-y-2">
+            <div class="rounded-xl border border-slate-100 bg-slate-50/50 p-4">
+              <label class="flex cursor-pointer items-start gap-3 text-sm font-bold text-slate-700">
+                <input v-model="agreements.cancelFee" type="checkbox" class="mt-0.5 h-4 w-4 shrink-0 rounded-md border-slate-300 text-red-600 focus:ring-red-500" />
+                [필수] 예매 및 취소 수수료/취소기한 동의
               </label>
-              <div class="ml-6 mt-3">
-                <table class="w-full border border-slate-200 text-center text-xs text-slate-600">
+              <div class="ml-7 mt-4 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+                <table class="w-full text-center text-[11px] text-slate-600">
                   <thead>
-                    <tr class="border-b border-slate-200 bg-slate-50">
-                      <th class="px-3 py-2 font-medium">취소일</th>
-                      <th class="px-3 py-2 font-medium">취소수수료</th>
+                    <tr class="border-b border-slate-200 bg-slate-50 font-bold">
+                      <th class="px-3 py-2.5">취소일</th>
+                      <th class="px-3 py-2.5">취소수수료</th>
                     </tr>
                   </thead>
-                  <tbody>
-                    <tr v-for="(row, i) in cancelPolicy" :key="i" class="border-b border-slate-100 last:border-0">
-                      <td class="px-3 py-2">{{ row.period }}</td>
-                      <td class="px-3 py-2">{{ row.fee }}</td>
+                  <tbody class="divide-y divide-slate-100">
+                    <tr v-for="(row, i) in cancelPolicy" :key="i">
+                      <td class="px-3 py-2.5 font-medium">{{ row.period }}</td>
+                      <td class="px-3 py-2.5 font-bold text-slate-900">{{ row.fee }}</td>
                     </tr>
                   </tbody>
                 </table>
-                <div class="mt-2 space-y-1 text-xs text-slate-500">
-                  <p>- 예매 당일 취소할 경우에는 예매수수료 및 취소수수료 환불이 가능합니다. (취소수수료는 취소 기한 내에 한함)</p>
-                  <p>- 취소수수료는 예매내역에 표기된 예매일 기준으로 부과됩니다. (경로:마이티켓&gt;예매내역&gt;예매상세)</p>
-                </div>
               </div>
             </div>
 
-            <div class="border-b border-slate-100 py-4">
-              <label class="flex cursor-pointer items-center gap-2 text-sm font-medium text-slate-700">
-                <input v-model="agreements.kakaoFinance" type="checkbox" class="h-4 w-4 shrink-0 border-slate-300 text-red-600 focus:ring-red-500" />
-                [필수] 카카오 전자금융 이용약관 동의
-                <button type="button"
-                  class="ml-1 rounded border border-slate-300 px-2 py-0.5 text-xs text-slate-500 hover:bg-slate-50">상세보기</button>
-              </label>
-            </div>
-
-            <div class="border-b border-slate-100 py-4">
-              <label class="flex cursor-pointer items-center gap-2 text-sm font-medium text-slate-700">
-                <input v-model="agreements.privacy" type="checkbox" class="h-4 w-4 shrink-0 border-slate-300 text-red-600 focus:ring-red-500" />
-                [필수] 개인정보 수집/이용에 동의합니다.
-                <button type="button"
-                  class="ml-1 rounded border border-slate-300 px-2 py-0.5 text-xs text-slate-500 hover:bg-slate-50">상세보기</button>
-              </label>
-            </div>
-
-            <div class="pt-4">
-              <label class="flex cursor-pointer items-center gap-2 text-sm font-medium text-slate-700">
-                <input v-model="agreements.thirdParty" type="checkbox" class="h-4 w-4 shrink-0 border-slate-300 text-red-600 focus:ring-red-500" />
-                [필수] 개인정보 제3자 제공 동의 및 주의사항
-                <button type="button" class="ml-1 rounded border border-slate-300 px-2 py-0.5 text-xs text-slate-500 hover:bg-slate-50">상세보기</button>
-              </label>
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <div class="rounded-xl border border-slate-100 bg-slate-50/50 p-4">
+                <label class="flex cursor-pointer items-center gap-3 text-xs font-bold text-slate-700">
+                  <input v-model="agreements.kakaoFinance" type="checkbox" class="h-4 w-4 shrink-0 rounded-md border-slate-300 text-red-600 focus:ring-red-500" />
+                  전자금융 이용약관
+                </label>
+              </div>
+              <div class="rounded-xl border border-slate-100 bg-slate-50/50 p-4">
+                <label class="flex cursor-pointer items-center gap-3 text-xs font-bold text-slate-700">
+                  <input v-model="agreements.privacy" type="checkbox" class="h-4 w-4 shrink-0 rounded-md border-slate-300 text-red-600 focus:ring-red-500" />
+                  개인정보 수집/이용
+                </label>
+              </div>
+              <div class="rounded-xl border border-slate-100 bg-slate-50/50 p-4">
+                <label class="flex cursor-pointer items-center gap-3 text-xs font-bold text-slate-700">
+                  <input v-model="agreements.thirdParty" type="checkbox" class="h-4 w-4 shrink-0 rounded-md border-slate-300 text-red-600 focus:ring-red-500" />
+                  개인정보 제3자 제공
+                </label>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
       <div v-if="order" class="md:col-span-1">
-        <div class="sticky top-24">
-          <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-            <div class="mb-4 flex items-center gap-2 border-b border-slate-100 pb-3">
-              <Receipt class="h-5 w-5 text-slate-500" />
-              <span class="text-base font-semibold text-slate-900">결제 정보</span>
+        <div class="sticky top-24 space-y-6">
+          <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+            <div class="mb-5 border-b border-slate-100 pb-4">
+              <div class="flex items-center justify-between gap-2">
+                <div class="flex items-center gap-2">
+                  <Receipt class="h-5 w-5 text-red-600" />
+                  <h2 class="text-base font-bold text-slate-900">결제 정보</h2>
+                </div>
+                <div
+                  v-if="holdExpiresAt != null"
+                  class="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold"
+                  :class="remainingMs > 0 ? 'bg-red-50 text-red-600' : 'bg-slate-100 text-slate-400'"
+                >
+                  <Clock class="h-3.5 w-3.5" />
+                  <span class="tabular-nums">
+                    {{ remainingMs > 0 ? timerText : '00:00' }}
+                  </span>
+                </div>
+              </div>
             </div>
 
-            <div class="space-y-3 text-sm text-slate-600">
+            <div class="space-y-4 rounded-xl bg-slate-50 p-4 text-sm font-medium text-slate-600">
               <div class="flex justify-between">
                 <span>티켓금액</span>
-                <span class="font-medium text-slate-800">{{ parseInt(order.amount).toLocaleString() }}원</span>
+                <span class="font-bold text-slate-900">{{ parseInt(order.amount).toLocaleString() }}원</span>
               </div>
               <div class="flex justify-between">
                 <span>예매수수료</span>
-                <span class="font-medium text-slate-800">{{ (2000 * order.seatDetails.length).toLocaleString() }}원</span>
+                <span class="font-bold text-slate-900">{{ (2000 * order.seatDetails.length).toLocaleString() }}원</span>
               </div>
             </div>
 
-            <div class="my-4 border-t border-slate-100"></div>
+            <div class="my-6 border-t border-dashed border-slate-200"></div>
 
-            <div class="mb-6 flex items-end justify-between">
-              <span class="font-bold text-slate-800">최종 결제금액</span>
-              <span class="text-2xl font-bold text-red-600">
-                {{ (parseInt(order.amount) + 2000 * order.seatDetails.length).toLocaleString() }}원
-              </span>
+            <div class="mb-6 flex flex-col gap-1">
+              <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Final Amount</span>
+              <div class="flex items-baseline justify-between">
+                <span class="text-2xl font-black text-red-600">
+                  {{ (parseInt(order.amount) + 2000 * order.seatDetails.length).toLocaleString() }}원
+                </span>
+                <span class="text-xs font-bold text-slate-500">VAT 포함</span>
+              </div>
             </div>
 
             <button
               type="button"
-              class="h-14 w-full rounded-xl bg-red-600 text-base font-bold text-white transition hover:bg-red-700 disabled:bg-slate-300"
+              class="h-14 w-full rounded-2xl bg-slate-900 text-base font-bold text-white shadow-lg transition-all hover:bg-slate-800 hover:shadow-xl active:scale-[0.98] disabled:bg-slate-200 disabled:shadow-none disabled:active:scale-100"
               :disabled="isExpired"
               @click="handlePayment"
             >
               {{ (parseInt(order.amount) + 2000 * order.seatDetails.length).toLocaleString() }}원 결제하기
             </button>
+            <p class="mt-4 text-center text-[11px] font-medium text-slate-400 leading-relaxed">
+              결제 완료 시 예매 내역은<br />
+              <span class="font-bold text-slate-600">마이페이지 > 예매내역</span>에서 확인 가능합니다.
+            </p>
           </div>
         </div>
       </div>

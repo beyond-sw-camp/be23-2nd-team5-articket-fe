@@ -678,39 +678,20 @@ export default {
       }
     },
 
-    // ── 공연 목록 로드: venue → seatMaps → concerts 필터링 ───────
-    // 서버에 venueId 필터가 없으므로 아래 체인으로 처리:
-    // 1) GET /venues/{venueId}/seat-maps  → seatMapId Set 구성
-    // 2) GET /concerts?status=PUBLISHED   → 전체 PUBLISHED 공연
-    // 3) concert.concertSeatMapResDto.id ∈ seatMapIds 인 것만 추출
     async loadConcertsByVenue(venueId) {
       if (venueId == null || venueId === '') return
       this.concertsLoading = true
       try {
-        // 1. seatMap 목록
-        const seatMapRes = await this.api.get(ENDPOINTS.venueSeatMapsList(venueId, { page: 0, size: 100 }))
-        const seatMaps = Array.isArray(seatMapRes) ? seatMapRes : seatMapRes?.content || seatMapRes?.items || []
-        const seatMapIds = new Set(seatMaps.map(sm => sm.id))
-
-        if (seatMapIds.size === 0) {
-          this.concerts = []
-          return
-        }
-
-        // 2. PUBLISHED 공연 전체 (size=200으로 충분히 가져옴)
-        const concertRes = await this.api.get(`${ENDPOINTS.concerts()}?status=PUBLISHED&size=200`)
-        const allConcerts = Array.isArray(concertRes) ? concertRes : concertRes?.content || concertRes?.items || []
-
-        // 3. 이 venue 소속 seatMap의 공연만 필터
-        this.concerts = allConcerts
-          .filter(c => seatMapIds.has(c.concertSeatMapResDto?.id))
-          .map(c => ({
-            id: c.id,
-            title: c.title,
-            status: c.status,
-            ageLimit: c.ageLimit,
-            organizer: c.concertMemberResDto?.name || null
-          }))
+        // 서버에서 제공하는 공연장별 공연 조회 API 사용
+        const res = await this.api.get(ENDPOINTS.venueConcerts(venueId))
+        const list = Array.isArray(res) ? res : res?.content || res?.items || []
+        this.concerts = list.map(c => ({
+          id: c.id,
+          title: c.title,
+          status: c.status,
+          ageLimit: c.ageLimit,
+          organizer: c.organizer || c.concertMemberResDto?.name || null
+        }))
       } catch (e) {
         console.warn('공연 목록 조회 실패:', e)
         this.concerts = []

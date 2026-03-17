@@ -1,5 +1,5 @@
-﻿<template>
-  <div class="flex flex-col gap-3">
+<template>
+  <div class="flex flex-col gap-3 min-h-[calc(100vh-160px)]">
 
     <!-- 등급 범례 -->
     <div v-if="gradeLabels.length > 0"
@@ -31,7 +31,7 @@
     </div>
 
     <!-- 메인: 캔버스 + 사이드바 -->
-    <div class="flex gap-4" style="height: 680px;">
+    <div class="flex gap-4 flex-1 min-h-0">
 
       <!-- ── 좌석 캔버스 ── -->
       <div class="relative flex-1 min-w-0 rounded-2xl overflow-hidden border border-slate-200"
@@ -77,23 +77,40 @@
       </div>
 
       <!-- ── 오른쪽 선택 패널 ── -->
-      <div class="w-64 shrink-0 flex flex-col rounded-2xl border border-slate-200 bg-white overflow-hidden">
+      <div class="w-64 shrink-0 flex flex-col rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
 
         <!-- 패널 헤더 -->
-        <div class="flex items-center justify-between px-4 py-3 border-b border-slate-100">
-          <span class="text-sm font-semibold text-slate-900">
-            선택 좌석&nbsp;<span class="text-blue-600">{{ selected.length }}</span>
-          </span>
-          <button
-            v-if="selected.length > 0"
-            class="text-xs text-slate-400 hover:text-red-500 transition-colors"
-            @click="clearAll">
-            전체삭제
-          </button>
+        <div class="flex items-center justify-between px-4 py-3 border-b border-slate-100 bg-slate-50/60">
+          <div class="flex flex-col">
+            <span class="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+              Seat Hold
+            </span>
+            <span class="text-sm font-semibold text-slate-900">
+              선택 좌석&nbsp;<span class="text-blue-600">{{ selected.length }}</span>
+            </span>
+          </div>
+          <div class="flex items-center gap-2">
+            <div
+              v-if="holdCountdown"
+              class="inline-flex items-center gap-1.5 rounded-full bg-orange-50 px-3 py-1 text-[11px] font-semibold text-orange-600"
+            >
+              <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg>
+              <span class="tabular-nums">{{ holdCountdown }}</span>
+            </div>
+            <button
+              v-if="selected.length > 0"
+              class="text-xs text-slate-400 hover:text-red-500 transition-colors"
+              @click="clearAll">
+              전체삭제
+            </button>
+          </div>
         </div>
 
-        <!-- 선택된 좌석 목록 -->
-        <div class="flex-1 overflow-y-auto px-3 py-2 flex flex-col gap-2">
+        <!-- 선택된 좌석 목록 (박스 내부 스크롤) -->
+        <div class="max-h-64 overflow-y-auto px-3 py-3 flex flex-col gap-2 bg-white">
           <div
             v-for="seat in selectedSeats"
             :key="seat.seatId"
@@ -119,34 +136,31 @@
 
           <!-- 빈 상태 -->
           <div v-if="selected.length === 0"
-               class="flex flex-col items-center justify-center h-48 text-slate-400 text-xs text-center leading-relaxed">
-            <span class="text-2xl mb-2">🪑</span>
-            좌석을 클릭해<br>선택하세요
+               class="flex flex-col items-center justify-center h-32 text-slate-400 text-xs text-center leading-relaxed">
+            <span class="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-slate-100">
+              <svg class="h-5 w-5 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <rect x="4" y="8" width="16" height="9" rx="2" />
+                <path d="M6 17v2M18 17v2M4 12h16" />
+              </svg>
+            </span>
+            좌석을 클릭해<br>선택을 시작해 주세요
           </div>
         </div>
 
-        <!-- 선점 타이머 -->
-        <div v-if="holdCountdown"
-             class="px-4 py-2 flex items-center justify-between border-t border-orange-100 bg-orange-50">
-          <span class="text-xs text-slate-500">선점 만료까지</span>
-          <span
-            class="text-sm font-bold tabular-nums transition-colors"
-            :class="holdIsUrgent ? 'text-red-600 animate-pulse' : 'text-orange-500'">
-            {{ holdCountdown }}
-          </span>
-        </div>
-
         <!-- 합계 + 버튼 영역 -->
-        <div class="border-t border-slate-100 px-4 py-4 flex flex-col gap-3">
+        <div class="border-t border-slate-100 px-4 py-4 flex flex-col gap-3 bg-white">
           <div class="flex items-center justify-between text-sm">
-            <span class="text-slate-500">합계</span>
+            <span class="text-slate-500">선택 좌석 합계</span>
             <span class="font-bold text-slate-900">
               {{ selectedTotalPrice > 0 ? selectedTotalPrice.toLocaleString() + '원' : '—' }}
             </span>
           </div>
 
-          <div class="text-xs text-slate-500">
-            최대 {{ maxSeats }}개까지 선택할 수 있습니다.
+          <div class="flex flex-col gap-1 text-[11px] text-slate-500">
+            <span>최대 {{ maxSeats }}개까지 선택할 수 있습니다.</span>
+            <span v-if="holdCountdown">
+              좌석은 선점 후 5분 동안만 유지됩니다.
+            </span>
           </div>
 
           <div v-if="holdError" class="text-xs text-red-500">{{ holdError }}</div>
