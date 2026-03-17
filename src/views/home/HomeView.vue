@@ -663,7 +663,20 @@ export default {
     sampleBannerEdges(url) {
       return new Promise((resolve) => {
         const img = new Image()
-        img.crossOrigin = 'anonymous'
+        // 같은 origin이면 crossOrigin 설정이 필요 없고, 일부 환경에서는 오히려 방해가 될 수 있어 조건부로만 설정
+        try {
+          const loc = window.location
+          const a = document.createElement('a')
+          a.href = url
+          const sameOrigin =
+            (!a.protocol || a.protocol === ':' || a.protocol === loc.protocol) &&
+            (!a.host || a.host === loc.host)
+          if (!sameOrigin) {
+            img.crossOrigin = 'anonymous'
+          }
+        } catch {
+          // origin 계산 실패 시에는 그대로 두고 진행
+        }
         const timer = setTimeout(() => resolve(null), 8000)
 
         img.onload = () => {
@@ -689,7 +702,9 @@ export default {
 
             ctx.drawImage(img, 0, 0, iw, ih, destX, destY, destW, destH)
 
-            const sampleWidth = Math.max(8, Math.min(20, Math.floor(destW * 0.15)))
+            // 여러 수직 스트라이프를 샘플링하고,
+            // 각 구간에서 "실제 많이 쓰인 색"을 대표색으로 삼은 뒤
+            // 좌/우 바깥쪽에서 사용 비중이 가장 큰 색을 골라 그라데이션에 사용한다.
             const avg = (x0, y0, w, h) => {
               const d = ctx.getImageData(
                 Math.max(0, Math.floor(x0)),
@@ -704,11 +719,53 @@ export default {
                 r += d[i] * a; g += d[i + 1] * a; b += d[i + 2] * a; n += a
               }
               if (n === 0) return null
-              return { r: Math.round(r / n), g: Math.round(g / n), b: Math.round(b / n) }
+              const rr = Math.round(r / n)
+              const gg = Math.round(g / n)
+              const bb = Math.round(b / n)
+              return { r: rr, g: gg, b: bb, count: n }
             }
 
-            const left = avg(destX, destY, sampleWidth, destH)
-            const right = avg(destX + destW - sampleWidth, destY, sampleWidth, destH)
+            const stripeCount = 7
+            const stripeWidth = Math.max(8, destW / stripeCount)
+            const stripes = []
+            for (let i = 0; i < stripeCount; i++) {
+              const cx = destX + (i + 0.5) * (destW / stripeCount)
+              const x0 = cx - stripeWidth / 2
+              const info = avg(x0, destY, stripeWidth, destH)
+              if (info) {
+                stripes.push({ x: cx, ...info })
+              }
+            }
+
+            if (!stripes.length) { resolve(null); return }
+
+            const midX = destX + destW / 2
+            let left = null
+            let right = null
+
+            for (const s of stripes) {
+              if (s.x <= midX) {
+                // 왼쪽 영역: 사용 비중(count)이 가장 큰 색을 선택
+                if (!left || s.count > left.count) left = s
+              } else {
+                // 오른쪽 영역: 사용 비중(count)이 가장 큰 색을 선택
+                if (!right || s.count > right.count) right = s
+              }
+            }
+
+            // 한쪽이 비어 있으면 가장 왼쪽/오른쪽 스트라이프 중에서
+            // 위치 기준으로 가장 바깥쪽이면서 사용 비중이 큰 색을 사용
+            if (!left) {
+              left = stripes.reduce((best, s) =>
+                (!best || s.x < best.x || (s.x === best.x && s.count > best.count)) ? s : best,
+              null)
+            }
+            if (!right) {
+              right = stripes.reduce((best, s) =>
+                (!best || s.x > best.x || (s.x === best.x && s.count > best.count)) ? s : best,
+              null)
+            }
+
             if (!left || !right) { resolve(null); return }
             resolve({ left, right })
           } catch (_) {
@@ -763,14 +820,14 @@ export default {
           .then((colors) => {
             const gradient = colors
               ? `linear-gradient(to right, rgb(${colors.left.r},${colors.left.g},${colors.left.b}), rgb(${colors.right.r},${colors.right.g},${colors.right.b}))`
-              : this.getBannerFallbackGradient()
+              : this.buildHashGradient(b.imageUrl)
             this.bannerBgCache[b.id] = gradient
             if (this.heroBanner?.id === b.id) this.bannerBgGradient = gradient
           })
           .catch(() => {
-            this.bannerBgCache[b.id] = this.getBannerFallbackGradient()
+            this.bannerBgCache[b.id] = this.buildHashGradient(b.imageUrl)
             if (this.heroBanner?.id === b.id && !this.bannerBgGradient) {
-              this.bannerBgGradient = this.getBannerFallbackGradient()
+              this.bannerBgGradient = this.buildHashGradient(b.imageUrl)
             }
           })
       })
