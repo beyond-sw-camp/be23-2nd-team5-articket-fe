@@ -109,8 +109,8 @@
           </div>
         </div>
 
-        <!-- 선택된 좌석 목록 (박스 내부 스크롤) -->
-        <div class="max-h-64 overflow-y-auto px-3 py-3 flex flex-col gap-2 bg-white">
+        <!-- 선택된 좌석 목록 (패널 내부 스크롤 영역) -->
+        <div class="flex-1 min-h-0 overflow-y-auto px-3 py-3 flex flex-col gap-2 bg-white">
           <div
             v-for="seat in selectedSeats"
             :key="seat.seatId"
