@@ -40,21 +40,7 @@
                 <option v-for="opt in categoryOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
               </select>
             </div>
-
-            <div>
-              <label class="block text-sm font-medium text-slate-700">게시 상태</label>
-              <select
-                v-model="form.status"
-                required
-                class="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm text-slate-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
-              >
-                <option value="DRAFT">초안 (임시 저장)</option>
-                <option value="UPCOMING">오픈 대기 (정보 공개)</option>
-                <option value="AVAILABLE">예매 가능</option>
-                <option value="CLOSED">예매 마감</option>
-              </select>
-            </div>
-
+            <div></div>
             <div>
               <label class="block text-sm font-medium text-slate-700">관람 연령</label>
               <input
@@ -267,11 +253,11 @@ import { ENDPOINTS } from '../../lib/api/endpoints'
 import { CONCERT_CATEGORY_OPTIONS } from '../../lib/constants/concertCategory'
 
 // ERD: concert 테이블
-// 필수: title, status (DRAFT/PUBLISHED), seat_map_id
+// 공연 생성 시 상태는 입력받지 않고, 백엔드 기본값(DRAFT)으로 생성
+// 이후 공연 상태는 회차 상태를 기준으로 자동 동기화
 // 선택: age_limit (member_id는 자동)
 const DUMMY_CONCERT = {
   title: '새로운 공연',
-  status: 'DRAFT',
   seat_map_id: 1,
   age_limit: null
 }
@@ -280,7 +266,6 @@ function getDefaultForm() {
   return {
     title: DUMMY_CONCERT.title,
     category: 'CONCERT',
-    status: DUMMY_CONCERT.status,
     venue_id: '',
     seat_map_id: null,
     age_limit: DUMMY_CONCERT.age_limit,
@@ -467,7 +452,6 @@ export default {
       const dto = {
         title: this.form.title || DUMMY_CONCERT.title,
         category: this.form.category || 'CONCERT',
-        status: this.form.status || DUMMY_CONCERT.status,
         ageLimit: (this.form.age_limit !== null && this.form.age_limit !== undefined && this.form.age_limit !== '')
           ? Number(this.form.age_limit)
           : 0,
