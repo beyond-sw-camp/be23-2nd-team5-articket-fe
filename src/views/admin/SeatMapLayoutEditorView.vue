@@ -1172,9 +1172,9 @@ const handleSave = async () => {
     }
 
     await api.patch(`/seat-maps/admin/${seatMapId}/layout`, payload)
-    // reload 없이 상태만 업데이트 (reload 시 xPos/yPos가 복원되지 않는 문제 방지)
+    await loadLayout()
+    // 저장 후 서버 기준으로 다시 로드하여 section id/삭제 상태를 동기화
     savedStatus.value = '저장됨'
-    seatMapVersion.value = (seatMapVersion.value || 1) + 1
     alert('저장되었습니다.')
   } catch (e) {
     console.error(e)
